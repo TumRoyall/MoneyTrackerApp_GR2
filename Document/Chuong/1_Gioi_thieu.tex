@@ -1,0 +1,46 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+\section{Đặt vấn đề}
+\label{section:1.1}
+
+Trong bối cảnh đời sống hiện đại, nhu cầu quản lý tài chính cá nhân ngày càng trở nên quan trọng. Sự phát triển của nền kinh tế số cùng với sự phổ biến của các hình thức thanh toán điện tử như ví điện tử, thẻ ngân hàng hay chuyển khoản trực tuyến khiến cho việc kiểm soát chi tiêu trở nên phức tạp hơn bao giờ hết. Đặc biệt đối với giới trẻ, nhất là sinh viên – nhóm đối tượng có thu nhập hạn chế nhưng phải đối mặt với nhiều khoản chi khác nhau như học phí, sinh hoạt, giải trí – việc quản lý tài chính hợp lý đóng vai trò quan trọng trong việc cân đối ngân sách và hình thành thói quen chi tiêu khoa học.
+
+Hiện nay, nhiều người vẫn đang quản lý chi tiêu của mình một cách thủ công thông qua sổ tay hoặc bảng tính Excel. Tuy nhiên, các phương pháp này thường thiếu tính trực quan, tốn thời gian nhập liệu, khó thống kê và không đáp ứng được nhu cầu theo dõi, phân tích chi tiêu trong dài hạn. Điều này dẫn đến tình trạng nhiều người không nắm rõ thói quen chi tiêu của bản thân, khó kiểm soát được các khoản chi vượt mức hoặc lãng phí.
+
+Từ thực tế đó, bài toán đặt ra là làm thế nào để hỗ trợ người dùng ghi chép, theo dõi và quản lý chi tiêu của mình một cách tiện lợi, nhanh chóng và hiệu quả hơn. Việc giải quyết được bài toán này không chỉ giúp người dùng kiểm soát tài chính cá nhân tốt hơn, mà còn góp phần nâng cao nhận thức về quản lý tài chính, hỗ trợ việc lập kế hoạch chi tiêu và tiết kiệm một cách chủ động. Hơn nữa, hướng tiếp cận này có thể mở rộng áp dụng cho nhiều đối tượng khác như hộ gia đình, nhóm bạn hoặc các tổ chức nhỏ cần theo dõi chi phí hàng ngày.
+
+\section{Mục tiêu và phạm vi đề tài}
+\label{section:1.2}
+
+Trong bối cảnh công nghệ số phát triển mạnh mẽ, việc quản lý tài chính cá nhân ngày càng trở nên quan trọng đối với mọi đối tượng người dùng, đặc biệt là sinh viên và người trẻ tuổi. Nhiều ứng dụng phổ biến như Money Lover, Misa MoneyKeeper hay Spendee đã cung cấp các tính năng cơ bản như ghi chép thu chi và thống kê tài chính. Tuy nhiên, phần lớn các ứng dụng này vẫn tồn tại một số hạn chế như giao diện phức tạp, yêu cầu đăng ký trả phí hoặc chưa phù hợp với thói quen sử dụng của người Việt Nam. Bên cạnh đó, trong đời sống hàng ngày, người dùng còn thường xuyên phát sinh các hoạt động chi tiêu chung như đi ăn, đi du lịch hoặc tổ chức sự kiện cùng bạn bè, nhưng lại thiếu một công cụ đơn giản để ghi lại và chia sẻ chi phí giữa các thành viên.
+
+Từ thực tế đó, đề tài “Thiết kế và xây dựng ứng dụng quản lý chi tiêu” được thực hiện với mục tiêu phát triển một ứng dụng thân thiện, dễ sử dụng, hỗ trợ người dùng quản lý chi tiêu cá nhân một cách hiệu quả, đồng thời bổ sung tính năng \textbf{quản lý chi tiêu nhóm theo sự kiện}. Ứng dụng cho phép người dùng ghi chép và phân loại các khoản thu – chi của riêng mình, xem thống kê tổng quan theo thời gian, và khi cần, có thể tạo “nhóm chi tiêu” cho một sự kiện cụ thể để mời bạn bè cùng tham gia. Mỗi thành viên có thể nhập phần chi của mình, hệ thống sẽ tự tổng hợp và tính toán phần chia trung bình, giúp việc thanh toán trở nên minh bạch và thuận tiện hơn.
+
+Phạm vi của đề tài tập trung vào việc xây dựng các chức năng chính gồm: (i) quản lý chi tiêu cá nhân (thêm, sửa, xóa, thống kê), (ii) quản lý nhóm chi tiêu theo sự kiện, và (iii) tổng hợp – chia sẻ báo cáo chi tiêu. Đề tài không đặt mục tiêu tích hợp với hệ thống ngân hàng hay các cổng thanh toán trực tuyến, nhằm tập trung vào tính khả dụng, tính chính xác của dữ liệu và trải nghiệm người dùng. Trong tương lai, ứng dụng có thể mở rộng thêm các chức năng nâng cao như gợi ý chi tiêu thông minh, đồng bộ dữ liệu đám mây hoặc tích hợp AI để phân tích thói quen tài chính cá nhân.
+
+\section{Định hướng giải pháp}
+\label{section:1.3}
+
+Dựa trên các phân tích ở phần trên, đề tài lựa chọn định hướng xây dựng \textbf{ứng dụng di động đa nền tảng} nhằm giúp người dùng quản lý chi tiêu cá nhân và nhóm một cách thuận tiện, trực quan và linh hoạt. Ứng dụng được phát triển bằng \textbf{React Native} để có thể triển khai trên cả hệ điều hành Android và iOS với cùng một mã nguồn, đảm bảo tính thống nhất, hiệu năng tốt và trải nghiệm người dùng mượt mà. 
+
+Phần \textbf{backend} của hệ thống được xây dựng bằng \textbf{Spring Boot}, một framework mạnh mẽ trong hệ sinh thái Java, hỗ trợ phát triển RESTful API nhanh chóng, ổn định và có khả năng mở rộng cao. Spring Boot cung cấp sẵn các cơ chế bảo mật, quản lý kết nối cơ sở dữ liệu, xử lý lỗi, và tích hợp dễ dàng với các công nghệ khác như JWT, WebSocket hay Cloud Storage. Dữ liệu của hệ thống được lưu trữ và quản lý bởi \textbf{PostgreSQL}, một hệ quản trị cơ sở dữ liệu quan hệ mạnh mẽ, hỗ trợ truy vấn phức tạp và đảm bảo tính toàn vẹn, nhất quán của thông tin người dùng.
+
+Giải pháp được tổ chức thành hai thành phần chính: (i) \textbf{quản lý chi tiêu cá nhân} – là chức năng cốt lõi, cho phép người dùng ghi chép, phân loại, và thống kê thu chi theo thời gian; và (ii) \textbf{quản lý chi tiêu nhóm theo sự kiện} – là chức năng mở rộng, giúp người dùng tạo nhóm tạm thời cho các hoạt động chung như du lịch, ăn uống hay mua sắm, ghi lại các khoản chi của từng thành viên và tự động tính toán phần chia trung bình. Ứng dụng được thiết kế với mục tiêu tối giản thao tác, đảm bảo sự tiện lợi trong việc nhập liệu và hiển thị thông tin tài chính.
+
+Đóng góp chính của đồ án là phát triển một \textbf{hệ thống quản lý chi tiêu thống nhất}, đáp ứng đồng thời nhu cầu cá nhân và nhóm trong cùng một nền tảng di động. Ứng dụng không chỉ giúp người dùng kiểm soát tài chính hiệu quả, mà còn hỗ trợ việc chia sẻ, tính toán và minh bạch hóa chi tiêu trong các hoạt động tập thể. Kết quả mong đợi là một sản phẩm có thể triển khai thực tế, dễ mở rộng, và tạo nền tảng cho các hướng phát triển nâng cao trong tương lai.
+
+\section{Bố cục đồ án}
+\label{section:1.4}
+
+Phần còn lại của báo cáo đồ án tốt nghiệp này được tổ chức như sau.  
+
+\textbf{Chương 2} trình bày quá trình \textbf{phân tích và khảo sát yêu cầu} của hệ thống. Trong chương này, tác giả tiến hành tìm hiểu thực trạng và nhu cầu thực tế của người dùng trong việc quản lý chi tiêu cá nhân và chi tiêu nhóm. Chương này cũng xác định bài toán cần giải quyết, mô tả yêu cầu chức năng, phi chức năng, các đối tượng sử dụng, cũng như các ràng buộc kỹ thuật cần thiết. Đây là nền tảng quan trọng để định hướng cho việc thiết kế hệ thống ở chương tiếp theo.  
+
+\textbf{Chương 3} trình bày nội dung \textbf{phân tích và thiết kế hệ thống}, bao gồm mô hình kiến trúc tổng thể, mô hình ca sử dụng, sơ đồ luồng dữ liệu, mô hình thực thể – quan hệ và thiết kế cơ sở dữ liệu. Ngoài ra, chương này cũng mô tả nguyên tắc tổ chức giao diện người dùng, mối quan hệ giữa các module và cách hệ thống đảm bảo tính mở rộng, tính toàn vẹn dữ liệu và khả năng xử lý hiệu quả.  
+
+\textbf{Chương 4} trình bày quá trình \textbf{cài đặt và đánh giá thực nghiệm} của ứng dụng. Phần này mô tả môi trường phát triển, công cụ và công nghệ được sử dụng gồm \textbf{React Native} cho giao diện người dùng, \textbf{FastAPI} cho backend, và \textbf{PostgreSQL} cho hệ quản trị cơ sở dữ liệu. Chương này cũng minh họa các chức năng chính của ứng dụng, kết quả kiểm thử, và đánh giá hiệu năng hệ thống so với yêu cầu đặt ra.  
+
+\textbf{Chương 5} trình bày \textbf{kết luận và hướng phát triển} của đồ án. Chương này tổng hợp các kết quả đạt được, đánh giá mức độ hoàn thành mục tiêu, chỉ ra những hạn chế còn tồn tại và đề xuất các hướng mở rộng trong tương lai, chẳng hạn như cải thiện hiệu năng, tối ưu giao diện người dùng, hoặc tích hợp các thuật toán thông minh hỗ trợ phân tích và dự báo chi tiêu cá nhân.
+
+
+\end{document}

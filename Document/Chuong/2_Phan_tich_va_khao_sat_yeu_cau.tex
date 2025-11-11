@@ -1,0 +1,510 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+Trong Chương 1, đề tài đã trình bày bối cảnh hình thành, mục tiêu, phạm vi và định hướng giải pháp cho hệ thống quản lý chi tiêu cá nhân và nhóm. Trên cơ sở đó, Chương 2 này tập trung khảo sát và phân tích yêu cầu của hệ thống nhằm xác định rõ các chức năng cần có, các tác nhân tham gia, cũng như các quy trình nghiệp vụ đặc trưng cần được hiện thực hóa trong phần mềm.
+
+Cụ thể, chương này sẽ trước hết tiến hành \textbf{khảo sát hiện trạng} của các ứng dụng quản lý chi tiêu hiện có trên thị trường, đồng thời phân tích nhu cầu thực tế của người dùng để rút ra các điểm mạnh và hạn chế còn tồn tại. Tiếp theo, chương sẽ xây dựng \textbf{tổng quan chức năng} của hệ thống thông qua biểu đồ \textit{use case} tổng quát và các biểu đồ phân rã, mô tả mối quan hệ giữa các tác nhân và các chức năng chính của hệ thống. 
+
+Bên cạnh đó, một số \textbf{quy trình nghiệp vụ quan trọng} sẽ được minh họa bằng biểu đồ hoạt động để thể hiện luồng xử lý tổng thể của các tác vụ điển hình, chẳng hạn như quy trình ghi nhận và chia sẻ giao dịch trong nhóm. Sau cùng, chương sẽ trình bày phần \textbf{đặc tả chi tiết các use case chính} cùng các \textbf{yêu cầu phi chức năng} của hệ thống, làm cơ sở cho việc thiết kế mô hình dữ liệu và mô hình xử lý được trình bày ở chương tiếp theo.
+
+Như vậy, Chương 2 đóng vai trò định hình cấu trúc và phạm vi hoạt động của hệ thống, giúp bảo đảm rằng giải pháp được xây dựng đáp ứng đúng nhu cầu thực tiễn và phù hợp với mục tiêu đề ra của đề tài.
+
+\section{Khảo sát hiện trạng}
+\label{section:2.1}
+
+Trong bối cảnh nhu cầu quản lý chi tiêu cá nhân ngày càng được quan tâm, đặc biệt là ở nhóm người trẻ mới bắt đầu tự chủ tài chính, việc xây dựng các ứng dụng hỗ trợ ghi chép, thống kê và kiểm soát chi tiêu trở nên hết sức cần thiết. Để định hướng phát triển hệ thống “\textit{Ứng dụng quản lý chi tiêu cá nhân và nhóm}”, tác giả đã tiến hành khảo sát và phân tích các ứng dụng hiện có trên thị trường, kết hợp với việc tìm hiểu nhu cầu và thói quen của người dùng mục tiêu.
+
+\subsection{Khảo sát người dùng.}  
+Đối tượng người dùng hướng đến là những người có thu nhập ở mức trung bình, vừa bắt đầu tự chi tiêu và thường gặp khó khăn trong việc quản lý tài chính cá nhân. Họ thường rơi vào tình trạng “tiền vừa về đã hết”, thiếu kế hoạch cụ thể cho các khoản chi, không theo dõi được dòng tiền ra – vào, và không có phương pháp quản lý rõ ràng.  
+
+Để tìm hiểu cụ thể hơn về thói quen chi tiêu, tác giả đã tiến hành khảo sát trực tuyến với 50 người tham gia thuộc nhiều độ tuổi khác nhau. Kết quả khảo sát được tóm tắt trong Bảng~\ref{tab:age_survey} dưới đây.
+
+\begin{table}[H]
+\centering
+\caption{Phân bố độ tuổi người tham gia khảo sát}
+\label{tab:age_survey}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Nhóm tuổi} & \textbf{Số người (người)} & \textbf{Tỷ lệ (\%)} \\ \hline
+18–22 tuổi (sinh viên, người mới đi làm) & 26 & 52 \\ \hline
+23–30 tuổi (nhân viên văn phòng trẻ) & 17 & 34 \\ \hline
+Trên 30 tuổi (đã ổn định tài chính) & 7 & 14 \\ \hline
+\textbf{Tổng cộng} & \textbf{50} & \textbf{100} \\ \hline
+\end{tabular}
+\end{table}
+
+Kết quả cho thấy phần lớn người được khảo sát nằm trong độ tuổi 18–30 (chiếm 86\%), đây là nhóm người bắt đầu có thu nhập và đang học cách tự quản lý chi tiêu. Họ thường chưa có thói quen ghi chép chi tiêu hằng ngày và dễ gặp khó khăn trong việc kiểm soát dòng tiền vào cuối tháng.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    bar width=18pt,
+    ylabel={Tỷ lệ người dùng (\%)},
+    symbolic x coords={Có,Không},
+    xtick=data,
+    nodes near coords,
+    ymin=0,ymax=100,
+    width=9cm,
+    height=5.5cm,
+    bar shift=0pt,
+    every node near coord/.append style={font=\small},
+    title={Mức độ gặp khó khăn khi kiểm soát chi tiêu cuối tháng}
+]
+\addplot coordinates {(Có,68) (Không,32)};
+\end{axis}
+\end{tikzpicture}
+\caption{Kết quả khảo sát về khó khăn trong việc kiểm soát chi tiêu cuối tháng}
+\label{fig:user_bar}
+\end{figure}
+
+Như thể hiện ở Hình~\ref{fig:user_bar}, có đến 86\% người tham gia khảo sát cho biết họ thường xuyên gặp khó khăn trong việc kiểm soát chi tiêu vào cuối tháng, chỉ 14\% cảm thấy có thể kiểm soát được. Điều này cho thấy phần lớn người dùng vẫn thiếu công cụ hỗ trợ theo dõi và phân tích chi tiêu một cách trực quan, có hệ thống.
+
+\textbf{Trích đoạn phỏng vấn người dùng:}  
+\begin{quote}
+\textit{“Em đi làm được gần một năm rồi, mà tháng nào cũng hết tiền sớm. Em không nhớ rõ mình tiêu vào những gì nữa. Nếu có app nào tự tổng hợp lại và nhắc khi sắp vượt hạn mức thì tốt quá.”}
+\end{quote}
+\begin{quote}
+\textit{“Tụi em ở chung nhóm bạn, hay chia tiền ăn uống, điện nước. Ghi chép thủ công rối lắm, nhiều khi không nhớ ai trả, ai nợ. Có app nào chia nhóm được thì đỡ cực.”}
+\end{quote}
+
+\textbf{Nhận xét:}  
+Những kết quả khảo sát và phỏng vấn trên phản ánh đúng khó khăn của nhóm người dùng mục tiêu: họ chưa có thói quen quản lý chi tiêu, cảm thấy phiền phức khi phải nhập dữ liệu thủ công, và mong muốn có một ứng dụng đơn giản, thân thiện, giúp thống kê rõ ràng, đồng thời hỗ trợ chia sẻ nhóm chi tiêu với người khác.
+
+\subsection{Khảo sát các hệ thống tương tự.}  
+Trên thị trường hiện nay, có nhiều ứng dụng nổi bật trong lĩnh vực quản lý tài chính cá nhân. Bốn ứng dụng tiêu biểu được lựa chọn để khảo sát và phân tích bao gồm: \textit{Money Lover}, \textit{Money Manager}, \textit{Sổ thu chi}, và \textit{Sổ thu chi MISA}.  
+Bảng~\ref{tab:pros_cons} và Bảng~\ref{tab:feature_matrix} dưới đây trình bày tổng hợp các tính năng, ưu điểm và hạn chế chính của từng ứng dụng.
+
+% ====== Bảng 1: Ưu/nhược điểm theo từng ứng dụng ======
+\begin{table}[H]
+\centering
+\caption{Phân tích ưu/nhược điểm các ứng dụng hiện có (theo khảo sát nội bộ)}
+\label{tab:pros_cons}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3cm}|
+>{\raggedright\arraybackslash}p{6.2cm}|
+>{\raggedright\arraybackslash}p{6.2cm}|}
+\hline
+\textbf{Ứng dụng} & \textbf{Ưu điểm} & \textbf{Hạn chế} \\ \hline
+\textbf{Money Lover} &
+\begin{itemize}\setlength\itemsep{2pt}
+\item Ghi nhận thu/chi, phân loại theo nhóm thị trường.
+\item Quản lý nhiều ví (tiền mặt, thẻ tín dụng, ví điện tử…).
+\item Theo dõi nợ/cho vay; liên kết ngân hàng.
+\item Báo cáo chi tiêu theo tháng/năm; đa nền tảng.
+\item Đồng bộ dữ liệu đám mây.
+\item Bộ công cụ mở rộng: tìm ATM, chia tips nhóm, tính thuế TNCN, tính lãi suất, xuất dữ liệu Google Sheets.
+\end{itemize}
+&
+\begin{itemize}\setlength\itemsep{2pt}
+\item Nhiều tính năng nâng cao khiến ứng dụng phức tạp với người mới.
+\item Liên kết ngân hàng và đồng bộ đám mây phụ thuộc gói sử dụng.
+\item Chưa có tính năng chia sẻ \emph{nhóm chi tiêu} theo thời gian thực.
+\end{itemize}
+\\ \hline
+
+\textbf{Money Manager} &
+\begin{itemize}\setlength\itemsep{2pt}
+\item Ghi chép thu chi, vay/nợ, tiết kiệm và đầu tư.
+\item Bảo mật bằng mật khẩu/vân tay.
+\item Có thống kê, biểu đồ chi tiêu theo thời gian, danh mục và tài khoản.
+\item Lịch nhắc chi tiêu, thanh toán định kỳ.
+\end{itemize}
+&
+\begin{itemize}\setlength\itemsep{2pt}
+\item Không hỗ trợ liên kết ngân hàng.
+\item Không có tính năng chia sẻ nhóm chi tiêu.
+\item Phụ thuộc nhập tay; dễ thiếu dữ liệu nếu người dùng quên ghi.
+\end{itemize}
+\\ \hline
+
+\textbf{Sổ thu chi} &
+\begin{itemize}\setlength\itemsep{2pt}
+\item Chức năng gọn nhẹ: thêm giao dịch, báo cáo theo tháng/quý/năm.
+\item Lưu hoá đơn kèm ảnh; xuất CSV/Excel.
+\item Giao diện tiếng Việt, dễ sử dụng.
+\end{itemize}
+&
+\begin{itemize}\setlength\itemsep{2pt}
+\item Không có đồng bộ đám mây hay liên kết ngân hàng.
+\item Không hỗ trợ chia sẻ nhóm chi tiêu.
+\item Báo cáo/biểu đồ còn đơn giản, ít chiều phân tích.
+\end{itemize}
+\\ \hline
+
+\textbf{Sổ thu chi MISA} &
+\begin{itemize}\setlength\itemsep{2pt}
+\item Quản lý tài khoản (ngân hàng, sổ tiết kiệm, tiền mặt).
+\item Tính lãi vay, nhắc sự kiện/chi tiêu theo sự kiện.
+\item Cảnh báo chi tiêu bất thường; tạo ngân sách, hạn mức cho từng nhóm hàng.
+\item Giao diện tiếng Việt, phù hợp người dùng Việt Nam.
+\end{itemize}
+&
+\begin{itemize}\setlength\itemsep{2pt}
+\item Thiết lập ban đầu nhiều bước (tài khoản, hạn mức, ngân sách).
+\item Không có tính năng chia sẻ nhóm chi tiêu thời gian thực.
+\item Phụ thuộc nhập tay nếu không liên kết ngân hàng.
+\end{itemize}
+\\ \hline
+\end{tabular}%
+}
+\end{table}
+
+
+% ====== Bảng 2: Ma trận tính năng ======
+\begin{table}[H]
+\centering
+\caption{Ma trận so sánh tính năng (\ding{51}: có; \ding{55}: không nêu trong khảo sát)}
+\label{tab:feature_matrix}
+\begin{tabular}{|p{4.2cm}|
+>{\centering\arraybackslash}p{2.3cm}|
+>{\centering\arraybackslash}p{2.3cm}|
+>{\centering\arraybackslash}p{2.3cm}|
+>{\centering\arraybackslash}p{2.3cm}|}
+\hline
+\textbf{Tính năng} & \textbf{Money Lover} & \textbf{Money Manager} & \textbf{Sổ thu chi} & \textbf{Sổ thu chi MISA} \\ \hline
+Ghi thu/chi, phân loại & \ding{51} & \ding{51} & \ding{51} & \ding{51} \\ \hline
+Quản lý nhiều ví/tài khoản & \ding{51} & \ding{51} & \ding{51} & \ding{51} \\ \hline
+Liên kết ngân hàng & \ding{51} & \ding{55} & \ding{55} & \ding{51} \\ \hline
+Đồng bộ đám mây & \ding{51} & \ding{55} & \ding{55} & \ding{55} \\ \hline
+Báo cáo/biểu đồ theo thời gian & \ding{51} & \ding{51} & \ding{51} & \ding{51} \\ \hline
+Lưu hoá đơn kèm ảnh & \ding{55} & \ding{55} & \ding{51} & \ding{55} \\ \hline
+Xuất dữ liệu (CSV/Excel/Sheets) & \ding{51} & \ding{55} & \ding{51} & \ding{55} \\ \hline
+Nhắc nhở chi tiêu/định kỳ & \ding{55} & \ding{51} & \ding{55} & \ding{51} \\ \hline
+Cảnh báo vượt hạn mức & \ding{55} & \ding{55} & \ding{55} & \ding{51} \\ \hline
+Công cụ nâng cao (tips nhóm, TNCN, lãi suất) & \ding{51} & \ding{55} & \ding{55} & \ding{51} \\ \hline
+Chia sẻ \emph{nhóm chi tiêu}/ví chung & \ding{55} & \ding{55} & \ding{55} & \ding{55} \\ \hline
+\end{tabular}
+\end{table}
+
+
+\subsection{Phân tích và đánh giá.}  
+Nhìn chung, các ứng dụng trên đều đáp ứng khá tốt nhu cầu quản lý chi tiêu cá nhân cơ bản như ghi nhận thu chi, phân loại giao dịch, và tạo báo cáo thống kê. Trong đó, \textit{Money Lover} nổi bật với khả năng đồng bộ dữ liệu và liên kết ngân hàng, trong khi \textit{MISA} có ưu thế về giao diện tiếng Việt và cảnh báo chi tiêu. Tuy nhiên, hầu hết các ứng dụng vẫn tồn tại một số hạn chế đáng chú ý:
+\begin{itemize}
+    \item Chưa hỗ trợ \textbf{chia sẻ nhóm chi tiêu} — người dùng không thể cùng nhau nhập và theo dõi các khoản chi chung.
+    \item Một số tính năng nâng cao (đồng bộ dữ liệu, biểu đồ chi tiết) chỉ có ở bản trả phí.
+    \item Tích hợp ví điện tử và ngân hàng chưa thực sự tối ưu cho người dùng Việt Nam.
+    \item Chưa có cơ chế \textbf{nhắc nhở hoặc cảnh báo chi tiêu thông minh} theo hành vi người dùng.
+\end{itemize}
+
+\subsection{Khoảng trống và hàm ý phát triển.}  
+Đối tượng người dùng mục tiêu của đề tài là nhóm thu nhập trung bình, mới bắt đầu quản lý tài chính cá nhân. Với nhóm này, các hạn chế nêu trên dẫn đến yêu cầu cấp thiết về một giải pháp:
+\begin{itemize}
+    \item Quản lý nhiều ví nội bộ mà không cần liên kết ngân hàng.
+    \item Cho phép chia sẻ và cộng tác trong nhóm chi tiêu (gia đình, bạn cùng phòng, nhóm bạn).
+    \item Tích hợp tính năng nhắc nhở chi tiêu và cảnh báo vượt hạn mức linh hoạt theo ví, danh mục và thời gian.
+    \item Cung cấp thống kê chi tiêu trực quan, giúp người dùng nhận biết thói quen chi tiêu và điều chỉnh hành vi.
+\end{itemize}
+
+\subsection{Kết luận khảo sát.}  
+Từ kết quả khảo sát và đánh giá, có thể thấy khoảng trống lớn trên thị trường cho một ứng dụng quản lý chi tiêu có tính linh hoạt và hỗ trợ cộng tác nhóm. Hệ thống “\textit{Ứng dụng quản lý chi tiêu cá nhân và nhóm}” được đề xuất hướng đến việc giải quyết các vấn đề nêu trên bằng cách tập trung vào:
+(i) quản lý đa ví,  
+(ii) chia sẻ nhóm chi tiêu,  
+(iii) nhắc nhở thông minh,  
+(iv) thống kê trực quan, và  
+(v) tối ưu nhập liệu cho người dùng Việt.  
+
+Những phân tích và kết quả trong phần này là cơ sở để xây dựng mô hình chức năng tổng quát của hệ thống, được trình bày chi tiết trong phần~\ref{section:2.2}.
+
+
+\section{Tổng quan chức năng}
+\label{section:2.2}
+
+Phần \ref{section:2.2} này trình bày tổng quan các chức năng chính của hệ thống \textbf{Ứng dụng quản lý chi tiêu cá nhân}.  
+Mục tiêu của phần này là giúp người đọc có cái nhìn toàn diện về phạm vi nghiệp vụ của phần mềm, bao gồm các nhóm chức năng chính mà người dùng và quản trị viên có thể thực hiện.  
+Các chức năng được mô tả ở mức khái quát (mức cao), phần đặc tả chi tiết cho từng chức năng sẽ được trình bày ở mục \ref{section:2.3}.
+
+\subsection{Biểu đồ use case tổng quát}
+\label{subsection:2.2.1}
+
+Hình \ref{fig:UC_TongQuat} minh hoạ \textbf{biểu đồ use case tổng quát} của hệ thống.  
+Hệ thống có ba tác nhân chính:
+
+\begin{itemize}
+    \item \textbf{Người dùng}: là người sử dụng ứng dụng để quản lý chi tiêu cá nhân. Người dùng có thể quản lý hồ sơ cá nhân, tạo và quản lý ví, thêm hoặc chỉnh sửa danh mục chi tiêu, ghi nhận giao dịch, xem báo cáo thống kê.
+    \item \textbf{Admin}: có quyền quản trị hệ thống, bao gồm quản lý người dùng, kiểm tra và xử lý các báo cáo hoặc sự cố trong hệ thống.
+    \item \textbf{Hệ thống}: chịu trách nhiệm gửi thông báo, cập nhật dữ liệu tự động và hỗ trợ người dùng trong quá trình sử dụng ứng dụng.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/Usecase quản lý giao dịch/UC Tổng quát.png}
+    \caption{Biểu đồ use case tổng quát của hệ thống quản lý chi tiêu cá nhân}
+    \label{fig:UC_TongQuat}
+\end{figure}
+
+\subsection{Các nhóm chức năng chính}
+\label{subsection:2.2.2}
+
+Hệ thống bao gồm sáu nhóm chức năng chính:
+
+\begin{enumerate}
+    \item \textbf{Quản lý tài khoản cá nhân:} cho phép người dùng đăng ký, đăng nhập, đổi mật khẩu, chỉnh sửa thông tin cá nhân và cập nhật ảnh đại diện.
+    \item \textbf{Quản lý ví:} hỗ trợ người dùng tạo ví cá nhân hoặc ví nhóm, chỉnh sửa, xoá ví, xem số dư và lịch sử giao dịch, nạp hoặc rút tiền từ ví.
+    \item \textbf{Quản lý danh mục chi tiêu:} cung cấp khả năng tạo mới, chỉnh sửa, xoá và lựa chọn biểu tượng hoặc màu sắc cho từng danh mục chi tiêu.
+    \item \textbf{Quản lý giao dịch:} cho phép người dùng thêm, sửa, xoá, lọc giao dịch theo danh mục, ví hoặc thời gian; tự động cập nhật số dư và gửi cảnh báo khi chi tiêu vượt hạn mức.
+    \item \textbf{Thống kê và báo cáo:} tổng hợp dữ liệu chi tiêu theo thời gian, danh mục hoặc ví; hiển thị biểu đồ trực quan và xuất báo cáo; đồng thời đưa ra gợi ý điều chỉnh kế hoạch chi tiêu cho các tháng sau.
+    \item \textbf{Quản lý hệ thống:} dành cho quản trị viên (Admin), bao gồm các chức năng quản lý người dùng, xử lý báo cáo vi phạm, thống kê hoạt động và đảm bảo vận hành hệ thống ổn định.
+\end{enumerate}
+
+Như vậy, biểu đồ use case tổng quát thể hiện mối quan hệ giữa các tác nhân và hệ thống, phản ánh toàn bộ chức năng cốt lõi của ứng dụng. Các phần tiếp theo sẽ phân rã chi tiết từng nhóm chức năng và mô tả cụ thể các use case con tương ứng.
+
+
+\subsection{Biểu đồ use case phân rã ``Quản lý tài khoản cá nhân''}
+\label{subsection:2.2.3}
+
+Phần này trình bày biểu đồ use case phân rã cho nhóm chức năng \textbf{Quản lý tài khoản cá nhân}.  
+Chức năng này cho phép người dùng thực hiện các thao tác liên quan đến tài khoản của mình, bao gồm đăng ký, đăng nhập, đổi mật khẩu, quên mật khẩu và cập nhật thông tin cá nhân.  
+Hệ thống chịu trách nhiệm xác thực thông tin người dùng, lưu trữ dữ liệu và gửi thông báo cập nhật khi có thay đổi.  
+Mục tiêu của nhóm chức năng này là giúp người dùng truy cập vào hệ thống một cách an toàn, đồng thời đảm bảo tính cá nhân hóa và bảo mật thông tin.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/Usecase quản lý giao dịch/Quản lý tài khoản cá nhân/Usecase quản lý tài khoản.png}
+    \caption{Biểu đồ use case phân rã chức năng ``Quản lý tài khoản cá nhân''}
+    \label{fig:UC_QL_TaiKhoan}
+\end{figure}
+
+\textbf{Các tác nhân tham gia:}
+\begin{itemize}
+    \item \textbf{Người dùng:} thực hiện các thao tác đăng ký, đăng nhập, đổi mật khẩu, quên mật khẩu và cập nhật thông tin cá nhân.
+    \item \textbf{Hệ thống:} tiếp nhận yêu cầu, xử lý xác thực thông tin và phản hồi kết quả, đồng thời gửi thông báo cập nhật khi có thay đổi liên quan đến tài khoản.
+\end{itemize}
+
+\textbf{Các use case con:}
+\begin{enumerate}
+    \item \textbf{Đăng ký tài khoản:} Người dùng cung cấp các thông tin cơ bản như họ tên, địa chỉ email, số điện thoại và mật khẩu để tạo tài khoản mới. Hệ thống kiểm tra thông tin trùng lặp, xác thực và lưu trữ vào cơ sở dữ liệu.
+    \item \textbf{Đăng nhập:} Người dùng nhập thông tin tài khoản để truy cập hệ thống. Hệ thống kiểm tra tính hợp lệ của thông tin và cấp quyền truy cập.
+    \item \textbf{Đổi mật khẩu:} Người dùng có thể thay đổi mật khẩu để đảm bảo bảo mật. Quá trình này luôn bao gồm bước đăng nhập trước khi cập nhật mật khẩu mới. 
+    \item \textbf{Quên mật khẩu:} Khi người dùng quên mật khẩu, hệ thống hỗ trợ khôi phục thông qua địa chỉ email đã đăng ký. Quá trình này cũng bao gồm xác minh danh tính và đặt lại mật khẩu mới.
+    \item \textbf{Cập nhật thông tin cá nhân:} Cho phép người dùng chỉnh sửa thông tin như họ tên, số điện thoại, địa chỉ, ảnh đại diện hoặc giới tính. Sau khi chỉnh sửa, hệ thống lưu thay đổi và gửi thông báo cập nhật.
+    \item \textbf{Thông báo và cập nhật:} Là chức năng hệ thống tự động gửi thông báo tới người dùng khi có thay đổi liên quan đến thông tin tài khoản.
+\end{enumerate}
+
+\textbf{Các mối quan hệ giữa các use case:}
+\begin{itemize}
+    \item \textbf{Đổi mật khẩu} \texttt{<<include>>} \textbf{Đăng nhập:} người dùng cần đăng nhập trước khi thay đổi mật khẩu.
+    \item \textbf{Quên mật khẩu} \texttt{<<include>>} \textbf{Đăng nhập:} khi người dùng không thể đăng nhập được do quên mật khẩu, hệ thống sẽ kích hoạt quá trình khôi phục.
+    \item \textbf{Cập nhật thông tin cá nhân} \texttt{<<include>>} \textbf{Đăng nhập:} để đảm bảo chỉ người dùng đã xác thực mới được phép chỉnh sửa thông tin.
+\end{itemize}
+
+Như vậy, nhóm chức năng “Quản lý tài khoản cá nhân” là nền tảng cho toàn bộ hệ thống, đảm bảo việc định danh người dùng, quản lý hồ sơ và bảo mật dữ liệu. Đây cũng là bước đầu tiên để người dùng truy cập và sử dụng các chức năng khác như quản lý ví, chi tiêu hoặc xem thống kê trong ứng dụng.
+
+\subsection{Biểu đồ use case phân rã ``Quản lý ví''}
+\label{subsection:2.2.4}
+
+Nhóm chức năng \textbf{Quản lý ví} cho phép người dùng tạo, cập nhật và chia sẻ ví để theo dõi các nguồn tiền của mình.  
+Người dùng có thể tạo ví cá nhân hoặc ví chung, thêm hoặc xóa thành viên, cũng như phân quyền cho các thành viên khác trong ví.  
+Hệ thống đồng thời hỗ trợ người dùng cập nhật thu nhập thông qua nhiều hình thức khác nhau (nhập thủ công, nhập bằng văn bản tự nhiên sử dụng AI), giúp cho việc quản lý số dư ví trở nên linh hoạt và thuận tiện.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/Usecase quản lý giao dịch/Quản lý ví/UseCase quản lý ví.png}
+    \caption{Biểu đồ use case phân rã chức năng ``Quản lý ví''}
+    \label{fig:UC_QL_Vi}
+\end{figure}
+
+\textbf{Các tác nhân tham gia:}
+\begin{itemize}
+    \item \textbf{Người dùng:} thực hiện các thao tác tạo ví, cập nhật số dư và thêm người dùng vào ví chung.
+    \item \textbf{Chủ ví:} là người sở hữu ví, có quyền cao nhất trong ví chung, có thể thêm/xóa thành viên hoặc phân quyền cho người khác.
+    \item \textbf{Hệ thống:} đảm nhiệm việc xử lý, lưu trữ dữ liệu và gửi thông báo cập nhật cho các thành viên khi có thay đổi.
+\end{itemize}
+
+\textbf{Các use case con:}
+\begin{enumerate}
+    \item \textbf{Tạo ví:} Người dùng có thể tạo một ví mới (ví cá nhân hoặc ví chung).  
+    Quá trình này bao gồm việc nhập tên ví, loại ví, số dư ban đầu và đơn vị tiền tệ.
+    \item \textbf{Cập nhật số dư ví:} Khi có thu nhập hoặc chi tiêu mới, người dùng có thể cập nhật số dư ví tương ứng.  
+    Chức năng này được gọi khi thêm giao dịch, nạp tiền hoặc chia sẻ chi tiêu.
+    \item \textbf{Nhập thu nhập thủ công:} Người dùng có thể nhập trực tiếp giá trị thu nhập vào ví.  
+    Use case này mở rộng từ “Cập nhật số dư ví”.
+    \item \textbf{Thêm thu nhập bằng text AI:} Người dùng có thể nhập câu tự nhiên (ví dụ: ``Hôm nay nhận lương 10 triệu'') và hệ thống sử dụng mô hình AI để tự động nhận diện và cập nhật số tiền vào ví.  
+    Đây cũng là một use case mở rộng từ “Cập nhật số dư ví”.
+    \item \textbf{Thêm người dùng cho ví chung:} Chủ ví mời thêm người dùng khác vào ví chung.  
+    Sau khi được chấp nhận, các thành viên này có thể xem hoặc thực hiện thao tác tùy quyền hạn.
+    \item \textbf{Xóa người dùng ví chung:} Chủ ví có thể xóa thành viên khỏi ví khi không còn cần thiết.
+    \item \textbf{Phân quyền cho người dùng ví:} Chủ ví có thể gán quyền (xem, chỉnh sửa, thêm giao dịch) cho từng thành viên trong ví chung.
+    \item \textbf{Cập nhật và thông báo:} Hệ thống tự động gửi thông báo đến các thành viên khi có thay đổi về số dư, quyền, hoặc thành viên trong ví.
+\end{enumerate}
+
+\textbf{Các mối quan hệ giữa các use case:}
+\begin{itemize}
+    \item \textbf{Tạo ví} \texttt{<<include>>} \textbf{Cập nhật số dư ví:} Khi người dùng tạo ví mới, hệ thống yêu cầu nhập số dư ban đầu.
+    \item \textbf{Cập nhật số dư ví} \texttt{<<extend>>} \textbf{Nhập thu nhập thủ công:} Cho phép người dùng tự nhập giá trị vào ví.
+    \item \textbf{Cập nhật số dư ví} \texttt{<<extend>>} \textbf{Thêm thu nhập bằng text AI:} Hệ thống mở rộng tính năng cập nhật số dư thông qua phân tích ngôn ngữ tự nhiên.
+    \item \textbf{Cập nhật và thông báo} \texttt{<<include>>} trong các use case thay đổi dữ liệu ví, đảm bảo các thành viên được thông tin kịp thời.
+\end{itemize}
+
+Nhóm chức năng ``Quản lý ví'' đóng vai trò trung tâm trong ứng dụng, là nơi tập hợp và quản lý toàn bộ luồng tiền thu/chi của người dùng.  
+Việc hỗ trợ ví chung giúp tăng tính tương tác giữa các thành viên, đồng thời tích hợp công nghệ AI cho phép ghi nhận và xử lý dữ liệu thu nhập một cách thông minh và tự động.
+
+\subsection{Biểu đồ use case phân rã ``Quản lý danh mục chi tiêu''}
+\label{subsection:2.2.5}
+
+Nhóm chức năng \textbf{Quản lý danh mục chi tiêu} cho phép người dùng tổ chức, theo dõi và điều chỉnh các danh mục chi tiêu trong ứng dụng.  
+Người dùng có thể xem danh sách các danh mục có sẵn, thêm mới danh mục, gán giao dịch vào danh mục cụ thể và được hệ thống gợi ý điều chỉnh khi chi tiêu vượt mức dự kiến.  
+Mục tiêu của chức năng này là giúp người dùng kiểm soát dòng tiền tốt hơn và duy trì thói quen chi tiêu hợp lý.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/Usecase quản lý giao dịch/Quản lý danh mục chi tiêu/UseCase quản lý danh mục chi tiêu.png}
+    \caption{Biểu đồ use case phân rã chức năng ``Quản lý danh mục chi tiêu''}
+    \label{fig:UC_QL_DanhMuc}
+\end{figure}
+
+\textbf{Các tác nhân tham gia:}
+\begin{itemize}
+    \item \textbf{Người dùng:} thực hiện thao tác xem, thêm hoặc chỉnh sửa danh mục chi tiêu.
+    \item \textbf{Hệ thống:} theo dõi mức chi tiêu, đưa ra cảnh báo và gợi ý khi cần thiết.
+\end{itemize}
+
+\textbf{Các use case con:}
+\begin{enumerate}
+    \item \textbf{Xem các danh mục có sẵn:} Người dùng có thể xem danh sách danh mục mặc định (ăn uống, di chuyển, giải trí, v.v.) hoặc danh mục tự tạo.
+    \item \textbf{Thêm danh mục chi tiêu trong thời gian dự kiến:} Người dùng tự thiết lập danh mục mới và định mức chi tiêu trong một khoảng thời gian cụ thể.
+    \item \textbf{Thêm giao dịch vào danh mục:} Cho phép gán giao dịch cụ thể vào danh mục tương ứng để thống kê chi tiêu.
+    \item \textbf{Cảnh cáo vượt hạn mức:} Khi chi tiêu vượt mức đã đặt, hệ thống gửi cảnh báo cho người dùng. (mở rộng từ use case “Thêm giao dịch vào danh mục”)
+    \item \textbf{Gợi ý điều chỉnh chi tiêu:} Hệ thống đề xuất giảm chi ở danh mục vượt hạn mức hoặc điều chỉnh tỷ lệ phân bổ. (mở rộng từ use case “Thêm danh mục chi tiêu trong thời gian dự kiến”)
+    \item \textbf{Cập nhật và thông báo:} Hệ thống tự động gửi thông báo khi danh mục được cập nhật hoặc thay đổi trạng thái.
+\end{enumerate}
+
+\textbf{Quan hệ giữa các use case:}
+\begin{itemize}
+    \item \textbf{Thêm danh mục chi tiêu trong thời gian dự kiến} \texttt{<<extend>>} \textbf{Gợi ý điều chỉnh chi tiêu.}
+    \item \textbf{Thêm giao dịch vào danh mục} \texttt{<<extend>>} \textbf{Cảnh cáo vượt hạn mức.}
+    \item \textbf{Cập nhật và thông báo} \texttt{<<include>>} trong mọi thao tác thay đổi danh mục.
+\end{itemize}
+
+\subsection{Biểu đồ use case phân rã ``Quản lý giao dịch''}
+\label{subsection:2.2.6}
+
+Nhóm chức năng \textbf{Quản lý giao dịch} cho phép người dùng ghi nhận, chỉnh sửa, và theo dõi các giao dịch thu chi của mình.  
+Người dùng có thể nhập giao dịch theo nhiều cách khác nhau (nhập thủ công, tải file CSV, hoặc nhập bằng văn bản tự nhiên sử dụng AI).  
+Chức năng này giúp người dùng lưu trữ và thống kê đầy đủ mọi hoạt động chi tiêu.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/Usecase quản lý giao dịch/Quản lý giao dịch/Usecase quản lý giao dịch.png}
+    \caption{Biểu đồ use case phân rã chức năng ``Quản lý giao dịch''}
+    \label{fig:UC_QL_GiaoDich}
+\end{figure}
+
+\textbf{Các tác nhân:}
+\begin{itemize}
+    \item \textbf{Người dùng:} thêm, sửa, xoá, xem và lọc giao dịch.
+    \item \textbf{Hệ thống:} lưu trữ, xử lý và gửi thông báo cập nhật khi có thay đổi dữ liệu.
+\end{itemize}
+
+\textbf{Các use case con:}
+\begin{enumerate}
+    \item \textbf{Thêm giao dịch:} Người dùng nhập thông tin giao dịch mới (số tiền, danh mục, ví, ghi chú).
+    \item \textbf{Sửa, xoá giao dịch:} Người dùng có thể chỉnh sửa hoặc xóa các giao dịch đã ghi trước đó.
+    \item \textbf{Lọc giao dịch theo yêu cầu:} Cho phép lọc theo thời gian, danh mục, ví, hoặc loại giao dịch (thu/chi).
+    \item \textbf{Xem chi tiết giao dịch:} Hiển thị đầy đủ thông tin của một giao dịch cụ thể.
+    \item \textbf{Nhập liệu thủ công giao dịch:} Người dùng nhập dữ liệu bằng tay — mở rộng từ “Thêm giao dịch”.
+    \item \textbf{Thêm file CSV, Excel:} Cho phép người dùng tải lên tệp dữ liệu giao dịch — mở rộng từ “Thêm giao dịch”.
+    \item \textbf{Thêm giao dịch bằng chat AI:} Hệ thống nhận lệnh tự nhiên (ví dụ “Hôm nay ăn cơm gà 60k”) và tự động phân tích, thêm giao dịch tương ứng — mở rộng từ “Thêm giao dịch”.
+    \item \textbf{Cập nhật và thông báo:} Hệ thống gửi thông báo khi có thêm, sửa hoặc xóa giao dịch.
+\end{enumerate}
+
+\textbf{Quan hệ giữa các use case:}
+\begin{itemize}
+    \item \textbf{Thêm giao dịch} \texttt{<<extend>>} \textbf{Nhập liệu thủ công giao dịch, Thêm file CSV/Excel, Thêm giao dịch bằng chat AI.}
+    \item \textbf{Cập nhật và thông báo} \texttt{<<include>>} trong các thao tác tạo, sửa hoặc xoá giao dịch.
+\end{itemize}
+
+\subsection{Biểu đồ use case phân rã ``Thống kê và báo cáo''}
+\label{subsection:2.2.7}
+
+Chức năng \textbf{Thống kê và báo cáo} cho phép người dùng xem toàn cảnh chi tiêu, so sánh giữa kế hoạch và thực tế, đồng thời nhận đề xuất cho kế hoạch tài chính trong các tháng tiếp theo.  
+Hệ thống cũng hỗ trợ xuất báo cáo dưới dạng biểu đồ và file dữ liệu.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/Usecase quản lý giao dịch/Thống kê và báo cáo/UseCase Thống kê và báo cáo.png}
+    \caption{Biểu đồ use case phân rã chức năng ``Thống kê và báo cáo''}
+    \label{fig:UC_ThongKe}
+\end{figure}
+
+\textbf{Các use case con:}
+\begin{enumerate}
+    \item \textbf{Xem thống kê theo thời gian:} Người dùng xem tổng chi tiêu trong ngày, tuần, tháng hoặc năm.
+    \item \textbf{So sánh kế hoạch và thực tế:} Hệ thống đối chiếu mức chi tiêu thực tế so với ngân sách đã đặt ra.
+    \item \textbf{Xem biểu đồ (tròn, cột, line):} Hiển thị trực quan tỷ lệ chi tiêu theo danh mục hoặc thời gian.
+    \item \textbf{Xuất báo cáo:} Cho phép người dùng xuất báo cáo chi tiêu ra file (PDF, Excel).
+    \item \textbf{Đề xuất kế hoạch tháng sau:} Hệ thống tự động gợi ý kế hoạch chi tiêu tối ưu dựa trên lịch sử chi tiêu trước đó (mở rộng từ use case “So sánh kế hoạch và thực tế”).
+    \item \textbf{Cập nhật và thông báo:} Tự động cập nhật dữ liệu và thông báo khi hoàn thành thống kê.
+\end{enumerate}
+
+\textbf{Quan hệ giữa các use case:}
+\begin{itemize}
+    \item \textbf{So sánh kế hoạch và thực tế} \texttt{<<extend>>} \textbf{Đề xuất kế hoạch tháng sau.}
+    \item \textbf{Cập nhật và thông báo} \texttt{<<include>>} trong mọi thao tác thống kê.
+\end{itemize}
+
+\subsection{Biểu đồ use case phân rã ``Quản lý hệ thống''}
+\label{subsection:2.2.8}
+
+Nhóm chức năng \textbf{Quản lý hệ thống} dành cho tác nhân \textbf{Admin}, nhằm duy trì hoạt động ổn định của ứng dụng, kiểm soát người dùng, xử lý báo cáo vi phạm và thống kê toàn hệ thống.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/Usecase quản lý giao dịch/Quản lý hệ thống/UseCase quản lý hệ thống.png}
+    \caption{Biểu đồ use case phân rã chức năng ``Quản lý hệ thống''}
+    \label{fig:UC_QL_HeThong}
+\end{figure}
+
+\textbf{Các tác nhân tham gia:}
+\begin{itemize}
+    \item \textbf{Admin:} thực hiện các thao tác quản trị người dùng và xử lý sự cố.
+    \item \textbf{Hệ thống:} cung cấp dữ liệu, gửi thông báo và hỗ trợ quá trình vận hành.
+\end{itemize}
+
+\textbf{Các use case con:}
+\begin{enumerate}
+    \item \textbf{Xem danh sách người dùng:} Admin có thể xem thông tin người dùng trong hệ thống.
+    \item \textbf{Khoá / mở tài khoản:} Admin thực hiện khoá hoặc mở tài khoản khi có yêu cầu hoặc vi phạm.
+    \item \textbf{Quản lý báo cáo vi phạm:} Xử lý các báo cáo từ người dùng, đảm bảo môi trường sử dụng lành mạnh.
+    \item \textbf{Thống kê tổng hợp toàn hệ thống:} Theo dõi tình hình hoạt động, số lượng người dùng, ví, giao dịch, v.v.
+    \item \textbf{Cập nhật và thông báo:} Gửi thông báo đến admin khi có sự kiện quan trọng hoặc yêu cầu xử lý mới.
+\end{enumerate}
+
+\subsection{Quy trình nghiệp vụ}
+\label{subsection:2.2.3}
+Nếu sản phẩm/hệ thống cần xây dựng có quy trình nghiệp vụ quan trọng/đáng chú ý, sinh viên cần mô tả và vẽ biểu đồ hoạt động minh họa quy trình nghiệp vụ đó. Sinh viên lưu ý đây không phải là luồng sự kiện của từng use case, mà là luồng hoạt động kết hợp nhiều use case để thực hiện một nghiệp vụ nào đó.
+
+Ví dụ, một hệ thống quản lý thư viện có quy trình nghiệp vụ mượn trả với mô tả sơ bộ như sau: Sinh viên làm thẻ mượn, sau đó sinh viên đăng ký mượn sách, thủ thư cho mượn, và cuối cùng sinh viên trả lại sách cho thư viện. Một hệ thống có thể có một vài quy trình nghiệp vụ quan trọng như vậy.
+\section{Đặc tả chức năng}
+\label{section:2.3}
+Sinh viên lựa chọn từ 4 đến 7 use case quan trọng nhất của đồ án để đặc tả chi tiết. Mỗi đặc tả bao gồm ít nhất các thông tin sau: (i) Tên use case, (ii) Luồng sự kiện (chính và phát sinh), (iii) Tiền điều kiện, và (iv) Hậu điều kiện. Sinh viên chỉ vẽ bổ sung biểu đồ hoạt động khi đặc tả use case phức tạp.
+\subsection{Đặc tả use case A}
+\hfill
+\subsection{Đặc tả use case B}
+\hfill
+
+<Cô cho em nợ phần này, e sẽ mô tả chi tiết sau vì vẽ bảng biểu hơi lâu ạ>
+
+\section{Yêu cầu phi chức năng}
+\label{section:2.4}
+
+Ngoài các yêu cầu chức năng đã được trình bày ở các phần trước, hệ thống \textbf{Ứng dụng quản lý chi tiêu cá nhân} cần đáp ứng một số yêu cầu phi chức năng quan trọng để đảm bảo hoạt động ổn định, an toàn và mang lại trải nghiệm tốt nhất cho người dùng. Các yêu cầu này bao gồm độ tin cậy, tính bảo mật, tính sử dụng và khả năng bảo trì, mở rộng trong quá trình phát triển lâu dài của hệ thống.
+
+\subsection{Độ tin cậy}
+Hệ thống phải đảm bảo khả năng hoạt động liên tục, ổn định và hạn chế tối đa các sự cố ảnh hưởng đến quá trình sử dụng của người dùng. Dữ liệu cần được lưu trữ một cách an toàn, có cơ chế sao lưu định kỳ để tránh mất mát thông tin khi xảy ra lỗi hệ thống hoặc mất kết nối. Mọi giao dịch và thao tác của người dùng phải được ghi nhận chính xác, đồng bộ trên toàn bộ nền tảng, giúp đảm bảo tính toàn vẹn và nhất quán dữ liệu. Ngoài ra, hệ thống cần có khả năng tự động phục hồi sau các sự cố nhỏ nhằm duy trì hoạt động ổn định và tin cậy trong quá trình vận hành.
+
+\subsection{Tính bảo mật}
+Hệ thống phải bảo vệ tuyệt đối thông tin cá nhân và dữ liệu tài chính của người dùng. Toàn bộ quá trình truyền và lưu trữ dữ liệu đều phải được mã hóa, đặc biệt là các thông tin nhạy cảm như mật khẩu, email và lịch sử giao dịch. Ngoài ra, hệ thống cần có chính sách phân quyền rõ ràng giữa các loại tài khoản (người dùng, quản trị viên), nhằm ngăn chặn hành vi truy cập trái phép hoặc chỉnh sửa dữ liệu ngoài phạm vi cho phép.
+
+\subsection{Tính sử dụng}
+Giao diện người dùng được thiết kế thân thiện, trực quan và dễ thao tác, giúp người dùng nhanh chóng làm quen với hệ thống. Các chức năng chính như thêm giao dịch, xem thống kê hay quản lý ví và danh mục được bố trí hợp lý, đảm bảo thực hiện nhanh chỉ với vài bước đơn giản. Màu sắc và biểu tượng được lựa chọn phù hợp để dễ nhận biết danh mục, trạng thái và loại giao dịch. Ứng dụng duy trì trải nghiệm nhất quán giữa các nền tảng và phản hồi nhanh, giúp người dùng theo dõi và kiểm soát chi tiêu một cách thuận tiện và hiệu quả.
+
+
+\subsection{Tính dễ bảo trì và mở rộng}
+Hệ thống được phát triển dựa trên kiến trúc module hóa, trong đó các thành phần được tách biệt rõ ràng theo từng chức năng như giao diện người dùng, xử lý nghiệp vụ và quản lý dữ liệu. Cách tiếp cận này giúp việc bảo trì trở nên thuận lợi hơn, cho phép phát hiện và khắc phục lỗi nhanh chóng mà không ảnh hưởng đến toàn bộ hệ thống. Ngoài ra, cấu trúc module còn tạo điều kiện thuận lợi cho việc mở rộng và nâng cấp, cho phép bổ sung các tính năng mới hoặc điều chỉnh quy trình hoạt động khi có thay đổi về yêu cầu mà không làm gián đoạn các phần đang vận hành ổn định. Nhờ vậy, hệ thống có khả năng thích ứng linh hoạt với nhu cầu phát triển trong tương lai, đảm bảo duy trì hiệu quả và tính ổn định lâu dài trong quá trình sử dụng.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
