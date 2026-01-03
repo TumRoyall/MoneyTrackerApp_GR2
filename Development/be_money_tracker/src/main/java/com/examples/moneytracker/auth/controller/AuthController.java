@@ -3,7 +3,11 @@ package com.examples.moneytracker.auth.controller;
 import com.examples.moneytracker.auth.dto.*;
 import com.examples.moneytracker.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,5 +38,22 @@ public class AuthController {
         return authService.resendVerification(email);
     }
 
+    @GetMapping("/check-email")
+    public ResponseEntity<?> checkEmail(@RequestParam String email) {
 
+        boolean exists = authService.emailExists(email);
+
+        if (exists) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(Map.of(
+                            "exists", true,
+                            "message", "Email đã tồn tại"
+                    ));
+        }
+
+        return ResponseEntity.ok(
+                Map.of("exists", false)
+        );
+    }
 }

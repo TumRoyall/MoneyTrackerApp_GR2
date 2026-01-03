@@ -126,5 +126,8 @@ public class AuthService {
         return "Thư xác thực đã được gửi tới: "+ user.getEmail();
     }
 
+    public boolean emailExists(String email) {
+        return Boolean.TRUE.equals(userRepository.existsByEmail(email));
+    }
 
 }
