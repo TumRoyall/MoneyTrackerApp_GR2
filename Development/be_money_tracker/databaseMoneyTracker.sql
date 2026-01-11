@@ -162,3 +162,10 @@ CREATE TABLE budgets (
     CONSTRAINT fk_budgets_category
         FOREIGN KEY (category_id) REFERENCES categories(category_id)
 );
+
+CREATE INDEX idx_tx_account_date ON transactions(account_id, date);
+CREATE INDEX idx_tx_created_by ON transactions(created_by);
+CREATE INDEX idx_tx_category ON transactions(category_id);
+
+ALTER TABLE categories
+ADD COLUMN is_default BOOLEAN NOT NULL DEFAULT FALSE;

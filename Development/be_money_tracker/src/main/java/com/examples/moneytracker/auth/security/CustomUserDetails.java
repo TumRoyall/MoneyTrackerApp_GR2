@@ -12,6 +12,10 @@ public class CustomUserDetails implements UserDetails {
 
     private final User user;
 
+    public Long getId() {
+        return user.getUserId();
+    }
+
     @Override
     public List<SimpleGrantedAuthority> getAuthorities() {
         if (user.getIsAdmin()) {
