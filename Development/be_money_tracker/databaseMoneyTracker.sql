@@ -111,7 +111,7 @@ CREATE TABLE event_members (
 -- ===========================
 CREATE TABLE categories (
     category_id BIGSERIAL PRIMARY KEY,
-    user_id     BIGINT NOT NULL,
+    user_id     BIGINT,
     name        VARCHAR(255) NOT NULL,
     type        VARCHAR(50)  NOT NULL,   -- EXPENSE / INCOME
     icon        VARCHAR(255),
@@ -120,6 +120,11 @@ CREATE TABLE categories (
     CONSTRAINT fk_categories_user
         FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
+ALTER TABLE categories
+ADD COLUMN is_default BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE categories
+ALTER COLUMN user_id DROP NOT NULL;
 
 -- ===========================
 -- TRANSACTIONS
@@ -144,6 +149,10 @@ CREATE TABLE transactions (
         FOREIGN KEY (category_id) REFERENCES categories(category_id)
 );
 
+ALTER TABLE transactions
+ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+
 -- ===========================
 -- BUDGETS
 -- ===========================
@@ -167,5 +176,9 @@ CREATE INDEX idx_tx_account_date ON transactions(account_id, date);
 CREATE INDEX idx_tx_created_by ON transactions(created_by);
 CREATE INDEX idx_tx_category ON transactions(category_id);
 
-ALTER TABLE categories
-ADD COLUMN is_default BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE transactions
+ALTER COLUMN created_at DROP DEFAULT;
+
+ALTER TABLE transactions
+ALTER COLUMN updated_at DROP DEFAULT;

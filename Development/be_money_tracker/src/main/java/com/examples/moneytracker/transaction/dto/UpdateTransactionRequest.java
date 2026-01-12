@@ -9,11 +9,16 @@ import java.time.LocalDate;
 
 @Data
 public class UpdateTransactionRequest {
+
     @NotNull
-    private Long accountId;
-    @NotNull private Long categoryId;
-    @NotNull @Positive
+    private Long categoryId;
+
+    @NotNull
+    @Positive
     private BigDecimal amount;
+
     private String note;
-    @NotNull private LocalDate date;
+
+    @NotNull
+    private LocalDate date;
 }

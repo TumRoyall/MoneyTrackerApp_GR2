@@ -4,17 +4,9 @@ import com.examples.moneytracker.accounts.model.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
+    // Kiểm tra account_name đã tồn tại với user_id đó hay chưa
+    boolean existsByUserIdAndAccountName(Long userId, String accountName);
 
-    // Lấy tất cả ví của 1 user (chưa xoá)
-    List<Account> findByUserId(Long userId);
-
-    // Lấy tất cả ví theo user + type
-    List<Account> findByUserIdAndType(Long userId, String type);
-
-    // Kiểm tra user có sở hữu account không (rất hay dùng cho security)
-    boolean existsByAccountIdAndUserId(Long accountId, Long userId);
 }

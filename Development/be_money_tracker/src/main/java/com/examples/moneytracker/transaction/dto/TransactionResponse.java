@@ -17,4 +17,5 @@ public class TransactionResponse {
     private String note;
     private LocalDate date;
     private Instant createdAt;
+    private Instant updatedAt;
 }

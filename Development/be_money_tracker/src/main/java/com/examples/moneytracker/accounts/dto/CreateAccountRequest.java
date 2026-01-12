@@ -1,5 +1,6 @@
 package com.examples.moneytracker.accounts.dto;
 
+import com.examples.moneytracker.accounts.model.AccountType;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -12,4 +13,6 @@ public class CreateAccountRequest {
     private BigDecimal current_value;
     private String currency;
     private String description;
+
+    private AccountType type;
 }

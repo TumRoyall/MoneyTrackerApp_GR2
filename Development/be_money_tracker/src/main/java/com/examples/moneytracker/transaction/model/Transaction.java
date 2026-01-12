@@ -1,5 +1,6 @@
 package com.examples.moneytracker.transaction.model;
 
+import com.examples.moneytracker.category.model.Category;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -11,13 +12,20 @@ import java.time.LocalDate;
 @Table(name = "transactions")
 @Data
 public class Transaction {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long transactionId;
 
+    @Column(nullable = false)
     private Long accountId;
+
+    @Column(nullable = false)
     private Long createdBy;
-    private Long categoryId;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
     @Column(precision = 18, scale = 2, nullable = false)
     private BigDecimal amount;
@@ -28,7 +36,22 @@ public class Transaction {
     @Column(nullable = false)
     private LocalDate date;
 
-    @Column(insertable = false, updatable = false)
-    private Instant createdAt; // DB default NOW()
-}
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    // ===== AUDIT =====
+    @PrePersist
+    public void prePersist() {
+        Instant now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = Instant.now();
+    }
+}

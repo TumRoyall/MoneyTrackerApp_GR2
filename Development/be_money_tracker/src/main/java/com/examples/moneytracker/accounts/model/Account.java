@@ -17,7 +17,9 @@ public class Account {
 
     private Long userId;
 
-    private String type; // REGULAR / CASH / SAVING / DEBT / INVEST / EVENT
+    @Enumerated(EnumType.STRING)            // REGULAR / CASH / SAVING / DEBT / INVEST / EVENT
+    @Column(length = 20, nullable = false)
+    private AccountType type;
 
     private String accountName;
 

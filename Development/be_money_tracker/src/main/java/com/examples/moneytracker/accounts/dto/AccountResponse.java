@@ -1,6 +1,7 @@
 package com.examples.moneytracker.accounts.dto;
 
 import com.examples.moneytracker.accounts.model.Account;
+import com.examples.moneytracker.accounts.model.AccountType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -13,7 +14,7 @@ public class AccountResponse {
 
     private Long accountId;
     private String accountName;
-    private String type;
+    private AccountType type;
     private String currency;
     private BigDecimal currentValue;
     private Instant createdAt;
