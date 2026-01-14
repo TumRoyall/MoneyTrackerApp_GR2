@@ -2,18 +2,17 @@ package com.examples.moneytracker.accounts.controller;
 
 import com.examples.moneytracker.accounts.dto.AccountResponse;
 import com.examples.moneytracker.accounts.dto.CreateAccountRequest;
+import com.examples.moneytracker.accounts.model.Account;
 import com.examples.moneytracker.accounts.service.AccountService;
 import com.examples.moneytracker.auth.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.attribute.UserPrincipal;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/accounts")
@@ -30,5 +29,20 @@ public class AccountController {
         return ResponseEntity.ok(
                 accountService.createDefaultAccount(request, user.getId())
         );
+    }
+
+    // GET accounts của user → trả DTO
+    @GetMapping
+    public List<AccountResponse> getAccounts(@AuthenticationPrincipal CustomUserDetails user) {
+        return accountService.getAccountsByUser(user.getId());
+    }
+
+    // SOFT DELETE
+    @DeleteMapping("/{accountId}")
+    public void deleteAccount(
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        accountService.softDeleteAccount(accountId, user.getId());
     }
 }

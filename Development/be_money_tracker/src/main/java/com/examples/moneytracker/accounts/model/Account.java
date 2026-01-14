@@ -30,6 +30,9 @@ public class Account {
 
     private String description;
 
+    @Column(nullable = false)
+    private Boolean deleted = false;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

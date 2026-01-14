@@ -1,15 +1,16 @@
+import { colors } from "@/constants/colors";
+import { loginApi } from "@/services/auth.api";
+import { saveToken } from "@/services/auth.storage";
+import { router } from "expo-router";
+import { useState } from "react";
 import {
-  View,
+  Image,
+  Pressable,
+  StyleSheet,
   Text,
   TextInput,
-  Pressable,
-  Image,
-  StyleSheet,
+  View,
 } from "react-native";
-import { useState } from "react";
-import { router } from "expo-router";
-import { loginApi } from "@/services/auth.api";
-import { colors } from "@/constants/colors";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,14 +18,17 @@ export default function Login() {
   const [error, setError] = useState("");
 
   const handleLogin = async () => {
-    try {
-      setError("");
-      await loginApi(email, password);
-      router.replace("/(tabs)");
-    } catch {
-      setError("Email hoặc mật khẩu không đúng");
-    }
-  };
+
+  try {
+    const res = await loginApi({ email, password });
+
+    await saveToken(res.data.token);
+    router.replace("/(tabs)");
+  } catch (e) {
+    setError("Email hoặc mật khẩu không đúng");
+  }
+};
+
 
   return (
     <View style={styles.container}>

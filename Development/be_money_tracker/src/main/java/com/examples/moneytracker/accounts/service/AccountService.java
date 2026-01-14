@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -40,5 +41,24 @@ public class AccountService {
         accountRepository.save(account);
 
         return AccountResponse.from(account);
+    }
+
+    // GET accounts của user (DTO)
+    public List<AccountResponse> getAccountsByUser(Long userId) {
+        return accountRepository
+                .findByUserIdAndDeletedFalse(userId)
+                .stream()
+                .map(AccountResponse::from)
+                .toList();
+    }
+
+    // SOFT DELETE
+    public void softDeleteAccount(Long accountId, Long userId) {
+        Account account = accountRepository
+                .findByAccountIdAndUserIdAndDeletedFalse(accountId, userId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        account.setDeleted(true);
+        accountRepository.save(account);
     }
 }
