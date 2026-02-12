@@ -1,30 +1,33 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function Settings() {
   const { logout, fullName, email } = useAuth();
 
   const handleLogout = () => {
-    Alert.alert(
-      "Đăng xuất",
-      "Bạn có chắc chắn muốn đăng xuất?",
-      [
-        {
-          text: "Hủy",
-          style: "cancel",
+    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
+      {
+        text: "Hủy",
+        style: "cancel",
+      },
+      {
+        text: "Đăng xuất",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+          router.replace("/login");
         },
-        {
-          text: "Đăng xuất",
-          style: "destructive",
-          onPress: async () => {
-            await logout();
-            router.replace("/login");
-          },
-        },
-      ],
-    );
+      },
+    ]);
   };
 
   return (
@@ -37,7 +40,7 @@ export default function Settings() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Cài đặt</Text>
-        
+
         {/* Add more settings items here as needed */}
         <TouchableOpacity style={styles.settingItem}>
           <Ionicons name="notifications-outline" size={24} color="#333" />
@@ -60,7 +63,7 @@ export default function Settings() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Khác</Text>
-        
+
         <TouchableOpacity style={styles.settingItem}>
           <Ionicons name="information-circle-outline" size={24} color="#333" />
           <Text style={styles.settingText}>Về ứng dụng</Text>

@@ -1,27 +1,27 @@
-import { colors } from "@/constants/colors";
 import {
   CATEGORY_COLOR_OPTIONS,
   CATEGORY_EMOJI_OPTIONS,
 } from "@/constants/category-icons";
+import { colors } from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import {
-    createCategory,
-    CreateCategoryPayload,
-    getCategoriesByType,
+  createCategory,
+  CreateCategoryPayload,
+  getCategoriesByType,
 } from "@/dao/CategoryDAO";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface Category {

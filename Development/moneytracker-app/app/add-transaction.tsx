@@ -1,9 +1,6 @@
 import { colors } from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
-import {
-  Category as LocalCategory,
-  getCategories,
-} from "@/dao/CategoryDAO";
+import { getCategories } from "@/dao/CategoryDAO";
 import { Account, getAccounts } from "@/services/account.api";
 import {
   createTransaction,
@@ -73,7 +70,7 @@ export default function AddTransactionScreen() {
 
         if (mounted) {
           setAccounts(accountsData);
-          
+
           // Map local categories to compatible format
           const mappedCategories: Category[] = localCategories.map((cat) => ({
             categoryId: cat.id,
@@ -82,7 +79,7 @@ export default function AddTransactionScreen() {
             color: cat.color,
             type: cat.type,
           }));
-          
+
           setCategories(mappedCategories);
 
           // Auto-select first account
@@ -120,7 +117,8 @@ export default function AddTransactionScreen() {
 
   // Check if amount exceeds balance
   const numAmount = Number(amount) || 0;
-  const isOverBalance = selectedAccount && numAmount > selectedAccount.currentValue;
+  const isOverBalance =
+    selectedAccount && numAmount > selectedAccount.currentValue;
 
   const onSubmit = async () => {
     if (!accountId) {
@@ -222,18 +220,24 @@ export default function AddTransactionScreen() {
       {/* Amount Input */}
       <View style={styles.section}>
         <Text style={styles.label}>Số tiền</Text>
-        <View style={[
-          styles.amountInputContainer,
-          isOverBalance && styles.amountInputContainerError
-        ]}>
-          <Text style={[
-            styles.currencySymbol,
-            isOverBalance && styles.currencySymbolError
-          ]}>đ</Text>
+        <View
+          style={[
+            styles.amountInputContainer,
+            isOverBalance && styles.amountInputContainerError,
+          ]}
+        >
+          <Text
+            style={[
+              styles.currencySymbol,
+              isOverBalance && styles.currencySymbolError,
+            ]}
+          >
+            đ
+          </Text>
           <TextInput
             style={[
               styles.amountInput,
-              isOverBalance && styles.amountInputError
+              isOverBalance && styles.amountInputError,
             ]}
             placeholder="0"
             keyboardType="decimal-pad"
@@ -244,7 +248,8 @@ export default function AddTransactionScreen() {
         </View>
         {isOverBalance && (
           <Text style={styles.errorText}>
-            Vượt quá số dư của ví ({selectedAccount.currentValue.toLocaleString('vi-VN')} đ)
+            Vượt quá số dư của ví (
+            {selectedAccount.currentValue.toLocaleString("vi-VN")} đ)
           </Text>
         )}
       </View>
@@ -348,15 +353,23 @@ export default function AddTransactionScreen() {
                   <Text style={styles.categoryItemEmoji}>{item.icon}</Text>
                   <View style={styles.categoryItemInfo}>
                     <Text style={styles.categoryItemName}>{item.name}</Text>
-                    <View style={[
-                      styles.categoryTypeBadge,
-                      item.type === 'INCOME' ? styles.categoryTypeBadgeIncome : styles.categoryTypeBadgeExpense
-                    ]}>
-                      <Text style={[
-                        styles.categoryTypeText,
-                        item.type === 'INCOME' ? styles.categoryTypeTextIncome : styles.categoryTypeTextExpense
-                      ]}>
-                        {item.type === 'INCOME' ? 'Thu nhập' : 'Chi tiêu'}
+                    <View
+                      style={[
+                        styles.categoryTypeBadge,
+                        item.type === "INCOME"
+                          ? styles.categoryTypeBadgeIncome
+                          : styles.categoryTypeBadgeExpense,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryTypeText,
+                          item.type === "INCOME"
+                            ? styles.categoryTypeTextIncome
+                            : styles.categoryTypeTextExpense,
+                        ]}
+                      >
+                        {item.type === "INCOME" ? "Thu nhập" : "Chi tiêu"}
                       </Text>
                     </View>
                   </View>
