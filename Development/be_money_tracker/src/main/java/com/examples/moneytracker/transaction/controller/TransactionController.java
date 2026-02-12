@@ -24,11 +24,10 @@ public class TransactionController {
     // GET PAGE TRANSACTIONS OF A USER
     @GetMapping
     public Page<TransactionResponse> getTransactions(
-            @ModelAttribute TransactionFilterRequest filter,
+            @Valid @ModelAttribute TransactionFilterRequest filter,
             Pageable pageable,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        System.out.println("fromDate = " + filter.getFromDate());
         return transactionService.getTransactions(filter, pageable, user.getId());
     }
 

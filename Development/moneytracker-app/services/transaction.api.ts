@@ -2,7 +2,7 @@ import api from "./axios";
 
 // ===== Types =====
 export interface TransactionFilterRequest {
-  accountId?: number;
+  accountId: number;
   categoryId?: number;
   type?: "INCOME" | "EXPENSE";
   fromDate?: string; // YYYY-MM-DD
@@ -76,7 +76,7 @@ export interface UpdateTransactionRequest {
  * Lấy danh sách transactions với filter và pagination
  */
 export async function getTransactions(
-  filters?: TransactionFilterRequest,
+  filters: TransactionFilterRequest,
 ): Promise<TransactionListResponse> {
   const response = await api.get<TransactionListResponse>("/api/transactions", {
     params: filters,

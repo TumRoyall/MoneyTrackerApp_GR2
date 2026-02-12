@@ -1,24 +1,35 @@
 import { colors } from "@/constants/colors";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 
 import { AccountSection } from "@/components/home/AccountSection";
 import { FloatingAddButton } from "@/components/home/FloatingAddButton";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { NetSummary } from "@/components/home/NetSummary";
-import { TimeFilter } from "@/components/home/TimeFilter";
+import { TopSpendingCategories } from "@/components/home/TopSpendingCategories";
 
 export default function Home() {
   return (
     <>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+      >
         <HomeHeader />
 
-        <AccountSection />
+        {/* Quick Stats Section */}
+        <View style={styles.section}>
+          <NetSummary />
+        </View>
 
-        <NetSummary />
+        {/* Accounts Section - Compact */}
+        <View style={styles.section}>
+          <AccountSection />
+        </View>
 
-        <TimeFilter />
-
+        {/* Top Spending Categories */}
+        <View style={styles.section}>
+          <TopSpendingCategories />
+        </View>
       </ScrollView>
 
       <FloatingAddButton />
@@ -32,7 +43,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 120,
+  },
+  section: {
+    marginBottom: 12,
   },
 });

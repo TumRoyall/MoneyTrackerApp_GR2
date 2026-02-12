@@ -1,9 +1,9 @@
 import { colors } from "@/constants/colors";
-import { loginApi } from "@/services/auth.api";
-import { saveToken } from "@/services/auth.storage";
+import { useAuth } from "@/context/AuthContext";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Pressable,
   StyleSheet,
@@ -13,26 +13,35 @@ import {
 } from "react-native";
 
 export default function Login() {
+  const { login, loading, error: authError } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
 
   const handleLogin = async () => {
+    if (!email.trim()) {
+      setLocalError("Vui lòng nhập email");
+      return;
+    }
 
-  try {
-    const res = await loginApi({ email, password });
+    if (!password.trim()) {
+      setLocalError("Vui lòng nhập mật khẩu");
+      return;
+    }
 
-    await saveToken(res.data.token);
-    router.replace("/(tabs)");
-  } catch (e) {
-    setError("Email hoặc mật khẩu không đúng");
-  }
-};
+    try {
+      setLocalError("");
+      await login(email, password);
+      router.replace("/(tabs)");
+    } catch (error: any) {
+      setLocalError(error.message || "Đăng nhập thất bại");
+    }
+  };
 
+  const displayError = localError || authError;
 
   return (
     <View style={styles.container}>
-      {/* HERO */}
       <View style={styles.hero}>
         <Image
           source={require("@/assets/images/login-hero.jpg")}
@@ -44,7 +53,6 @@ export default function Login() {
         </Text>
       </View>
 
-      {/* FORM */}
       <View style={styles.form}>
         <Text style={styles.title}>Đăng nhập</Text>
 
@@ -52,8 +60,14 @@ export default function Login() {
           placeholder="Email"
           placeholderTextColor="#7A8A7F"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => {
+            setEmail(text);
+            setLocalError("");
+          }}
+          editable={!loading}
           style={styles.input}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
 
         <TextInput
@@ -61,21 +75,37 @@ export default function Login() {
           placeholderTextColor="#7A8A7F"
           secureTextEntry
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => {
+            setPassword(text);
+            setLocalError("");
+          }}
+          editable={!loading}
           style={styles.input}
         />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {displayError ? <Text style={styles.error}>{displayError}</Text> : null}
 
-        <Pressable style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Đăng nhập</Text>
+        <Pressable
+          style={[styles.button, loading && styles.buttonDisabled]}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <Text style={styles.buttonText}>Đăng nhập</Text>
+          )}
         </Pressable>
 
         <Text style={styles.registerText}>
           Chưa có tài khoản?{" "}
           <Text
             style={styles.link}
-            onPress={() => router.push("/register")}
+            onPress={() => {
+              if (!loading) {
+                router.push("/register");
+              }
+            }}
           >
             Đăng ký
           </Text>
@@ -90,7 +120,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-
   hero: {
     flex: 1.1,
     backgroundColor: colors.secondary,
@@ -100,31 +129,26 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
   },
-
   heroImage: {
     width: "85%",
     height: 220,
   },
-
   slogan: {
     marginTop: 8,
     fontSize: 14,
     fontFamily: "InterRegular",
     color: colors.white,
   },
-
   form: {
     flex: 1,
     padding: 24,
   },
-
   title: {
     fontSize: 28,
     fontFamily: "InterBold",
     color: colors.primary,
     marginBottom: 24,
   },
-
   input: {
     backgroundColor: colors.white,
     borderRadius: 14,
@@ -135,7 +159,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "InterRegular",
   },
-
   button: {
     backgroundColor: colors.primary,
     paddingVertical: 15,
@@ -143,20 +166,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
-
+  buttonDisabled: {
+    opacity: 0.5,
+  },
   buttonText: {
     fontSize: 16,
     fontFamily: "InterSemiBold",
     color: colors.white,
   },
-
   error: {
     fontSize: 13,
     fontFamily: "InterRegular",
     color: "#D9534F",
     marginBottom: 8,
   },
-
   registerText: {
     marginTop: 20,
     textAlign: "center",
@@ -164,7 +187,6 @@ const styles = StyleSheet.create({
     fontFamily: "InterRegular",
     color: colors.text,
   },
-
   link: {
     fontFamily: "InterSemiBold",
     color: colors.primary,

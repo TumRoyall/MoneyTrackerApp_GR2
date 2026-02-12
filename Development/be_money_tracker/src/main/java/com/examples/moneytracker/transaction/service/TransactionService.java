@@ -35,6 +35,14 @@ public class TransactionService {
             Pageable pageable,
             Long userId
     ) {
+        //check owner account
+        Account acc = accountRepo.findById(filter.getAccountId())
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        if (!userId.equals(acc.getUserId())) {
+            throw new AccessDeniedException("Not your account");
+        }
+
         var spec = TransactionSpecification.filter(
                 userId,
                 filter.getAccountId(),

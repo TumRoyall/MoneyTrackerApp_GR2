@@ -1,67 +1,112 @@
 import { colors } from "@/constants/colors";
-import { Category, getCategories } from "@/services/category.api";
+import { useAuth } from "@/context/AuthContext";
 import {
-    createTransaction,
-    CreateTransactionRequest,
+  Category as LocalCategory,
+  getCategories,
+} from "@/dao/CategoryDAO";
+import { Account, getAccounts } from "@/services/account.api";
+import {
+  createTransaction,
+  CreateTransactionRequest,
 } from "@/services/transaction.api";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
+// Map LocalCategory to Category with compatible fields
+interface Category {
+  categoryId: string | number;
+  name: string;
+  icon?: string;
+  color?: string;
+  type: string;
+}
+
 export default function AddTransactionScreen() {
+  const { userId } = useAuth();
   const router = useRouter();
 
   // Form state
-  const [accountId, setAccountId] = useState<number>(3); // Default account
-  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [accountId, setAccountId] = useState<number | null>(null);
+  const [categoryId, setCategoryId] = useState<string | number | null>(null);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   // UI state
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch categories on mount
+  // Fetch accounts and categories on mount
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const data = await getCategories();
+        if (!userId) {
+          console.log("[AddTransaction] No userId, skipping fetch");
+          setLoading(false);
+          return;
+        }
+
+        const [accountsData, localCategories] = await Promise.all([
+          getAccounts(),
+          getCategories(userId), // Local DB
+        ]);
+
         if (mounted) {
-          setCategories(data);
+          setAccounts(accountsData);
+          
+          // Map local categories to compatible format
+          const mappedCategories: Category[] = localCategories.map((cat) => ({
+            categoryId: cat.id,
+            name: cat.name,
+            icon: cat.icon,
+            color: cat.color,
+            type: cat.type,
+          }));
+          
+          setCategories(mappedCategories);
+
+          // Auto-select first account
+          if (accountsData.length > 0) {
+            setAccountId(accountsData[0].accountId);
+          }
+
           // Auto-select first category
-          if (data.length > 0) {
-            setCategoryId(data[0].categoryId);
+          if (mappedCategories.length > 0) {
+            setCategoryId(mappedCategories[0].categoryId);
           }
         }
       } catch (e) {
-        console.error("Error fetching categories:", e);
-        Alert.alert("Lỗi", "Không thể tải danh mục");
+        console.error("Error fetching data:", e);
+        Alert.alert("Lỗi", "Không thể tải dữ liệu");
       } finally {
-        if (mounted) setLoadingCategories(false);
+        if (mounted) setLoading(false);
       }
     })();
+
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [userId]);
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (selectedDate) {
@@ -71,8 +116,17 @@ export default function AddTransactionScreen() {
   };
 
   const selectedCategory = categories.find((c) => c.categoryId === categoryId);
+  const selectedAccount = accounts.find((a) => a.accountId === accountId);
+
+  // Check if amount exceeds balance
+  const numAmount = Number(amount) || 0;
+  const isOverBalance = selectedAccount && numAmount > selectedAccount.currentValue;
 
   const onSubmit = async () => {
+    if (!accountId) {
+      Alert.alert("Lỗi", "Vui lòng chọn ví");
+      return;
+    }
     if (!amount.trim()) {
       Alert.alert("Lỗi", "Vui lòng nhập số tiền");
       return;
@@ -82,12 +136,23 @@ export default function AddTransactionScreen() {
       return;
     }
 
+    const numAmount = Number(amount);
+
+    // Validate amount <= balance
+    if (selectedAccount && numAmount > selectedAccount.currentValue) {
+      Alert.alert(
+        "Không đủ tiền",
+        `Số dư ví "${selectedAccount.accountName}" chỉ còn ${selectedAccount.currentValue.toLocaleString()} đ. Không thể chi tiêu ${numAmount.toLocaleString()} đ.`,
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       const payload: CreateTransactionRequest = {
         accountId,
         categoryId,
-        amount: Number(amount),
+        amount: numAmount,
         note: note.trim(),
         date: date.toISOString().split("T")[0], // YYYY-MM-DD
       };
@@ -104,7 +169,7 @@ export default function AddTransactionScreen() {
     }
   };
 
-  if (loadingCategories) {
+  if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -125,13 +190,51 @@ export default function AddTransactionScreen() {
         <View style={{ width: 28 }} />
       </View>
 
+      {/* Account Picker */}
+      <View style={styles.section}>
+        <Text style={styles.label}>Ví</Text>
+        <TouchableOpacity
+          style={styles.accountButton}
+          onPress={() => setShowAccountPicker(true)}
+        >
+          <View style={styles.accountButtonContent}>
+            <View>
+              <Text style={styles.accountButtonName}>
+                {selectedAccount?.accountName || "Chọn ví"}
+              </Text>
+              <Text style={styles.accountButtonType}>
+                {selectedAccount?.accountType || ""}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.accountButtonRight}>
+            <Text style={styles.accountBalance}>
+              {selectedAccount
+                ? selectedAccount.currentValue.toLocaleString("vi-VN")
+                : "0"}{" "}
+              đ
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.text} />
+          </View>
+        </TouchableOpacity>
+      </View>
+
       {/* Amount Input */}
       <View style={styles.section}>
         <Text style={styles.label}>Số tiền</Text>
-        <View style={styles.amountInputContainer}>
-          <Text style={styles.currencySymbol}>đ</Text>
+        <View style={[
+          styles.amountInputContainer,
+          isOverBalance && styles.amountInputContainerError
+        ]}>
+          <Text style={[
+            styles.currencySymbol,
+            isOverBalance && styles.currencySymbolError
+          ]}>đ</Text>
           <TextInput
-            style={styles.amountInput}
+            style={[
+              styles.amountInput,
+              isOverBalance && styles.amountInputError
+            ]}
             placeholder="0"
             keyboardType="decimal-pad"
             value={amount}
@@ -139,6 +242,11 @@ export default function AddTransactionScreen() {
             placeholderTextColor="#999"
           />
         </View>
+        {isOverBalance && (
+          <Text style={styles.errorText}>
+            Vượt quá số dư của ví ({selectedAccount.currentValue.toLocaleString('vi-VN')} đ)
+          </Text>
+        )}
       </View>
 
       {/* Category Picker */}
@@ -240,7 +348,17 @@ export default function AddTransactionScreen() {
                   <Text style={styles.categoryItemEmoji}>{item.icon}</Text>
                   <View style={styles.categoryItemInfo}>
                     <Text style={styles.categoryItemName}>{item.name}</Text>
-                    <Text style={styles.categoryItemType}>{item.type}</Text>
+                    <View style={[
+                      styles.categoryTypeBadge,
+                      item.type === 'INCOME' ? styles.categoryTypeBadgeIncome : styles.categoryTypeBadgeExpense
+                    ]}>
+                      <Text style={[
+                        styles.categoryTypeText,
+                        item.type === 'INCOME' ? styles.categoryTypeTextIncome : styles.categoryTypeTextExpense
+                      ]}>
+                        {item.type === 'INCOME' ? 'Thu nhập' : 'Chi tiêu'}
+                      </Text>
+                    </View>
                   </View>
                   {categoryId === item.categoryId && (
                     <Ionicons
@@ -249,6 +367,63 @@ export default function AddTransactionScreen() {
                       color={colors.primary}
                     />
                   )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Account Picker Modal */}
+      <Modal
+        visible={showAccountPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAccountPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chọn ví</Text>
+              <TouchableOpacity onPress={() => setShowAccountPicker(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={accounts}
+              keyExtractor={(item) => item.accountId.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.accountItem,
+                    accountId === item.accountId && styles.accountItemSelected,
+                  ]}
+                  onPress={() => {
+                    setAccountId(item.accountId);
+                    setShowAccountPicker(false);
+                  }}
+                >
+                  <View style={styles.accountItemInfo}>
+                    <Text style={styles.accountItemName}>
+                      {item.accountName}
+                    </Text>
+                    <Text style={styles.accountItemType}>
+                      {item.accountType}
+                    </Text>
+                  </View>
+                  <View style={styles.accountItemRight}>
+                    <Text style={styles.accountItemBalance}>
+                      {item.currentValue.toLocaleString("vi-VN")} đ
+                    </Text>
+                    {accountId === item.accountId && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={24}
+                        color={colors.primary}
+                      />
+                    )}
+                  </View>
                 </TouchableOpacity>
               )}
             />
@@ -313,17 +488,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 56,
   },
+  amountInputContainerError: {
+    borderColor: "#FF3B30",
+    borderWidth: 2,
+  },
   currencySymbol: {
     fontSize: 24,
     fontWeight: "bold",
     color: colors.primary,
     marginRight: 8,
   },
+  currencySymbolError: {
+    color: "#FF3B30",
+  },
   amountInput: {
     flex: 1,
     fontSize: 28,
     fontWeight: "bold",
     color: colors.text,
+  },
+  amountInputError: {
+    color: "#FF3B30",
+  },
+  errorText: {
+    fontSize: 12,
+    color: "#FF3B30",
+    marginTop: 6,
+    marginLeft: 4,
   },
   categoryButton: {
     flexDirection: "row",
@@ -349,6 +540,40 @@ const styles = StyleSheet.create({
   categoryButtonText: {
     fontSize: 16,
     color: colors.text,
+  },
+  accountButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    minHeight: 56,
+  },
+  accountButtonContent: {
+    flex: 1,
+  },
+  accountButtonName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  accountButtonType: {
+    fontSize: 13,
+    color: "#999",
+    marginTop: 2,
+  },
+  accountButtonRight: {
+    alignItems: "flex-end",
+    gap: 8,
+  },
+  accountBalance: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.primary,
   },
   dateButton: {
     flexDirection: "row",
@@ -442,10 +667,67 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: colors.text,
+    marginBottom: 4,
+  },
+  categoryTypeBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  categoryTypeBadgeIncome: {
+    backgroundColor: "#E8F5E9",
+  },
+  categoryTypeBadgeExpense: {
+    backgroundColor: "#FFEBEE",
+  },
+  categoryTypeText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  categoryTypeTextIncome: {
+    color: "#2E7D32",
+  },
+  categoryTypeTextExpense: {
+    color: "#C62828",
   },
   categoryItemType: {
     fontSize: 12,
     color: "#999",
     marginTop: 2,
+  },
+  accountItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  accountItemSelected: {
+    backgroundColor: colors.white,
+  },
+  accountItemInfo: {
+    flex: 1,
+  },
+  accountItemName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  accountItemType: {
+    fontSize: 12,
+    color: "#999",
+    marginTop: 2,
+  },
+  accountItemRight: {
+    alignItems: "flex-end",
+    gap: 8,
+  },
+  accountItemBalance: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.primary,
   },
 });
