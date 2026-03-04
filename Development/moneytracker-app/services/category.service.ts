@@ -4,11 +4,10 @@
  */
 
 import * as CategoryDAO from "@/dao/CategoryDAO";
-import { CategoryDAO as Types } from "@/dao/CategoryDAO";
 
-export type CategoryType = Types.CategoryType;
-export type Category = Types.Category;
-export type CreateCategoryPayload = Types.CreateCategoryPayload;
+export type CategoryType = CategoryDAO.CategoryType;
+export type Category = CategoryDAO.Category;
+export type CreateCategoryPayload = CategoryDAO.CreateCategoryPayload;
 
 /* ===================== SERVICE FUNCTIONS ===================== */
 
@@ -75,7 +74,10 @@ export const createCategory = async (
   try {
     console.log("[CategoryService] Creating category:", payload.name);
     const category = await CategoryDAO.createCategory(userId, payload);
-    console.log("[CategoryService] Category created with ID:", category.id);
+    console.log(
+      "[CategoryService] Category created with ID:",
+      category.category_id,
+    );
     return category;
   } catch (error) {
     console.error("[CategoryService] Error creating category:", error);

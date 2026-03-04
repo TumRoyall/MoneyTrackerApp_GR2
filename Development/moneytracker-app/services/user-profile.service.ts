@@ -4,10 +4,9 @@
  */
 
 import * as UserProfileDAO from "@/dao/UserProfileDAO";
-import { UserProfileDAO as Types } from "@/dao/UserProfileDAO";
 
-export type UserProfile = Types.UserProfile;
-export type CreateUserProfilePayload = Types.CreateUserProfilePayload;
+export type UserProfile = UserProfileDAO.UserProfile;
+export type CreateUserProfilePayload = UserProfileDAO.CreateUserProfilePayload;
 
 /* ===================== SERVICE FUNCTIONS ===================== */
 

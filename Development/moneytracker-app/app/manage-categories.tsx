@@ -25,7 +25,7 @@ import {
 } from "react-native";
 
 interface Category {
-  id: string;
+  category_id: string;
   name: string;
   type: "INCOME" | "EXPENSE";
   icon?: string;
@@ -167,7 +167,7 @@ export default function ManageCategoriesScreen() {
         {/* Categories List */}
         <FlatList
           data={categories}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.category_id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <View style={styles.categoryCard}>

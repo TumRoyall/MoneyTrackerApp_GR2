@@ -4,11 +4,10 @@
  */
 
 import * as AccountDAO from "@/dao/AccountDAO";
-import { AccountDAO as Types } from "@/dao/AccountDAO";
 
-export type AccountType = Types.AccountType;
-export type Account = Types.Account;
-export type CreateAccountPayload = Types.CreateAccountPayload;
+export type AccountType = AccountDAO.AccountType;
+export type Account = AccountDAO.Account;
+export type CreateAccountPayload = AccountDAO.CreateAccountPayload;
 
 /* ===================== SERVICE FUNCTIONS ===================== */
 
@@ -73,7 +72,10 @@ export const createAccount = async (
   try {
     console.log("[AccountService] Creating account:", payload.account_name);
     const account = await AccountDAO.createAccount(userId, payload);
-    console.log("[AccountService] Account created with ID:", account.id);
+    console.log(
+      "[AccountService] Account created with ID:",
+      account.account_id,
+    );
     return account;
   } catch (error) {
     console.error("[AccountService] Error creating account:", error);

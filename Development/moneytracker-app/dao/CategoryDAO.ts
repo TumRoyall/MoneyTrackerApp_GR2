@@ -1,11 +1,11 @@
-import { executeSQL, fetchOne, fetchRows } from "../db/init";
+import { executeSQL, fetchOne, fetchRows } from "@/db/init";
 
 /* ===================== TYPES ===================== */
 
 export type CategoryType = "INCOME" | "EXPENSE";
 
 export interface Category {
-  id: string;
+  category_id: string;
   server_id?: number;
   user_id?: string;
   name: string;
@@ -14,6 +14,7 @@ export interface Category {
   color?: string;
   is_default: number;
   version: number;
+  created_at: number;
   updated_at: number;
   deleted_at?: number;
   sync_status: string;
@@ -59,10 +60,12 @@ export const getCategoriesByType = async (
 /**
  * Get single category by ID
  */
-export const getCategoryById = async (id: string): Promise<Category | null> => {
+export const getCategoryById = async (
+  categoryId: string,
+): Promise<Category | null> => {
   return fetchOne<Category>(
-    `SELECT * FROM categories WHERE id = ? AND deleted_at IS NULL`,
-    [id],
+    `SELECT * FROM categories WHERE category_id = ? AND deleted_at IS NULL`,
+    [categoryId],
   );
 };
 
@@ -73,26 +76,28 @@ export const createCategory = async (
   userId: string,
   payload: CreateCategoryPayload,
 ): Promise<Category> => {
-  const id = generateUUID();
+  const categoryId = generateUUID();
   const now = Date.now();
 
   await executeSQL(
     `INSERT INTO categories (
-      id, user_id, name, type, icon, color, updated_at, sync_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      category_id, user_id, name, type, icon, color, created_at, updated_at, version, sync_status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      id,
+      categoryId,
       userId,
       payload.name,
       payload.type,
       payload.icon || null,
       payload.color || null,
       now,
+      now,
+      1,
       "PENDING",
     ],
   );
 
-  const category = await getCategoryById(id);
+  const category = await getCategoryById(categoryId);
   if (!category) throw new Error("Failed to create category");
   return category;
 };
@@ -101,7 +106,7 @@ export const createCategory = async (
  * Update category
  */
 export const updateCategory = async (
-  id: string,
+  categoryId: string,
   payload: Partial<CreateCategoryPayload>,
 ): Promise<Category> => {
   const now = Date.now();
@@ -130,15 +135,15 @@ export const updateCategory = async (
     values.push(now);
     updateFields.push("sync_status = ?");
     values.push("PENDING");
-    values.push(id);
+    values.push(categoryId);
 
     await executeSQL(
-      `UPDATE categories SET ${updateFields.join(", ")} WHERE id = ?`,
+      `UPDATE categories SET ${updateFields.join(", ")} WHERE category_id = ?`,
       values,
     );
   }
 
-  const category = await getCategoryById(id);
+  const category = await getCategoryById(categoryId);
   if (!category) throw new Error("Failed to update category");
   return category;
 };
@@ -146,11 +151,11 @@ export const updateCategory = async (
 /**
  * Delete category (soft delete)
  */
-export const deleteCategory = async (id: string): Promise<void> => {
+export const deleteCategory = async (categoryId: string): Promise<void> => {
   const now = Date.now();
   await executeSQL(
-    `UPDATE categories SET deleted_at = ?, sync_status = ? WHERE id = ?`,
-    [now, "PENDING", id],
+    `UPDATE categories SET deleted_at = ?, sync_status = ? WHERE category_id = ?`,
+    [now, "PENDING", categoryId],
   );
 };
 

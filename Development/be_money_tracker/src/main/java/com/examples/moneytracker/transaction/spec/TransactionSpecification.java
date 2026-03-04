@@ -8,17 +8,18 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 public class TransactionSpecification {
 
     // ===== USER (BẮT BUỘC) =====
-    public static Specification<Transaction> hasUser(Long userId) {
+    public static Specification<Transaction> hasUser(UUID userId) {
         return (root, query, cb) ->
                 cb.equal(root.get("createdBy"), userId);
     }
 
     // ===== ACCOUNT =====
-    public static Specification<Transaction> hasAccount(Long accountId) {
+    public static Specification<Transaction> hasAccount(UUID accountId) {
         return (root, query, cb) ->
                 accountId == null
                         ? cb.conjunction()
@@ -26,7 +27,7 @@ public class TransactionSpecification {
     }
 
     // ===== CATEGORY =====
-    public static Specification<Transaction> hasCategory(Long categoryId) {
+    public static Specification<Transaction> hasCategory(UUID categoryId) {
         return (root, query, cb) -> {
             if (categoryId == null)
                 return cb.conjunction();
@@ -101,9 +102,9 @@ public class TransactionSpecification {
 
     // ===== COMPOSE ALL =====
     public static Specification<Transaction> filter(
-            Long userId,
-            Long accountId,
-            Long categoryId,
+            UUID userId,
+            UUID accountId,
+            UUID categoryId,
             String type,
             LocalDate fromDate,
             LocalDate toDate,

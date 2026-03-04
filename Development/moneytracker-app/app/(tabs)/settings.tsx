@@ -2,12 +2,12 @@ import { useAuth } from "@/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function Settings() {
@@ -73,6 +73,15 @@ export default function Settings() {
         <TouchableOpacity style={styles.settingItem}>
           <Ionicons name="help-circle-outline" size={24} color="#333" />
           <Text style={styles.settingText}>Trợ giúp</Text>
+          <Ionicons name="chevron-forward" size={20} color="#999" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.settingItem}
+          onPress={() => router.push("/debug-db")}
+        >
+          <Ionicons name="code-slash-outline" size={24} color="#FF9500" />
+          <Text style={styles.settingText}>Debug Database</Text>
           <Ionicons name="chevron-forward" size={20} color="#999" />
         </TouchableOpacity>
       </View>

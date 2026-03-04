@@ -1,17 +1,18 @@
-import { executeSQL, fetchOne, fetchRows } from "./init";
+import { executeSQL, fetchOne, fetchRows } from "@/db/init";
 
 /* ===================== TYPES ===================== */
 
 export interface Transaction {
-  id: string;
+  transaction_id: string;
   server_id?: number;
   account_id: string;
   created_by: string;
   category_id: string;
   amount: number;
   note?: string;
-  date: string; // YYYY-MM-DD
+  tx_date: string; // YYYY-MM-DD
   version: number;
+  created_at: number;
   updated_at: number;
   deleted_at?: number;
   sync_status: string;
@@ -22,7 +23,7 @@ export interface CreateTransactionPayload {
   category_id: string;
   amount: number;
   note?: string;
-  date: string; // YYYY-MM-DD
+  tx_date: string; // YYYY-MM-DD
 }
 
 export interface TransactionFilter {
@@ -52,12 +53,12 @@ export const getTransactions = async (
   }
 
   if (filter?.fromDate) {
-    sql += ` AND date >= ?`;
+    sql += ` AND tx_date >= ?`;
     params.push(filter.fromDate);
   }
 
   if (filter?.toDate) {
-    sql += ` AND date <= ?`;
+    sql += ` AND tx_date <= ?`;
     params.push(filter.toDate);
   }
 
@@ -71,7 +72,7 @@ export const getTransactions = async (
     params.push(filter.maxAmount);
   }
 
-  sql += ` ORDER BY date DESC, updated_at DESC`;
+  sql += ` ORDER BY tx_date DESC, updated_at DESC`;
 
   return fetchRows<Transaction>(sql, params);
 };
@@ -85,7 +86,7 @@ export const getTransactionsByUser = async (
 ): Promise<Transaction[]> => {
   let sql = `
     SELECT t.* FROM transactions t
-    JOIN accounts a ON t.account_id = a.id
+    JOIN accounts a ON t.account_id = a.account_id
     WHERE a.user_id = ? AND t.deleted_at IS NULL
   `;
   const params: any[] = [userId];
@@ -101,12 +102,12 @@ export const getTransactionsByUser = async (
   }
 
   if (filter?.fromDate) {
-    sql += ` AND t.date >= ?`;
+    sql += ` AND t.tx_date >= ?`;
     params.push(filter.fromDate);
   }
 
   if (filter?.toDate) {
-    sql += ` AND t.date <= ?`;
+    sql += ` AND t.tx_date <= ?`;
     params.push(filter.toDate);
   }
 
@@ -120,7 +121,7 @@ export const getTransactionsByUser = async (
     params.push(filter.maxAmount);
   }
 
-  sql += ` ORDER BY t.date DESC, t.updated_at DESC`;
+  sql += ` ORDER BY t.tx_date DESC, t.updated_at DESC`;
 
   return fetchRows<Transaction>(sql, params);
 };
@@ -129,11 +130,11 @@ export const getTransactionsByUser = async (
  * Get single transaction by ID
  */
 export const getTransactionById = async (
-  id: string,
+  transactionId: string,
 ): Promise<Transaction | null> => {
   return fetchOne<Transaction>(
-    `SELECT * FROM transactions WHERE id = ? AND deleted_at IS NULL`,
-    [id],
+    `SELECT * FROM transactions WHERE transaction_id = ? AND deleted_at IS NULL`,
+    [transactionId],
   );
 };
 
@@ -144,27 +145,29 @@ export const createTransaction = async (
   userId: string,
   payload: CreateTransactionPayload,
 ): Promise<Transaction> => {
-  const id = generateUUID();
+  const transactionId = generateUUID();
   const now = Date.now();
 
   await executeSQL(
     `INSERT INTO transactions (
-      id, account_id, created_by, category_id, amount, note, date, updated_at, sync_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      transaction_id, account_id, created_by, category_id, amount, note, tx_date, created_at, updated_at, version, sync_status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      id,
+      transactionId,
       payload.account_id,
       userId,
       payload.category_id,
       payload.amount,
       payload.note || null,
-      payload.date,
+      payload.tx_date,
       now,
+      now,
+      1,
       "PENDING",
     ],
   );
 
-  const transaction = await getTransactionById(id);
+  const transaction = await getTransactionById(transactionId);
   if (!transaction) throw new Error("Failed to create transaction");
   return transaction;
 };
@@ -173,7 +176,7 @@ export const createTransaction = async (
  * Update transaction
  */
 export const updateTransaction = async (
-  id: string,
+  transactionId: string,
   payload: Partial<CreateTransactionPayload>,
 ): Promise<Transaction> => {
   const now = Date.now();
@@ -192,9 +195,9 @@ export const updateTransaction = async (
     updateFields.push("note = ?");
     values.push(payload.note);
   }
-  if (payload.date) {
-    updateFields.push("date = ?");
-    values.push(payload.date);
+  if (payload.tx_date) {
+    updateFields.push("tx_date = ?");
+    values.push(payload.tx_date);
   }
 
   if (updateFields.length > 0) {
@@ -202,15 +205,15 @@ export const updateTransaction = async (
     values.push(now);
     updateFields.push("sync_status = ?");
     values.push("PENDING");
-    values.push(id);
+    values.push(transactionId);
 
     await executeSQL(
-      `UPDATE transactions SET ${updateFields.join(", ")} WHERE id = ?`,
+      `UPDATE transactions SET ${updateFields.join(", ")} WHERE transaction_id = ?`,
       values,
     );
   }
 
-  const transaction = await getTransactionById(id);
+  const transaction = await getTransactionById(transactionId);
   if (!transaction) throw new Error("Failed to update transaction");
   return transaction;
 };
@@ -218,11 +221,13 @@ export const updateTransaction = async (
 /**
  * Delete transaction (soft delete)
  */
-export const deleteTransaction = async (id: string): Promise<void> => {
+export const deleteTransaction = async (
+  transactionId: string,
+): Promise<void> => {
   const now = Date.now();
   await executeSQL(
-    `UPDATE transactions SET deleted_at = ?, sync_status = ? WHERE id = ?`,
-    [now, "PENDING", id],
+    `UPDATE transactions SET deleted_at = ?, sync_status = ? WHERE transaction_id = ?`,
+    [now, "PENDING", transactionId],
   );
 };
 
@@ -245,8 +250,8 @@ export const getTransactionSummary = async (
       COALESCE(SUM(CASE WHEN c.type = 'INCOME' THEN t.amount ELSE 0 END), 0) as total_income,
       COUNT(*) as count
     FROM transactions t
-    JOIN categories c ON t.category_id = c.id
-    WHERE t.account_id = ? AND t.date >= ? AND t.date <= ? AND t.deleted_at IS NULL
+    JOIN categories c ON t.category_id = c.category_id
+    WHERE t.account_id = ? AND t.tx_date >= ? AND t.tx_date <= ? AND t.deleted_at IS NULL
     `,
     [accountId, fromDate, toDate],
   );
@@ -265,8 +270,8 @@ export const getTransactionsByDateRange = async (
   const transactions = await fetchRows<Transaction>(
     `
     SELECT * FROM transactions 
-    WHERE account_id = ? AND date >= ? AND date <= ? AND deleted_at IS NULL
-    ORDER BY date DESC
+    WHERE account_id = ? AND tx_date >= ? AND tx_date <= ? AND deleted_at IS NULL
+    ORDER BY tx_date DESC
     `,
     [accountId, fromDate, toDate],
   );
@@ -274,10 +279,10 @@ export const getTransactionsByDateRange = async (
   // Group by date
   const grouped: { [key: string]: Transaction[] } = {};
   transactions.forEach((tx) => {
-    if (!grouped[tx.date]) {
-      grouped[tx.date] = [];
+    if (!grouped[tx.tx_date]) {
+      grouped[tx.tx_date] = [];
     }
-    grouped[tx.date].push(tx);
+    grouped[tx.tx_date].push(tx);
   });
 
   return Object.entries(grouped)
@@ -301,12 +306,12 @@ export const getTransactionByServerId = async (
  * Update transaction with server_id after sync
  */
 export const updateTransactionWithServerId = async (
-  id: string,
+  transactionId: string,
   serverId: number,
 ): Promise<void> => {
   await executeSQL(
-    `UPDATE transactions SET server_id = ?, sync_status = ? WHERE id = ?`,
-    [serverId, "SYNCED", id],
+    `UPDATE transactions SET server_id = ?, sync_status = ? WHERE transaction_id = ?`,
+    [serverId, "SYNCED", transactionId],
   );
 };
 

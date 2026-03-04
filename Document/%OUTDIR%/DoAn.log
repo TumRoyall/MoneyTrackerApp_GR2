@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.11.11)  11 NOV 2025 01:45
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.11.11)  24 FEB 2026 23:48
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1327,15 +1327,8 @@ File: t5utm.fd 2005/08/24 Fontinst v1.929 font definitions for T5/ptm.
 LaTeX Warning: Unused global option(s):
     [13pt,3p].
 
-(DoAn.aux
+(c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.aux
 \g__glossaries_gls_ref_acronym_int=\count524
-
-
-LaTeX Warning: Label `subsection:2.2.3' multiply defined.
-
-
-LaTeX Warning: Label `fig:Bia' multiply defined.
-
 )
 \openout1 = `DoAn.aux'.
 
@@ -1450,11 +1443,11 @@ Package biblatex Info: Data encoding 'utf8' specified.
 
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'DoAn.bbl' found.
- (DoAn.bbl)
+ (c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.bbl)
 Package biblatex Info: Reference section=0 on input line 169.
 Package biblatex Info: Reference segment=0 on input line 169.
 Package hyperref Info: Link coloring OFF on input line 169.
- (DoAn.out) (DoAn.out)
+ (c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.out) (c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.out)
 \@outlinefile=\write6
 \openout6 = `DoAn.out'.
 
@@ -1517,7 +1510,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{page.}) has be
 <to be read again> 
                    \relax 
 l.195 \newpage
-               [1] (DoAn.toc
+               [1] (c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.toc
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
  [1
@@ -1532,13 +1525,13 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
  [3] [4
 
 
-] (DoAn.lof)
+] (c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.lof)
 \tf@lof=\write8
 \openout8 = `DoAn.lof'.
 
  [5
 
-] (DoAn.lot)
+] (c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.lot)
 \tf@lot=\write9
 \openout9 = `DoAn.lot'.
 
@@ -1564,13 +1557,10 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.18 
-      [1
+l.29 \textbf{Chương 2}
+                         trình bày quá trình phân tích yêu cầu củ... [1
 
-]
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
+])
 
 Package fancyhdr Warning: \headheight is too small (10.0pt): 
 (fancyhdr)                Make it at least 17.97902pt, for example:
@@ -1578,23 +1568,31 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
-[2])
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[3]
+[2]
 Ch\uhorn \ohorn ng 2.
 (Chuong/2_Phan_tich_va_khao_sat_yeu_cau.tex
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [4
+ [3
 
 ]
-LaTeX Font Info:    Calculating math sizes for size <11.86258> on input line 55.
+Underfull \hbox (badness 2111) in paragraph at lines 41--41
+[]|\T5/ptm/m/n/13 Qu�n l� nhi�u v�/t�i
+ []
+
+
+Underfull \hbox (badness 4940) in paragraph at lines 47--47
+[]|\T5/ptm/m/n/13 C�nh b�o v��t h�n
+ []
+
+
+Overfull \hbox (16.87578pt too wide) in paragraph at lines 33--50
+ [][] 
+ []
+
+
+Underfull \vbox (badness 1028) has occurred while \output is active []
+
 
 
 Package fancyhdr Warning: \headheight is too small (10.0pt): 
@@ -1603,11 +1601,17 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
-[5]
-LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 150.
+[4]
+LaTeX Font Info:    Trying to load font information for TS1+ptm on input line 76.
  (C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\ts1ptm.fd
 File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
 )
+<Hinhve/Usecase quản lý giao dịch/UC Tổng quát.png, id=479, 744.53156pt x 596.98032pt>
+File: Hinhve/Usecase quản lý giao dịch/UC Tổng quát.png Graphic file (type png)
+<use Hinhve/Usecase quản lý giao dịch/UC Tổng quát.png>
+Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/UC Tổng quát.png  used on input line 82.
+(pdftex.def)             Requested size: 426.79135pt x 342.22256pt.
+
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
@@ -1618,23 +1622,154 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
-[6]
-Underfull \hbox (badness 2111) in paragraph at lines 167--167
-[]|\T5/ptm/m/n/13 Qu�n l� nhi�u v�/t�i
+[5{C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/base/8r.enc}]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+
+
+Package fancyhdr Warning: \headheight is too small (10.0pt): 
+(fancyhdr)                Make it at least 17.97902pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.97902pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
+
+[6 <./Hinhve/Usecase quản lý giao dịch/UC Tổng quát.png>]
+<Hinhve/Usecase quản lý giao dịch/Quản lý tài khoản cá nhân/Usecase quản lý tài khoản.png, id=497, 766.36313pt x 536.0025pt>
+File: Hinhve/Usecase quản lý giao dịch/Quản lý tài khoản cá nhân/Usecase quản lý tài khoản.png Graphic file (type png)
+<use Hinhve/Usecase quản lý giao dịch/Quản lý tài khoản cá nhân/Usecase quản lý tài khoản.png>
+Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Quản lý tài khoản cá nhân/Usecase quản lý tài khoản.png  used on input line 112.
+(pdftex.def)             Requested size: 426.79135pt x 298.50725pt.
+
+Underfull \vbox (badness 1147) has occurred while \output is active []
+
+
+
+Package fancyhdr Warning: \headheight is too small (10.0pt): 
+(fancyhdr)                Make it at least 17.97902pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.97902pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
+
+[7 <./Hinhve/Usecase quản lý giao dịch/Quản lý tài khoản cá nhân/Usecase quản lý tài khoản.png>]
+LaTeX Font Info:    Trying to load font information for T5+pcr on input line 135.
+ (C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex/latex/vntex\t5pcr.fd
+File: t5ucr.fd 2005/08/24 Fontinst v1.929 font definitions for T5/pcr.
+)
+<Hinhve/Usecase quản lý giao dịch/Quản lý ví/UseCase quản lý ví.png, id=505, 715.17188pt x 584.1825pt>
+File: Hinhve/Usecase quản lý giao dịch/Quản lý ví/UseCase quản lý ví.png Graphic file (type png)
+<use Hinhve/Usecase quản lý giao dịch/Quản lý ví/UseCase quản lý ví.png>
+Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Quản lý ví/UseCase quản lý ví.png  used on input line 150.
+(pdftex.def)             Requested size: 426.79135pt x 348.62245pt.
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+
+
+Package fancyhdr Warning: \headheight is too small (10.0pt): 
+(fancyhdr)                Make it at least 17.97902pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.97902pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
+
+[8]
+
+Package fancyhdr Warning: \headheight is too small (10.0pt): 
+(fancyhdr)                Make it at least 17.97902pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.97902pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
+
+[9 <./Hinhve/Usecase quản lý giao dịch/Quản lý ví/UseCase quản lý ví.png>]
+<Hinhve/Usecase quản lý giao dịch/Quản lý danh mục chi tiêu/UseCase quản lý danh mục chi tiêu.png, id=525, 647.41875pt x 495.35063pt>
+File: Hinhve/Usecase quản lý giao dịch/Quản lý danh mục chi tiêu/UseCase quản lý danh mục chi tiêu.png Graphic file (type png)
+<use Hinhve/Usecase quản lý giao dịch/Quản lý danh mục chi tiêu/UseCase quản lý danh mục chi tiêu.png>
+Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Quản lý danh mục chi tiêu/UseCase quản lý danh mục chi tiêu.png  used on input line 207.
+(pdftex.def)             Requested size: 426.79135pt x 326.54695pt.
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+
+
+Package fancyhdr Warning: \headheight is too small (10.0pt): 
+(fancyhdr)                Make it at least 17.97902pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.97902pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
+
+[10]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+
+
+Package fancyhdr Warning: \headheight is too small (10.0pt): 
+(fancyhdr)                Make it at least 17.97902pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.97902pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
+
+[11 <./Hinhve/Usecase quản lý giao dịch/Quản lý danh mục chi tiêu/UseCase quản lý danh mục chi tiêu.png>]
+<Hinhve/Usecase quản lý giao dịch/Quản lý giao dịch/Usecase quản lý giao dịch.png, id=542, 650.43pt x 569.87906pt>
+File: Hinhve/Usecase quản lý giao dịch/Quản lý giao dịch/Usecase quản lý giao dịch.png Graphic file (type png)
+<use Hinhve/Usecase quản lý giao dịch/Quản lý giao dịch/Usecase quản lý giao dịch.png>
+Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Quản lý giao dịch/Usecase quản lý giao dịch.png  used on input line 253.
+(pdftex.def)             Requested size: 426.79135pt x 373.94742pt.
+
+
+Package fancyhdr Warning: \headheight is too small (10.0pt): 
+(fancyhdr)                Make it at least 17.97902pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.97902pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
+
+[12 <./Hinhve/Usecase quản lý giao dịch/Quản lý giao dịch/Usecase quản lý giao dịch.png>]
+<Hinhve/Usecase quản lý giao dịch/Thống kê và báo cáo/UseCase Thống kê và báo cáo.png, id=548, 763.35187pt x 427.5975pt>
+File: Hinhve/Usecase quản lý giao dịch/Thống kê và báo cáo/UseCase Thống kê và báo cáo.png Graphic file (type png)
+<use Hinhve/Usecase quản lý giao dịch/Thống kê và báo cáo/UseCase Thống kê và báo cáo.png>
+Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Thống kê và báo cáo/UseCase Thống kê và báo cáo.png  used on input line 309.
+(pdftex.def)             Requested size: 426.79135pt x 239.06801pt.
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+
+
+Package fancyhdr Warning: \headheight is too small (10.0pt): 
+(fancyhdr)                Make it at least 17.97902pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.97902pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
+
+[13]
+<Hinhve/Usecase quản lý giao dịch/Quản lý hệ thống/UseCase quản lý hệ thống.png, id=561, 465.23813pt x 511.9125pt>
+File: Hinhve/Usecase quản lý giao dịch/Quản lý hệ thống/UseCase quản lý hệ thống.png Graphic file (type png)
+<use Hinhve/Usecase quản lý giao dịch/Quản lý hệ thống/UseCase quản lý hệ thống.png>
+Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Quản lý hệ thống/UseCase quản lý hệ thống.png  used on input line 335.
+(pdftex.def)             Requested size: 298.75264pt x 328.73207pt.
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+
+
+Package fancyhdr Warning: \headheight is too small (10.0pt): 
+(fancyhdr)                Make it at least 17.97902pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.97902pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
+
+[14 <./Hinhve/Usecase quản lý giao dịch/Thống kê và báo cáo/UseCase Thống kê và báo cáo.png>]
+
+Package fancyhdr Warning: \headheight is too small (10.0pt): 
+(fancyhdr)                Make it at least 17.97902pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.97902pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
+
+[15 <./Hinhve/Usecase quản lý giao dịch/Quản lý hệ thống/UseCase quản lý hệ thống.png>]
+Overfull \hbox (25.19995pt too wide) in paragraph at lines 375--412
+ [][] 
  []
 
 
-Underfull \hbox (badness 4940) in paragraph at lines 174--174
-[]|\T5/ptm/m/n/13 C�nh b�o v��t h�n
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 176--176
-[]|\T5/ptm/m/n/13 Chia s� \T5/ptm/m/it/13 nh�m chi
- []
-
-
-Overfull \hbox (16.87578pt too wide) in paragraph at lines 159--178
+Overfull \hbox (25.19995pt too wide) in paragraph at lines 420--458
  [][] 
  []
 
@@ -1649,134 +1784,16 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
-[7{C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/base/8r.enc}]
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[8]
-<Hinhve/Usecase quản lý giao dịch/UC Tổng quát.png, id=520, 750.55406pt x 653.44125pt>
-File: Hinhve/Usecase quản lý giao dịch/UC Tổng quát.png Graphic file (type png)
-<use Hinhve/Usecase quản lý giao dịch/UC Tổng quát.png>
-Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/UC Tổng quát.png  used on input line 231.
-(pdftex.def)             Requested size: 426.79135pt x 371.57799pt.
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[9]
-Underfull \vbox (badness 2717) has occurred while \output is active []
-
-
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[10 <./Hinhve/Usecase quản lý giao dịch/UC Tổng quát.png>]
-<Hinhve/Usecase quản lý giao dịch/Quản lý tài khoản cá nhân/Usecase quản lý tài khoản.png, id=536, 766.36313pt x 536.0025pt>
-File: Hinhve/Usecase quản lý giao dịch/Quản lý tài khoản cá nhân/Usecase quản lý tài khoản.png Graphic file (type png)
-<use Hinhve/Usecase quản lý giao dịch/Quản lý tài khoản cá nhân/Usecase quản lý tài khoản.png>
-Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Quản lý tài khoản cá nhân/Usecase quản lý tài khoản.png  used on input line 263.
-(pdftex.def)             Requested size: 426.79135pt x 298.50725pt.
-
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[11 <./Hinhve/Usecase quản lý giao dịch/Quản lý tài khoản cá nhân/Usecase quản lý tài khoản.png>]
-LaTeX Font Info:    Trying to load font information for T5+pcr on input line 286.
- (C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex/latex/vntex\t5pcr.fd
-File: t5ucr.fd 2005/08/24 Fontinst v1.929 font definitions for T5/pcr.
-)
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[12]
-<Hinhve/Usecase quản lý giao dịch/Quản lý ví/UseCase quản lý ví.png, id=554, 721.19438pt x 530.73282pt>
-File: Hinhve/Usecase quản lý giao dịch/Quản lý ví/UseCase quản lý ví.png Graphic file (type png)
-<use Hinhve/Usecase quản lý giao dịch/Quản lý ví/UseCase quản lý ví.png>
-Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Quản lý ví/UseCase quản lý ví.png  used on input line 302.
-(pdftex.def)             Requested size: 426.79135pt x 314.07715pt.
-
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[13 <./Hinhve/Usecase quản lý giao dịch/Quản lý ví/UseCase quản lý ví.png>]
-<Hinhve/Usecase quản lý giao dịch/Quản lý danh mục chi tiêu/UseCase quản lý danh mục chi tiêu.png, id=564, 710.655pt x 382.42876pt>
-File: Hinhve/Usecase quản lý giao dịch/Quản lý danh mục chi tiêu/UseCase quản lý danh mục chi tiêu.png Graphic file (type png)
-<use Hinhve/Usecase quản lý giao dịch/Quản lý danh mục chi tiêu/UseCase quản lý danh mục chi tiêu.png>
-Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Quản lý danh mục chi tiêu/UseCase quản lý danh mục chi tiêu.png  used on input line 351.
-(pdftex.def)             Requested size: 426.79135pt x 229.67493pt.
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[14]
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[15 <./Hinhve/Usecase quản lý giao dịch/Quản lý danh mục chi tiêu/UseCase quản lý danh mục chi tiêu.png>]
-<Hinhve/Usecase quản lý giao dịch/Quản lý giao dịch/Usecase quản lý giao dịch.png, id=585, 718.18312pt x 536.0025pt>
-File: Hinhve/Usecase quản lý giao dịch/Quản lý giao dịch/Usecase quản lý giao dịch.png Graphic file (type png)
-<use Hinhve/Usecase quản lý giao dịch/Quản lý giao dịch/Usecase quản lý giao dịch.png>
-Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Quản lý giao dịch/Usecase quản lý giao dịch.png  used on input line 388.
-(pdftex.def)             Requested size: 426.79135pt x 318.53696pt.
-
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[16 <./Hinhve/Usecase quản lý giao dịch/Quản lý giao dịch/Usecase quản lý giao dịch.png>]
-Overfull \hbox (13.54561pt too wide) in paragraph at lines 413--414
-[]\T5/ptm/b/n/13 Th�m giao d�ch \T5/pcr/m/n/13 <<ex-tend>> \T5/ptm/b/n/13 Nh�p li�u th� c�ng giao d�ch, Th�m file CSV/Ex-
+[16]
+Overfull \hbox (25.19995pt too wide) in paragraph at lines 466--504
+ [][] 
  []
 
-<Hinhve/Usecase quản lý giao dịch/Thống kê và báo cáo/UseCase Thống kê và báo cáo.png, id=593, 763.35187pt x 427.5975pt>
-File: Hinhve/Usecase quản lý giao dịch/Thống kê và báo cáo/UseCase Thống kê và báo cáo.png Graphic file (type png)
-<use Hinhve/Usecase quản lý giao dịch/Thống kê và báo cáo/UseCase Thống kê và báo cáo.png>
-Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Thống kê và báo cáo/UseCase Thống kê và báo cáo.png  used on input line 425.
-(pdftex.def)             Requested size: 426.79135pt x 239.06801pt.
+
+Overfull \hbox (25.19995pt too wide) in paragraph at lines 510--550
+ [][] 
+ []
+
 
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
@@ -1789,11 +1806,10 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
 [17]
-<Hinhve/Usecase quản lý giao dịch/Quản lý hệ thống/UseCase quản lý hệ thống.png, id=604, 465.23813pt x 511.9125pt>
-File: Hinhve/Usecase quản lý giao dịch/Quản lý hệ thống/UseCase quản lý hệ thống.png Graphic file (type png)
-<use Hinhve/Usecase quản lý giao dịch/Quản lý hệ thống/UseCase quản lý hệ thống.png>
-Package pdftex.def Info: Hinhve/Usecase quản lý giao dịch/Quản lý hệ thống/UseCase quản lý hệ thống.png  used on input line 453.
-(pdftex.def)             Requested size: 426.79135pt x 469.6217pt.
+Overfull \hbox (25.19995pt too wide) in paragraph at lines 556--595
+ [][] 
+ []
+
 
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
@@ -1805,7 +1821,7 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
-[18 <./Hinhve/Usecase quản lý giao dịch/Thống kê và báo cáo/UseCase Thống kê và báo cáo.png>]
+[18]
 
 Package fancyhdr Warning: \headheight is too small (10.0pt): 
 (fancyhdr)                Make it at least 17.97902pt, for example:
@@ -1813,10 +1829,7 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
-[19 <./Hinhve/Usecase quản lý giao dịch/Quản lý hệ thống/UseCase quản lý hệ thống.png>]
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
+[19])
 
 Package fancyhdr Warning: \headheight is too small (10.0pt): 
 (fancyhdr)                Make it at least 17.97902pt, for example:
@@ -1824,30 +1837,22 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
-[20])
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[21]
+[20]
 Ch\uhorn \ohorn ng 3.
-(Chuong/3_Phan_tich_va_thiet_ke_he_thong.tex) [22
+(Chuong/3_Phan_tich_va_thiet_ke_he_thong.tex) [21
 
 ]
 Ch\uhorn \ohorn ng 4.
 (Chuong/4_Cai_dat_va_danh_gia_thuc_nghiem.tex
-<Hinhve/Picture1.png, id=640, 234.8775pt x 179.6895pt>
+<Hinhve/Picture1.png, id=614, 234.8775pt x 179.6895pt>
 File: Hinhve/Picture1.png Graphic file (type png)
 <use Hinhve/Picture1.png>
 Package pdftex.def Info: Hinhve/Picture1.png  used on input line 13.
 (pdftex.def)             Requested size: 234.87692pt x 179.68906pt.
- [23
+ [22
 
  <./Hinhve/Picture1.png>]
-<Hinhve/Picture2.png, id=648, 238.64156pt x 299.61937pt>
+<Hinhve/Picture2.png, id=623, 238.64156pt x 299.61937pt>
 File: Hinhve/Picture2.png Graphic file (type png)
 <use Hinhve/Picture2.png>
 Package pdftex.def Info: Hinhve/Picture2.png  used on input line 26.
@@ -1860,18 +1865,10 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-5.977pt}.
 
-[24 <./Hinhve/Picture2.png>]
+[23 <./Hinhve/Picture2.png>]
 
-LaTeX Warning: Reference `table:my_label' on page 25 undefined on input line 43.
+LaTeX Warning: Reference `table:my_label' on page 24 undefined on input line 43.
 
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 15.977pt, for example:
-(fancyhdr)                \setlength{\headheight}{15.977pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-5.977pt}.
-
-[25])
 
 Package fancyhdr Warning: \headheight is too small (10.0pt): 
 (fancyhdr)                Make it at least 15.977pt, for example:
@@ -1879,14 +1876,22 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-5.977pt}.
 
-[26]
+[24])
+
+Package fancyhdr Warning: \headheight is too small (10.0pt): 
+(fancyhdr)                Make it at least 15.977pt, for example:
+(fancyhdr)                \setlength{\headheight}{15.977pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.977pt}.
+
+[25]
 Ch\uhorn \ohorn ng 5.
-(Chuong/5_Ket_luan.tex) [27
+(Chuong/5_Ket_luan.tex) [26
 
 ] (Chuong/7_Luu_y_tai_lieu_tham_khao.tex
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [28
+ [27
 
 ])
 
@@ -1896,22 +1901,22 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
-[29] [30
+[28] [29
 
-] [31
+] [30
 
 ]
 Ph\d {u} l\d {u}c A.
 (Chuong/Phu_luc_A.tex
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [32
+ [31
 
 ]
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-<Hinhve/IoT.png, id=716, 931.48pt x 523.9575pt>
+<Hinhve/IoT.png, id=695, 931.48pt x 523.9575pt>
 File: Hinhve/IoT.png Graphic file (type png)
 <use Hinhve/IoT.png>
 Package pdftex.def Info: Hinhve/IoT.png  used on input line 69.
@@ -1927,12 +1932,12 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
-[33]
+[32]
 
-LaTeX Warning: Citation 'scott2013sdn' on page 34 undefined on input line 81.
+LaTeX Warning: Citation 'scott2013sdn' on page 33 undefined on input line 81.
 
 
-LaTeX Warning: Citation 'ashton2009internet' on page 34 undefined on input line 81.
+LaTeX Warning: Citation 'ashton2009internet' on page 33 undefined on input line 81.
 
 
 Overfull \hbox (14.86223pt too wide) in paragraph at lines 81--82
@@ -1946,17 +1951,12 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
-[34 <./Hinhve/IoT.png>]
-<Hinhve/Bia.PNG, id=734, 313.77225pt x 331.83975pt>
+[33 <./Hinhve/IoT.png>]
+<Hinhve/Bia.PNG, id=715, 313.77225pt x 331.83975pt>
 File: Hinhve/Bia.PNG Graphic file (type png)
 <use Hinhve/Bia.PNG>
 Package pdftex.def Info: Hinhve/Bia.PNG  used on input line 100.
 (pdftex.def)             Requested size: 213.39568pt x 225.68349pt.
-<Hinhve/GayBia.PNG, id=735, 420.97275pt x 479.99326pt>
-File: Hinhve/GayBia.PNG Graphic file (type png)
-<use Hinhve/GayBia.PNG>
-Package pdftex.def Info: Hinhve/GayBia.PNG  used on input line 112.
-(pdftex.def)             Requested size: 213.39568pt x 243.31384pt.
 )
 
 Package fancyhdr Warning: \headheight is too small (10.0pt): 
@@ -1965,19 +1965,11 @@ Package fancyhdr Warning: \headheight is too small (10.0pt):
 (fancyhdr)                You might also make \topmargin smaller:
 (fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
 
-[35 <./Hinhve/Bia.PNG>]
-
-Package fancyhdr Warning: \headheight is too small (10.0pt): 
-(fancyhdr)                Make it at least 17.97902pt, for example:
-(fancyhdr)                \setlength{\headheight}{17.97902pt}.
-(fancyhdr)                You might also make \topmargin smaller:
-(fancyhdr)                \addtolength{\topmargin}{-7.97902pt}.
-
-[36 <./Hinhve/GayBia.PNG>]
+[34 <./Hinhve/Bia.PNG>]
 Ph\d {u} l\d {u}c B.
-(Chuong/Phu_luc_B.tex) [37
+(Chuong/Phu_luc_B.tex) [35
 
-] (DoAn.aux)
+] (c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
@@ -1991,10 +1983,16 @@ LaTeX Font Warning: Size substitutions with differences
 LaTeX Warning: There were undefined references.
 
 
-LaTeX Warning: There were multiply-defined labels.
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
-Package rerunfilecheck Info: File `DoAn.out' has not changed.
-(rerunfilecheck)             Checksum: D63EFC25D427B0CDD2090DE220D050A6;12608.
+
+Package rerunfilecheck Warning: File `DoAn.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `DoAn.out':
+(rerunfilecheck)             Before: 81C386317C6B1E491C9DACA11AB50F3B;12644
+(rerunfilecheck)             After:  CF006FC88D539494EE11ACF2FC2096AA;12644.
 
 Package biblatex Warning: Please (re)run BibTeX on the file(s):
 (biblatex)                DoAn
@@ -2005,17 +2003,50 @@ Package logreq Info: Writing requests to 'DoAn.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 54311 strings out of 474485
- 1219683 string characters out of 5742317
- 2121309 words of memory out of 5000000
- 75508 multiletter control sequences out of 15000+600000
- 600967 words of font info for 90 fonts, out of 8000000 for 9000
+ 53823 strings out of 474485
+ 1206941 string characters out of 5742317
+ 2114896 words of memory out of 5000000
+ 75025 multiletter control sequences out of 15000+600000
+ 598041 words of font info for 77 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 108i,12n,107p,2569b,2496s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 108i,18n,107p,2569b,1264s stack positions out of 10000i,1000n,20000p,200000b,200000s
+
+pdfTeX warning (dest): name{table.caption.26} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{table.caption.21} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{table.caption.6} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{figure.caption.30} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{figure.caption.27} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{figure.caption.20} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{figure.caption.19} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{figure.caption.8} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{figure.caption.7} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section*.25} has been referenced but does not exist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section*.24} has been referenced but does not exist, replaced by a fixed one
+
 <C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmex10.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi12.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi9.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr9.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy9.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/vntex/urwvn/ucrr8v.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/vntex/urwvn/utmb8v.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/urw/times/utmr8a.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/vntex/urwvn/utmr8v.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/vntex/urwvn/utmri8v.pfb><C:/Users/TumRoyal/AppData/Local/Programs/MiKTeX/fonts/type1/urw/zapfding/uzdr.pfb>
-Output written on DoAn.pdf (49 pages, 1369447 bytes).
+Output written on c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.pdf (47 pages, 1136013 bytes).
 PDF statistics:
- 856 PDF objects out of 1000 (max. 8388607)
- 190 named destinations out of 1000 (max. 500000)
- 569 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 833 PDF objects out of 1000 (max. 8388607)
+ 192 named destinations out of 1000 (max. 500000)
+ 548 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -25,9 +25,7 @@ export function NetSummary() {
 
         // Get ALL REGULAR accounts
         const accounts = await getAccounts();
-        const regularAccounts = accounts.filter(
-          (a) => a.accountType === "REGULAR" || a.type === "REGULAR",
-        );
+        const regularAccounts = accounts.filter((a) => a.type === "REGULAR");
 
         if (regularAccounts.length === 0) {
           setLoading(false);

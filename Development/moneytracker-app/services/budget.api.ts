@@ -138,8 +138,8 @@ export async function deleteBudget(id: string): Promise<void> {
  */
 function normalizeBudget(dbBudget: DBBudget): Budget {
   return {
-    id: dbBudget.id,
-    budgetId: parseInt(dbBudget.id.split("_")[1]) || undefined,
+    id: dbBudget.budget_id,
+    budgetId: parseInt(dbBudget.budget_id.split("_")[1]) || undefined,
     userId: dbBudget.user_id,
     user_id: dbBudget.user_id,
     categoryId: parseInt(dbBudget.category_id),

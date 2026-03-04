@@ -1,14 +1,8 @@
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-} from "react-native";
-import { useEffect, useState } from "react";
-import { useLocalSearchParams, router } from "expo-router";
-import * as Linking from "expo-linking";
 import { colors } from "@/constants/colors";
-import { resendVerifyApi } from "@/services/auth.api";
+import * as Linking from "expo-linking";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 const RESEND_SECONDS = 60;
 
@@ -39,7 +33,8 @@ export default function VerifyGuide() {
 
     try {
       setLoading(true);
-      await resendVerifyApi(email);
+      // TODO: Implement resend verification API call
+      // await resendVerifyApi(email);
       setMessage("Đã gửi lại email xác thực");
       setCooldown(RESEND_SECONDS);
     } catch {
@@ -53,13 +48,9 @@ export default function VerifyGuide() {
     <View style={styles.container}>
       <Text style={styles.title}>Xác thực email</Text>
 
-      <Text style={styles.desc}>
-        Chúng tôi đã gửi email xác thực đến:
-      </Text>
+      <Text style={styles.desc}>Chúng tôi đã gửi email xác thực đến:</Text>
 
-      <Text style={styles.email}>
-        {email || "email của bạn"}
-      </Text>
+      <Text style={styles.email}>{email || "email của bạn"}</Text>
 
       <Text style={styles.desc}>
         Vui lòng mở email và bấm vào liên kết xác thực để kích hoạt tài khoản.
@@ -72,22 +63,14 @@ export default function VerifyGuide() {
 
       {/* RESEND */}
       <Pressable
-        style={[
-          styles.resendButton,
-          cooldown > 0 && styles.resendDisabled,
-        ]}
+        style={[styles.resendButton, cooldown > 0 && styles.resendDisabled]}
         onPress={handleResend}
         disabled={cooldown > 0 || loading}
       >
         <Text
-          style={[
-            styles.resendText,
-            cooldown > 0 && styles.resendTextDisabled,
-          ]}
+          style={[styles.resendText, cooldown > 0 && styles.resendTextDisabled]}
         >
-          {cooldown > 0
-            ? `Gửi lại sau ${cooldown}s`
-            : "Gửi lại email xác thực"}
+          {cooldown > 0 ? `Gửi lại sau ${cooldown}s` : "Gửi lại email xác thực"}
         </Text>
       </Pressable>
 

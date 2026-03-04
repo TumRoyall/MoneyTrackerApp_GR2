@@ -48,7 +48,7 @@ export const getDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
 export const executeSQL = async (
   sql: string,
   params: any[] = [],
-): Promise<SQLite.SQLiteResultSet> => {
+): Promise<SQLite.SQLiteRunResult> => {
   const db = await getDatabase();
   return db.runAsync(sql, params);
 };

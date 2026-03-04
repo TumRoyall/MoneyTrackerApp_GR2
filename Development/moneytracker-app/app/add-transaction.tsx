@@ -1,11 +1,11 @@
 import { colors } from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import { getCategories } from "@/dao/CategoryDAO";
-import { Account, getAccounts } from "@/services/account.api";
+import { Account, getAccounts } from "@/services/account.service";
 import {
   createTransaction,
-  CreateTransactionRequest,
-} from "@/services/transaction.api";
+  CreateTransactionPayload,
+} from "@/services/transaction.service";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
@@ -37,7 +37,7 @@ export default function AddTransactionScreen() {
   const router = useRouter();
 
   // Form state
-  const [accountId, setAccountId] = useState<number | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | number | null>(null);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -64,7 +64,7 @@ export default function AddTransactionScreen() {
         }
 
         const [accountsData, localCategories] = await Promise.all([
-          getAccounts(),
+          getAccounts(userId), // Local DB
           getCategories(userId), // Local DB
         ]);
 
@@ -73,7 +73,7 @@ export default function AddTransactionScreen() {
 
           // Map local categories to compatible format
           const mappedCategories: Category[] = localCategories.map((cat) => ({
-            categoryId: cat.id,
+            categoryId: cat.category_id,
             name: cat.name,
             icon: cat.icon,
             color: cat.color,
@@ -84,7 +84,7 @@ export default function AddTransactionScreen() {
 
           // Auto-select first account
           if (accountsData.length > 0) {
-            setAccountId(accountsData[0].accountId);
+            setAccountId(accountsData[0].account_id);
           }
 
           // Auto-select first category
@@ -113,14 +113,18 @@ export default function AddTransactionScreen() {
   };
 
   const selectedCategory = categories.find((c) => c.categoryId === categoryId);
-  const selectedAccount = accounts.find((a) => a.accountId === accountId);
+  const selectedAccount = accounts.find((a) => a.account_id === accountId);
 
   // Check if amount exceeds balance
   const numAmount = Number(amount) || 0;
   const isOverBalance =
-    selectedAccount && numAmount > selectedAccount.currentValue;
+    selectedAccount && numAmount > selectedAccount.current_value;
 
   const onSubmit = async () => {
+    if (!userId) {
+      Alert.alert("Lỗi", "Không tìm thấy userId");
+      return;
+    }
     if (!accountId) {
       Alert.alert("Lỗi", "Vui lòng chọn ví");
       return;
@@ -137,25 +141,25 @@ export default function AddTransactionScreen() {
     const numAmount = Number(amount);
 
     // Validate amount <= balance
-    if (selectedAccount && numAmount > selectedAccount.currentValue) {
+    if (selectedAccount && numAmount > selectedAccount.current_value) {
       Alert.alert(
         "Không đủ tiền",
-        `Số dư ví "${selectedAccount.accountName}" chỉ còn ${selectedAccount.currentValue.toLocaleString()} đ. Không thể chi tiêu ${numAmount.toLocaleString()} đ.`,
+        `Số dư ví "${selectedAccount.account_name}" chỉ còn ${selectedAccount.current_value.toLocaleString()} đ. Không thể chi tiêu ${numAmount.toLocaleString()} đ.`,
       );
       return;
     }
 
     setSubmitting(true);
     try {
-      const payload: CreateTransactionRequest = {
-        accountId,
-        categoryId,
+      const payload: CreateTransactionPayload = {
+        account_id: accountId, // Already string
+        category_id: String(categoryId),
         amount: numAmount,
-        note: note.trim(),
-        date: date.toISOString().split("T")[0], // YYYY-MM-DD
+        note: note.trim() || undefined,
+        tx_date: date.toISOString().split("T")[0], // YYYY-MM-DD
       };
 
-      await createTransaction(payload);
+      await createTransaction(userId, payload);
       Alert.alert("Thành công", "Tạo giao dịch thành công!", [
         { text: "OK", onPress: () => router.back() },
       ]);
@@ -198,17 +202,17 @@ export default function AddTransactionScreen() {
           <View style={styles.accountButtonContent}>
             <View>
               <Text style={styles.accountButtonName}>
-                {selectedAccount?.accountName || "Chọn ví"}
+                {selectedAccount?.account_name || "Chọn ví"}
               </Text>
               <Text style={styles.accountButtonType}>
-                {selectedAccount?.accountType || ""}
+                {selectedAccount?.type || ""}
               </Text>
             </View>
           </View>
           <View style={styles.accountButtonRight}>
             <Text style={styles.accountBalance}>
               {selectedAccount
-                ? selectedAccount.currentValue.toLocaleString("vi-VN")
+                ? selectedAccount.current_value.toLocaleString("vi-VN")
                 : "0"}{" "}
               đ
             </Text>
@@ -249,7 +253,7 @@ export default function AddTransactionScreen() {
         {isOverBalance && (
           <Text style={styles.errorText}>
             Vượt quá số dư của ví (
-            {selectedAccount.currentValue.toLocaleString("vi-VN")} đ)
+            {selectedAccount.current_value.toLocaleString("vi-VN")} đ)
           </Text>
         )}
       </View>
@@ -405,31 +409,29 @@ export default function AddTransactionScreen() {
 
             <FlatList
               data={accounts}
-              keyExtractor={(item) => item.accountId.toString()}
+              keyExtractor={(item) => item.account_id}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={[
                     styles.accountItem,
-                    accountId === item.accountId && styles.accountItemSelected,
+                    accountId === item.account_id && styles.accountItemSelected,
                   ]}
                   onPress={() => {
-                    setAccountId(item.accountId);
+                    setAccountId(item.account_id);
                     setShowAccountPicker(false);
                   }}
                 >
                   <View style={styles.accountItemInfo}>
                     <Text style={styles.accountItemName}>
-                      {item.accountName}
+                      {item.account_name}
                     </Text>
-                    <Text style={styles.accountItemType}>
-                      {item.accountType}
-                    </Text>
+                    <Text style={styles.accountItemType}>{item.type}</Text>
                   </View>
                   <View style={styles.accountItemRight}>
                     <Text style={styles.accountItemBalance}>
-                      {item.currentValue.toLocaleString("vi-VN")} đ
+                      {item.current_value.toLocaleString("vi-VN")} đ
                     </Text>
-                    {accountId === item.accountId && (
+                    {accountId === item.account_id && (
                       <Ionicons
                         name="checkmark-circle"
                         size={24}

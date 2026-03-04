@@ -1,28 +1,28 @@
 import { colors } from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import {
-    Budget,
-    createBudget,
-    CreateBudgetRequest,
-    deleteBudget,
-    getBudgets,
-    updateBudget,
-    UpdateBudgetRequest,
+  Budget,
+  createBudget,
+  CreateBudgetRequest,
+  deleteBudget,
+  getBudgets,
+  updateBudget,
+  UpdateBudgetRequest,
 } from "@/services/budget.api";
 import { Category, getCategories } from "@/services/category.api";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface BudgetWithCategory extends Budget {
@@ -30,7 +30,7 @@ interface BudgetWithCategory extends Budget {
 }
 
 export default function BudgetScreen() {
-  const { user } = useAuth();
+  const { userId } = useAuth();
   const [budgets, setBudgets] = useState<BudgetWithCategory[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,20 +49,20 @@ export default function BudgetScreen() {
   useFocusEffect(
     useCallback(() => {
       loadBudgets();
-    }, [user?.userId]),
+    }, [userId]),
   );
 
   const loadBudgets = async () => {
     try {
       setLoading(true);
 
-      if (!user?.userId) {
+      if (!userId) {
         setLoading(false);
         return;
       }
 
       const [budgetList, categoryList] = await Promise.all([
-        getBudgets(user.userId),
+        getBudgets(userId),
         getCategories(),
       ]);
 
@@ -134,7 +134,7 @@ export default function BudgetScreen() {
       return;
     }
 
-    if (!user?.userId) {
+    if (!userId) {
       Alert.alert("Lỗi", "Không tìm thấy user");
       return;
     }
@@ -171,7 +171,9 @@ export default function BudgetScreen() {
           endDate: formData.endDate,
           notifyThreshold: parseFloat(formData.notifyThreshold),
         };
-        await createBudget(createData, user.userId);
+        if (userId) {
+          await createBudget(createData, userId);
+        }
         Alert.alert("Thành công", "Tạo budget thành công");
       }
 

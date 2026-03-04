@@ -5,6 +5,7 @@ import lombok.Data;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Data
 @Entity
@@ -12,8 +13,8 @@ import java.time.Instant;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID userId;
 
     @Column(nullable = false, unique = true, length = 255)
     private String email;
@@ -33,15 +34,18 @@ public class User {
     @Column(nullable = false)
     private Boolean isVerified = false;
 
-    @Column(nullable = false)
-    private Boolean isDelete = false;
-
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
     @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(nullable = false)
+    private Long version = 1L;
 
     @Column(nullable = false, length = 255)
     private String verificationToken;

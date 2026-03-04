@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       });
 
-      setUserId(response.userId);
+      setUserId(String(response.userId));
       setEmail(response.email);
       setFullName(response.fullname || null);
       setIsLoggedIn(true);

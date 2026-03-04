@@ -9,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -30,7 +31,7 @@ public class CategoryController {
     // GET /api/categories/{id}
     @GetMapping("/{id}")
     public ResponseEntity<CategoryResponse> getCategory(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         return ResponseEntity.ok(

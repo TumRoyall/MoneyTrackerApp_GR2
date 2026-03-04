@@ -16,7 +16,7 @@ interface CategorySpending {
 }
 
 export function TopSpendingCategories() {
-  const { user } = useAuth();
+  const { userId } = useAuth();
   const [topCategories, setTopCategories] = useState<CategorySpending[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +30,7 @@ export function TopSpendingCategories() {
     try {
       setLoading(true);
 
-      if (!user?.userId) {
+      if (!userId) {
         setLoading(false);
         return;
       }
@@ -44,9 +44,7 @@ export function TopSpendingCategories() {
 
       // Get ALL REGULAR accounts
       const accounts = await getAccounts();
-      const regularAccounts = accounts.filter(
-        (a) => a.accountType === "REGULAR" || a.type === "REGULAR",
-      );
+      const regularAccounts = accounts.filter((a) => a.type === "REGULAR");
 
       if (regularAccounts.length === 0) {
         setLoading(false);
@@ -55,7 +53,7 @@ export function TopSpendingCategories() {
 
       const [categories, budgets] = await Promise.all([
         getCategories(),
-        getActiveBudgets(user.userId),
+        userId ? getActiveBudgets(userId) : Promise.resolve([]),
       ]);
 
       const categoryMap = new Map(categories.map((c) => [c.categoryId, c]));
@@ -143,7 +141,9 @@ export function TopSpendingCategories() {
         <View style={styles.categoryList}>
           {topCategories.map((item) => {
             const exceeded =
-              item.budget && item.amount > item.budget.amountLimit;
+              item.budget &&
+              item.budget.amountLimit &&
+              item.amount > item.budget.amountLimit;
 
             return (
               <View key={item.category.categoryId} style={styles.categoryItem}>
@@ -157,12 +157,12 @@ export function TopSpendingCategories() {
                       <Text
                         style={[
                           styles.categoryAmount,
-                          exceeded && styles.amountExceeded,
+                          exceeded ? styles.amountExceeded : undefined,
                         ]}
                       >
                         {formatCurrency(item.amount)}
                       </Text>
-                      {item.budget && (
+                      {item.budget && item.budget.amountLimit && (
                         <Text style={styles.budgetText}>
                           / {formatCurrency(item.budget.amountLimit)}
                         </Text>
@@ -177,10 +177,10 @@ export function TopSpendingCategories() {
                     <View
                       style={[
                         styles.progressFill,
-                        exceeded && styles.progressFillExceeded,
+                        exceeded ? styles.progressFillExceeded : undefined,
                         {
                           width: `${Math.min(
-                            item.budget
+                            item.budget && item.budget.amountLimit
                               ? (item.amount / item.budget.amountLimit) * 100
                               : (item.amount / topCategories[0].amount) * 100,
                             100,
@@ -190,7 +190,9 @@ export function TopSpendingCategories() {
                     />
                   </View>
                   <Text style={styles.progressText}>
-                    {item.budget ? `${Math.round(item.budgetUsed)}%` : "-"}
+                    {item.budget && item.budget.amountLimit
+                      ? `${Math.round(item.budgetUsed)}%`
+                      : "-"}
                   </Text>
                 </View>
               </View>

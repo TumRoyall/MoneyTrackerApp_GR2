@@ -1,10 +1,6 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
-Trong chương này, chúng ta tiến hành khảo sát và phân tích yêu cầu của hệ thống nhằm xác định rõ phạm vi chức năng, các tác nhân tham gia và các nghiệp vụ cốt lõi cần hiện thực hóa trong ứng dụng.
-
-Trước hết, mục~\ref{section:2.1} trình bày kết quả khảo sát người dùng và phân tích các hệ thống tương tự trên thị trường để nhận diện nhu cầu thực tế cũng như những hạn chế còn tồn tại của các giải pháp hiện nay. Trên cơ sở đó, mục~\ref{section:2.2} xây dựng tổng quan chức năng của hệ thống thông qua biểu đồ \textit{use case} tổng quát và các biểu đồ phân rã, mô tả mối quan hệ giữa tác nhân và các chức năng chính.
-
-Tiếp theo, các quy trình nghiệp vụ quan trọng được mô tả trong mục~\ref{subsection:2.2.3} nhằm thể hiện luồng xử lý tổng thể của những tác vụ đặc trưng trong hệ thống. Phần đặc tả chi tiết cho các use case trọng tâm được trình bày tại mục~\ref{section:2.3}, làm rõ tiền điều kiện, luồng sự kiện và hậu điều kiện của từng chức năng. Cuối cùng, mục~\ref{section:2.4} tổng hợp các yêu cầu phi chức năng, bao gồm độ tin cậy, bảo mật, khả năng sử dụng và khả năng mở rộng của hệ thống. Những phân tích trong chương này là nền tảng để thiết kế kiến trúc và mô hình xử lý ở chương tiếp theo.
+Trong chương này, chúng ta tiến hành khảo sát và phân tích yêu cầu của hệ thống nhằm xác định rõ phạm vi chức năng, các tác nhân tham gia và các nghiệp vụ cần hiện thực hóa trong ứng dụng.
 
 \section{Khảo sát hiện trạng}
 \label{section:2.1}
@@ -15,11 +11,11 @@ Trên cơ sở bối cảnh và vấn đề đã được trình bày ở mục~
 
 Để hiểu rõ hơn về nhu cầu thực tế trong quá trình ghi chép và quản lý chi tiêu, tác giả đã thực hiện tiến hành một cuộc phỏng vấn ngắn với một người dùng có thói quen theo dõi tài chính cá nhân hằng ngày. Cuộc phỏng vấn được thực hiện theo phương pháp định tính, nhằm thu thập những trải nghiệm thực tế, khó khăn thường gặp và kỳ vọng của người dùng đối với một ứng dụng hỗ trợ quản lý chi tiêu.
 
-Đối tượng phỏng vấn là một người đi làm trẻ, trong độ tuổi từ 22 đến 28, có thu nhập ổn định và sử dụng song song nhiều hình thức thanh toán như tiền mặt, tài khoản ngân hàng và ví điện tử. Người dùng cho biết đã từng thử qua một số ứng dụng ghi chép chi tiêu nhưng gặp khó khăn trong việc duy trì sử dụng lâu dài.
+Đối tượng phỏng vấn là một bạn trẻ đi làm, 23 tuổi, có thu nhập ổn định và sử dụng song song nhiều hình thức thanh toán như tiền mặt, tài khoản ngân hàng và ví điện tử. Người dùng cho biết đã từng thử qua một số ứng dụng ghi chép chi tiêu nhưng gặp khó khăn trong việc duy trì sử dụng lâu dài.
 
 Trong quá trình trao đổi, người dùng chia sẻ rằng các ứng dụng hiện có thường yêu cầu quá nhiều thao tác nhập liệu thủ công, đặc biệt với các khoản chi nhỏ phát sinh hằng ngày. Điều này khiến việc ghi chép trở nên rườm rà và dễ bị bỏ sót. Người dùng cũng cho biết giao diện của một số ứng dụng khá phức tạp, khó thao tác nhanh và mất thời gian khi muốn xem lại các khoản chi theo tháng. Việc quản lý nhiều ví tài chính trong cùng một ứng dụng cũng chưa được hỗ trợ tốt, dẫn đến khó khăn trong việc tổng hợp và theo dõi dòng tiền.
 
-Khi được hỏi về những kỳ vọng trong một ứng dụng quản lý chi tiêu, người dùng mong muốn có hệ thống báo cáo trực quan giúp quan sát xu hướng chi tiêu theo thời gian, khả năng thiết lập hạn mức cho từng danh mục và nhận thông báo khi sắp vượt hạn mức. Ngoài ra, một tính năng được người dùng đặc biệt quan tâm là gợi ý hoặc nhắc nhở ghi chép chi tiêu hằng ngày nhằm duy trì thói quen. Người dùng cũng bày tỏ nhu cầu về khả năng chia sẻ giao dịch và chi phí sinh hoạt chung với bạn cùng phòng hoặc người thân khi cần thiết.
+Khi được hỏi về những kỳ vọng trong một ứng dụng quản lý chi tiêu, người dùng mong muốn có hệ thống báo cáo trực quan giúp quan sát xu hướng chi tiêu theo thời gian, khả năng thiết lập hạn mức cho từng danh mục và nhận thông báo khi sắp vượt hạn mức. Ngoài ra, một tính năng được người dùng đặc biệt quan tâm là gợi ý hoặc nhắc nhở ghi chép chi tiêu hằng ngày nhằm duy trì thói quen.
 
 Từ cuộc phỏng vấn trên, có thể nhận thấy người dùng ưu tiên các ứng dụng đơn giản, dễ thao tác và hỗ trợ giảm bớt việc nhập liệu thủ công. Những nhu cầu này trở thành cơ sở quan trọng để xác định các chức năng cốt lõi của hệ thống trong các phần tiếp theo.
 
@@ -46,36 +42,21 @@ Quản lý nhiều ví/tài khoản & \ding{51} & \ding{51} & \ding{51} & \ding{
 Liên kết ngân hàng & \ding{51} & \ding{55} & \ding{55} & \ding{51} \\ \hline
 Đồng bộ đám mây & \ding{51} & \ding{55} & \ding{55} & \ding{55} \\ \hline
 Báo cáo/biểu đồ theo thời gian & \ding{51} & \ding{51} & \ding{51} & \ding{51} \\ \hline
-Lưu hoá đơn kèm ảnh & \ding{55} & \ding{55} & \ding{51} & \ding{55} \\ \hline
 Xuất dữ liệu (CSV/Excel/Sheets) & \ding{51} & \ding{55} & \ding{51} & \ding{55} \\ \hline
 Nhắc nhở chi tiêu/định kỳ & \ding{55} & \ding{51} & \ding{55} & \ding{51} \\ \hline
 Cảnh báo vượt hạn mức & \ding{55} & \ding{55} & \ding{55} & \ding{51} \\ \hline
-Công cụ nâng cao (tips nhóm, TNCN, lãi suất) & \ding{51} & \ding{55} & \ding{55} & \ding{51} \\ \hline
-Chia sẻ \emph{nhóm chi tiêu}/ví chung & \ding{55} & \ding{55} & \ding{55} & \ding{55} \\ \hline
+Gợi ý / lập kế hoạch chi tiêu & \ding{55} & \ding{55} & \ding{55} & \ding{55} \\ \hline
 \end{tabular}
 \end{table}
 
 
-\subsection{Phân tích và đánh giá}  
-Qua quá trình tìm hiểu và sử dụng thử các ứng dụng hiện có, có thể nhận thấy rằng hầu hết các giải pháp trên thị trường đáp ứng khá tốt các nhu cầu cơ bản như ghi chép thu chi, phân loại giao dịch và hiển thị báo cáo theo tháng. Tuy nhiên, các ứng dụng vẫn còn một số hạn chế đáng kể so với nhu cầu sử dụng thực tế.
+\subsection{Phân tích và đánh giá}
 
-Một hạn chế quan trọng là phần lớn ứng dụng chưa hỗ trợ \textbf{chia sẻ chi tiêu theo nhóm}, trong khi đây là nhu cầu phổ biến ở người dùng trẻ sống chung hoặc có các khoản chi chung theo hoạt động. Bên cạnh đó, các ứng dụng vẫn phụ thuộc nhiều vào nhập liệu thủ công, khiến người dùng mới, người bận rộn hoặc người không có thói quen ghi chép khó duy trì sử dụng lâu dài. Các tính năng thống kê của nhiều ứng dụng cũng còn đơn giản, chưa hỗ trợ phân tích sâu hoặc so sánh giữa các ví. Ngoài ra, cơ chế nhắc nhở và cảnh báo chi tiêu thông minh vẫn chưa được chú trọng, khiến người dùng khó kiểm soát mức tiêu trong thời gian dài.
+Từ kết quả khảo sát người dùng, có thể nhận thấy rằng mặc dù nhu cầu quản lý chi tiêu là thường xuyên và thực tế, quá trình sử dụng các ứng dụng hiện có vẫn còn nhiều bất tiện. Vấn đề nổi bật nhất là thao tác nhập liệu còn phức tạp và mang tính thủ công, đặc biệt đối với các khoản chi nhỏ phát sinh hằng ngày. Điều này ảnh hưởng trực tiếp đến khả năng duy trì thói quen ghi chép lâu dài của người dùng. Ngoài ra, người dùng mong muốn có cái nhìn tổng quan rõ ràng hơn về xu hướng chi tiêu, thay vì chỉ xem các con số thống kê đơn lẻ.
 
+Qua phân tích các hệ thống tương tự trên thị trường trong bảng~\ref{tab:feature_matrix} , có thể thấy rằng phần lớn các ứng dụng đã đáp ứng tốt các chức năng cơ bản như ghi chép giao dịch, phân loại danh mục và hiển thị báo cáo theo thời gian. Tuy nhiên, các hệ thống này chủ yếu dừng lại ở mức ghi nhận và tổng hợp dữ liệu. Chức năng hỗ trợ phân tích hành vi chi tiêu, đưa ra gợi ý hoặc lập kế hoạch chi tiêu cho tương lai còn hạn chế hoặc chưa được triển khai rõ ràng. Điều này tạo ra khoảng trống giữa nhu cầu thực tế của người dùng và khả năng hỗ trợ của các ứng dụng hiện tại.
 
-\subsection{Khoảng trống và hàm ý phát triển}  
-Từ các phân tích trên, có thể xác định khoảng trống lớn trong việc đáp ứng nhu cầu của nhóm người dùng trẻ, người mới tự quản lý tài chính hoặc các nhóm sinh hoạt chung. Nhóm người dùng này cần một công cụ đơn giản, dễ dùng, hỗ trợ nhiều nguồn tiền và đặc biệt là có khả năng cộng tác.
-
-Do đó, hệ thống được đề xuất cần tập trung vào bốn hướng phát triển chính.  
-Thứ nhất, hỗ trợ \textbf{nhiều ví nội bộ} mà không phụ thuộc liên kết ngân hàng, phù hợp với hành vi sử dụng đồng thời tiền mặt, ví điện tử và tài khoản ngân hàng.  
-Thứ hai, cung cấp cơ chế \textbf{chia sẻ chi tiêu theo nhóm} để nhiều người cùng quản lý một hoặc nhiều ví chung.  
-Thứ ba, bổ sung \textbf{nhắc nhở và cảnh báo linh hoạt}, giúp người dùng duy trì thói quen ghi chép và tránh vượt ngân sách.  
-Thứ tư, phát triển \textbf{thống kê trực quan, đa chiều} nhằm hỗ trợ người dùng nắm bắt xu hướng chi tiêu và điều chỉnh hành vi tài chính.
-
-
-
-\subsection{Kết luận khảo sát}  
-Tổng hợp các kết quả đánh giá cho thấy thị trường chưa có nhiều giải pháp chú trọng vào khả năng cộng tác nhóm và hỗ trợ quản lý nhiều ví độc lập. Hệ thống được đề xuất trong đề tài hướng tới việc lấp đầy các khoảng trống này thông qua việc tối ưu nhập liệu, hỗ trợ chi tiêu nhóm, thống kê trực quan và quản lý đa ví. Những phân tích trên đây là nền tảng để xây dựng mô hình chức năng của hệ thống, được trình bày trong mục~\ref{section:2.2}.
-
+Từ những phân tích trên, có thể rút ra rằng hệ thống cần được thiết kế theo hướng không chỉ hỗ trợ ghi chép và thống kê, mà còn nâng cao trải nghiệm người dùng thông qua việc tối ưu thao tác nhập liệu và bổ sung các chức năng phân tích, gợi ý và lập kế hoạch chi tiêu. Những định hướng này sẽ được cụ thể hóa thành các yêu cầu chức năng và phi chức năng của hệ thống trong mục tiếp theo.
 
 
 \section{Tổng quan chức năng}
@@ -389,11 +370,9 @@ Trong phạm vi đồ án này, sáu use case quan trọng được lựa chọn
 
 Các mục dưới đây trình bày chi tiết từng use case theo cấu trúc nêu trên.
 
-\subsection{Đặc tả use case UC01 – Đăng ký tài khoản}
-
 \begin{table}[H]
 \centering
-\begin{tabular}{|p{4cm}|p{12cm}|}
+\begin{tabular}{|p{4cm}|p{11cm}|}
 \hline
 Tên Use case & UC01 – Đăng ký tài khoản \\ \hline
 
@@ -401,7 +380,7 @@ Tác nhân & Người dùng \\ \hline
 
 Kích hoạt & Người dùng chọn chức năng tạo tài khoản mới \\ \hline
 
-Mô tả & Use case mô tả quy trình tạo tài khoản bằng email và xác thực OTP. \\ \hline
+Mô tả & Use case mô tả quy trình tạo tài khoản bằng email và xác thực qua email. \\ \hline
 
 Điều kiện tiên quyết &
 Người dùng chưa có tài khoản trong hệ thống. \\ \hline
@@ -409,8 +388,8 @@ Người dùng chưa có tài khoản trong hệ thống. \\ \hline
 Luồng sự kiện chính &
 \begin{tabular}[t]{p{9.5cm}}
 Người dùng: Nhập email và yêu cầu tạo tài khoản. \newline
-Hệ thống: Gửi mã OTP xác thực qua email. \newline
-Người dùng: Nhập mã OTP để xác thực. \newline
+Hệ thống: Gửi thông tin xác thực qua email. \newline
+Người dùng: Nhấn vào đường dẫn qua email để xác thực. \newline
 Hệ thống: Tạo tài khoản mới và thông báo thành công.
 \end{tabular}
 \\ \hline
@@ -419,8 +398,8 @@ Luồng thay thế &
 \begin{tabular}[t]{p{9.5cm}}
 A1-1: Email không hợp lệ hoặc đã tồn tại. \newline
 A1-2: Hệ thống yêu cầu nhập email khác. \newline
-A2-1: OTP sai hoặc hết hạn. \newline
-A2-2: Hệ thống yêu cầu gửi lại mã OTP mới.
+A2-1: Token xác thực hết hạn. \newline
+A2-2: Hệ thống yêu cầu gửi lại token xác thực mới.
 \end{tabular}
 \\ \hline
 
@@ -438,7 +417,7 @@ Người dùng hoàn tất tạo tài khoản hoặc hủy thao tác. \\ \hline
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|p{4cm}|p{12cm}|}
+\begin{tabular}{|p{4cm}|p{11cm}|}
 \hline
 Tên Use case & UC02 – Đăng nhập hệ thống \\ \hline
 
@@ -479,11 +458,12 @@ Người dùng hủy thao tác hoặc đăng nhập thất bại quá số lần
 \end{table}
 
 
+
 \subsection{Đặc tả use case UC03 – Tạo ví}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|p{4cm}|p{12cm}|}
+\begin{tabular}{|p{4cm}|p{11cm}|}
 \hline
 Tên Use case & UC03 – Tạo ví \\ \hline
 
@@ -502,9 +482,7 @@ Luồng sự kiện chính &
 Người dùng: Chọn chức năng tạo ví mới. \newline
 Người dùng: Nhập tên ví, loại ví và số dư ban đầu. \newline
 Hệ thống: Kiểm tra tính hợp lệ của dữ liệu. \newline
-Hệ thống: Tạo ví mới và lưu vào hệ thống. \newline
-Hệ thống: Hiển thị tùy chọn “Thêm thành viên để chia sẻ ví”. \newline
-Người dùng: Có thể thêm thành viên hoặc bỏ qua.
+Hệ thống: Tạo ví mới và lưu vào hệ thống.
 \end{tabular}
 \\ \hline
 
@@ -525,12 +503,11 @@ Người dùng hoàn tất thao tác hoặc hủy tạo ví. \\ \hline
 \end{tabular}
 \end{table}
 
-
 \subsection{Đặc tả use case UC04 – Thêm giao dịch}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|p{4cm}|p{12cm}|}
+\begin{tabular}{|p{4cm}|p{11cm}|}
 \hline
 Tên Use case & UC04 – Thêm giao dịch \\ \hline
 
@@ -547,7 +524,7 @@ Người dùng đã đăng nhập và chọn ví để ghi giao dịch. \\ \hlin
 Luồng sự kiện chính &
 \begin{tabular}[t]{p{9.5cm}}
 Người dùng: Chọn chức năng thêm giao dịch. \newline
-Người dùng: Chọn phương thức nhập liệu (thủ công / AI / CSV). \newline
+Người dùng: Chọn phương thức nhập liệu (thủ công / AI). \newline
 Người dùng: Nhập hoặc cung cấp dữ liệu giao dịch. \newline
 Hệ thống: Kiểm tra và xử lý dữ liệu giao dịch. \newline
 Hệ thống: Lưu giao dịch và cập nhật số dư ví. \newline
@@ -559,8 +536,8 @@ Luồng thay thế &
 \begin{tabular}[t]{p{9.5cm}}
 A1-1: Người dùng thiếu thông tin quan trọng (số tiền, danh mục, ví). \newline
 A1-2: Hệ thống thông báo lỗi và yêu cầu nhập lại thông tin. \newline
-A2-1: File CSV sai định dạng hoặc câu lệnh AI không phân tích được. \newline
-A2-2: Hệ thống yêu cầu nhập lại bằng phương thức hợp lệ.
+A2-1: Câu lệnh AI không phân tích được. \newline
+A2-2: Hệ thống yêu cầu nhập lại bằng phương thủ công.
 \end{tabular}
 \\ \hline
 
@@ -572,14 +549,13 @@ Người dùng hoàn tất hoặc hủy thao tác thêm giao dịch. \\ \hline
 \end{tabular}
 \end{table}
 
-
-\subsection{Đặc tả use case UC06 – Xem thống kê thu/chi}
+\subsection{Đặc tả use case UC05 – Xem thống kê thu/chi}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{|p{4cm}|p{12cm}|}
+\begin{tabular}{|p{4cm}|p{11cm}|}
 \hline
-Tên Use case & UC06 – Xem thống kê thu/chi \\ \hline
+Tên Use case & UC05 – Xem thống kê thu/chi \\ \hline
 
 Tác nhân & Người dùng \\ \hline
 
@@ -611,7 +587,12 @@ A2-2: Hệ thống yêu cầu người dùng chỉnh lại phạm vi.
 \\ \hline
 
 Điều kiện sau &
-Thống kê thu/chi được hiển thị theo tiêu chí đã chọn. \\ \h
+Thống kê thu/chi được hiển thị theo tiêu chí đã chọn. \\ \hline
+
+Điều kiện thoát &
+Người dùng thoát màn hình thống kê hoặc đóng ứng dụng. \\ \hline
+\end{tabular}
+\end{table}
 
 
 \section{Yêu cầu phi chức năng}

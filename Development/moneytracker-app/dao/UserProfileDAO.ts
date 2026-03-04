@@ -1,4 +1,4 @@
-import { executeSQL, fetchOne } from "./init";
+import { executeSQL, fetchOne } from "@/db/init";
 
 /* ===================== TYPES ===================== */
 
@@ -11,8 +11,10 @@ export interface UserProfile {
   access_token?: string;
   refresh_token?: string;
   token_exp_at?: number;
-  created_at?: number;
-  updated_at?: number;
+  version: number;
+  created_at: number;
+  updated_at: number;
+  deleted_at?: number;
 }
 
 export interface CreateUserProfilePayload {
@@ -32,9 +34,10 @@ export interface CreateUserProfilePayload {
 export const getUserProfile = async (
   userId: string,
 ): Promise<UserProfile | null> => {
-  return fetchOne<UserProfile>(`SELECT * FROM user_profile WHERE user_id = ?`, [
-    userId,
-  ]);
+  return fetchOne<UserProfile>(
+    `SELECT * FROM user_profiles WHERE user_id = ?`,
+    [userId],
+  );
 };
 
 /**
@@ -51,7 +54,7 @@ export const saveUserProfile = async (
   if (existing) {
     // Update
     await executeSQL(
-      `UPDATE user_profile SET 
+      `UPDATE user_profiles SET 
         email = ?, 
         full_name = ?, 
         access_token = ?, 
@@ -72,10 +75,10 @@ export const saveUserProfile = async (
   } else {
     // Insert
     await executeSQL(
-      `INSERT INTO user_profile (
+      `INSERT INTO user_profiles (
         user_id, email, full_name, access_token, refresh_token, token_exp_at, 
-        is_admin, is_verified, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        is_admin, is_verified, version, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         payload.user_id,
         payload.email,
@@ -85,6 +88,7 @@ export const saveUserProfile = async (
         payload.token_exp_at || null,
         0,
         0,
+        1,
         now,
         now,
       ],
@@ -107,7 +111,7 @@ export const updateUserTokens = async (
 ): Promise<void> => {
   const now = Date.now();
   await executeSQL(
-    `UPDATE user_profile SET 
+    `UPDATE user_profiles SET 
       access_token = ?, 
       refresh_token = ?, 
       token_exp_at = ?,
@@ -121,12 +125,12 @@ export const updateUserTokens = async (
  * Delete user profile (logout)
  */
 export const deleteUserProfile = async (userId: string): Promise<void> => {
-  await executeSQL(`DELETE FROM user_profile WHERE user_id = ?`, [userId]);
+  await executeSQL(`DELETE FROM user_profiles WHERE user_id = ?`, [userId]);
 };
 
 /**
  * Get current user (should only be one)
  */
 export const getCurrentUser = async (): Promise<UserProfile | null> => {
-  return fetchOne<UserProfile>(`SELECT * FROM user_profile LIMIT 1`, []);
+  return fetchOne<UserProfile>(`SELECT * FROM user_profiles LIMIT 1`, []);
 };

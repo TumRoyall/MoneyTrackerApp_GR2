@@ -4,11 +4,10 @@
  */
 
 import * as TransactionDAO from "@/dao/TransactionDAO";
-import { TransactionDAO as Types } from "@/dao/TransactionDAO";
 
-export type Transaction = Types.Transaction;
-export type CreateTransactionPayload = Types.CreateTransactionPayload;
-export type TransactionFilter = Types.TransactionFilter;
+export type Transaction = TransactionDAO.Transaction;
+export type CreateTransactionPayload = TransactionDAO.CreateTransactionPayload;
+export type TransactionFilter = TransactionDAO.TransactionFilter;
 
 /* ===================== SERVICE FUNCTIONS ===================== */
 
@@ -98,7 +97,7 @@ export const createTransaction = async (
     const transaction = await TransactionDAO.createTransaction(userId, payload);
     console.log(
       "[TransactionService] Transaction created with ID:",
-      transaction.id,
+      transaction.transaction_id,
     );
     return transaction;
   } catch (error) {

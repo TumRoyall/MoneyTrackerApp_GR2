@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +32,7 @@ public class CategoryService {
      * - category do user tạo (userId = currentUserId)
      */
     @Transactional(readOnly = true)
-    public List<CategoryResponse> getAccessibleCategories(Long userId) {
+    public List<CategoryResponse> getAccessibleCategories(UUID userId) {
         // Chưa có query sẵn trong repo -> dùng findAll + filter (OK cho project nhỏ).
         // Nếu data lớn: tạo query riêng trong repository để filter thẳng DB.
         return categoryRepository.findAll().stream()
@@ -44,7 +45,7 @@ public class CategoryService {
      * Get 1 category nếu user được quyền truy cập (default hoặc thuộc user)
      */
     @Transactional(readOnly = true)
-    public CategoryResponse getCategoryById(Long userId, Long categoryId) {
+    public CategoryResponse getCategoryById(UUID userId, UUID categoryId) {
         Category c = categoryRepository.findAccessibleCategory(categoryId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found or not accessible"));
         return toResponse(c);

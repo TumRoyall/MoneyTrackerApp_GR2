@@ -1,4 +1,4 @@
-import { executeSQL, fetchOne, fetchRows } from "./init";
+import { executeSQL, fetchOne, fetchRows } from "@/db/init";
 
 /* ===================== TYPES ===================== */
 
@@ -11,7 +11,7 @@ export type AccountType =
   | "EVENT";
 
 export interface Account {
-  id: string;
+  account_id: string;
   server_id?: number;
   user_id: string;
   type: AccountType;
@@ -20,6 +20,7 @@ export interface Account {
   currency: string;
   description?: string;
   version: number;
+  created_at: number;
   updated_at: number;
   deleted_at?: number;
   sync_status: string;
@@ -49,10 +50,12 @@ export const getAccounts = async (userId: string): Promise<Account[]> => {
 /**
  * Get single account by ID
  */
-export const getAccountById = async (id: string): Promise<Account | null> => {
+export const getAccountById = async (
+  accountId: string,
+): Promise<Account | null> => {
   return fetchOne<Account>(
-    `SELECT * FROM accounts WHERE id = ? AND deleted_at IS NULL`,
-    [id],
+    `SELECT * FROM accounts WHERE account_id = ? AND deleted_at IS NULL`,
+    [accountId],
   );
 };
 
@@ -76,15 +79,15 @@ export const createAccount = async (
   userId: string,
   payload: CreateAccountPayload,
 ): Promise<Account> => {
-  const id = generateUUID();
+  const accountId = generateUUID();
   const now = Date.now();
 
   await executeSQL(
     `INSERT INTO accounts (
-      id, user_id, type, account_name, current_value, currency, description, updated_at, sync_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      account_id, user_id, type, account_name, current_value, currency, description, created_at, updated_at, version, sync_status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      id,
+      accountId,
       userId,
       payload.type,
       payload.account_name,
@@ -92,11 +95,13 @@ export const createAccount = async (
       payload.currency,
       payload.description || null,
       now,
+      now,
+      1,
       "PENDING",
     ],
   );
 
-  const account = await getAccountById(id);
+  const account = await getAccountById(accountId);
   if (!account) throw new Error("Failed to create account");
   return account;
 };
@@ -105,7 +110,7 @@ export const createAccount = async (
  * Update account
  */
 export const updateAccount = async (
-  id: string,
+  accountId: string,
   payload: Partial<CreateAccountPayload>,
 ): Promise<Account> => {
   const now = Date.now();
@@ -134,15 +139,15 @@ export const updateAccount = async (
     values.push(now);
     updateFields.push("sync_status = ?");
     values.push("PENDING");
-    values.push(id);
+    values.push(accountId);
 
     await executeSQL(
-      `UPDATE accounts SET ${updateFields.join(", ")} WHERE id = ?`,
+      `UPDATE accounts SET ${updateFields.join(", ")} WHERE account_id = ?`,
       values,
     );
   }
 
-  const account = await getAccountById(id);
+  const account = await getAccountById(accountId);
   if (!account) throw new Error("Failed to update account");
   return account;
 };
@@ -150,11 +155,11 @@ export const updateAccount = async (
 /**
  * Delete account (soft delete)
  */
-export const deleteAccount = async (id: string): Promise<void> => {
+export const deleteAccount = async (accountId: string): Promise<void> => {
   const now = Date.now();
   await executeSQL(
-    `UPDATE accounts SET deleted_at = ?, sync_status = ? WHERE id = ?`,
-    [now, "PENDING", id],
+    `UPDATE accounts SET deleted_at = ?, sync_status = ? WHERE account_id = ?`,
+    [now, "PENDING", accountId],
   );
 };
 
@@ -185,12 +190,12 @@ export const getAccountByServerId = async (
  * Update account with server_id after sync
  */
 export const updateAccountWithServerId = async (
-  id: string,
+  accountId: string,
   serverId: number,
 ): Promise<void> => {
   await executeSQL(
-    `UPDATE accounts SET server_id = ?, sync_status = ? WHERE id = ?`,
-    [serverId, "SYNCED", id],
+    `UPDATE accounts SET server_id = ?, sync_status = ? WHERE account_id = ?`,
+    [serverId, "SYNCED", accountId],
   );
 };
 

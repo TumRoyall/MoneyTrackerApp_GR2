@@ -1,7 +1,7 @@
 PWD c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document
 INPUT C:\Users\TumRoyal\AppData\Local\MiKTeX\miktex\data\le\pdftex\pdflatex.fmt
 INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\DoAn.tex
-OUTPUT DoAn.log
+OUTPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.log
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\base\report.cls
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\base\report.cls
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\base\size10.clo
@@ -487,10 +487,10 @@ INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\vntex\t5ptm.fd
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\vntex\t5ptm.fd
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\vntex\t5ptm.fd
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\urwvn\utmr8v.tfm
-INPUT .\DoAn.aux
-INPUT .\DoAn.aux
-INPUT DoAn.aux
-OUTPUT DoAn.aux
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.aux
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.aux
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.aux
+OUTPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.aux
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\context\base\mkii\supp-pdf.mkii
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\context\base\mkii\supp-pdf.mkii
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\context\base\mkii\supp-pdf.mkii
@@ -504,20 +504,20 @@ INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\00miktex\epstopd
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\caption\ltcaption.sty
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\caption\ltcaption.sty
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\biblatex\lbx\english.lbx
-OUTPUT DoAn-blx.bib
-INPUT DoAn.bbl
-INPUT .\DoAn.bbl
-INPUT .\DoAn.bbl
-INPUT .\DoAn.bbl
-INPUT DoAn.bbl
-INPUT .\DoAn.out
-INPUT .\DoAn.out
-INPUT DoAn.out
-INPUT DoAn.out
-OUTPUT DoAn.pdf
-INPUT .\DoAn.out
-INPUT .\DoAn.out
-OUTPUT DoAn.out
+OUTPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn-blx.bib
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.bbl
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.bbl
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.bbl
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.bbl
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.bbl
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.out
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.out
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.out
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.out
+OUTPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.pdf
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.out
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.out
+OUTPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.out
 INPUT .\Bia.tex
 INPUT .\Bia.tex
 INPUT Bia.tex
@@ -583,19 +583,19 @@ INPUT .\Chuong\0_4_Tom_tat_noi_dung_English.tex
 INPUT Chuong\0_4_Tom_tat_noi_dung_English.tex
 INPUT .\Chuong\0_4_Tom_tat_noi_dung_English.tex
 INPUT Chuong\0_4_Tom_tat_noi_dung_English.tex
-INPUT .\DoAn.toc
-INPUT .\DoAn.toc
-INPUT DoAn.toc
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.toc
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.toc
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.toc
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\urwvn\utmbc8v.tfm
-OUTPUT DoAn.toc
-INPUT .\DoAn.lof
-INPUT .\DoAn.lof
-INPUT DoAn.lof
-OUTPUT DoAn.lof
-INPUT .\DoAn.lot
-INPUT .\DoAn.lot
-INPUT DoAn.lot
-OUTPUT DoAn.lot
+OUTPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.toc
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.lof
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.lof
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.lof
+OUTPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.lof
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.lot
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.lot
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.lot
+OUTPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.lot
 INPUT .\Chuong\1_Gioi_thieu.tex
 INPUT .\Chuong\1_Gioi_thieu.tex
 INPUT Chuong\1_Gioi_thieu.tex
@@ -610,28 +610,12 @@ INPUT .\Chuong\2_Phan_tich_va_khao_sat_yeu_cau.tex
 INPUT Chuong\2_Phan_tich_va_khao_sat_yeu_cau.tex
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\urwvn\utmr8v.tfm
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\vntex\urwvn\utmb8v.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmr8.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmmi8.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmsy8.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmex10.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\cmextra\cmex8.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\cmextra\cmex7.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\latex-fonts\lasy8.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\symbols\msam10.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\symbols\msam10.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\symbols\msam5.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\symbols\msbm10.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\symbols\msbm10.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\symbols\msbm5.tfm
+INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\zapfding\pzdr.tfm
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\psnfss\ts1ptm.fd
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\psnfss\ts1ptm.fd
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\psnfss\ts1ptm.fd
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\tex\latex\psnfss\ts1ptm.fd
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\times\ptmr8c.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\zapfding\pzdr.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\vf\adobe\times\ptmr8c.vf
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\times\ptmr8r.tfm
-INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\enc\dvips\base\8r.enc
 INPUT .\Hinhve\Usecase quản lý giao dịch\UC Tổng quát.png
 INPUT .\Hinhve\Usecase quản lý giao dịch\UC Tổng quát.png
 INPUT Hinhve\Usecase quản lý giao dịch\UC Tổng quát.png
@@ -639,6 +623,9 @@ INPUT .\Hinhve\Usecase quản lý giao dịch\UC Tổng quát.png
 INPUT .\Hinhve\Usecase quản lý giao dịch\UC Tổng quát.png
 INPUT .\Hinhve\Usecase quản lý giao dịch\UC Tổng quát.png
 INPUT .\Hinhve\Usecase quản lý giao dịch\UC Tổng quát.png
+INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\vf\adobe\times\ptmr8c.vf
+INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\tfm\adobe\times\ptmr8r.tfm
+INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\enc\dvips\base\8r.enc
 INPUT .\Hinhve\Usecase quản lý giao dịch\Quản lý tài khoản cá nhân\Usecase quản lý tài khoản.png
 INPUT .\Hinhve\Usecase quản lý giao dịch\Quản lý tài khoản cá nhân\Usecase quản lý tài khoản.png
 INPUT Hinhve\Usecase quản lý giao dịch\Quản lý tài khoản cá nhân\Usecase quản lý tài khoản.png
@@ -746,24 +733,17 @@ INPUT .\Hinhve\Bia.PNG
 INPUT .\Hinhve\Bia.PNG
 INPUT .\Hinhve\Bia.PNG
 INPUT .\Hinhve\Bia.PNG
-INPUT .\Hinhve\GayBia.PNG
-INPUT .\Hinhve\GayBia.PNG
-INPUT Hinhve\GayBia.PNG
-INPUT .\Hinhve\GayBia.PNG
-INPUT .\Hinhve\GayBia.PNG
-INPUT .\Hinhve\GayBia.PNG
-INPUT .\Hinhve\GayBia.PNG
 INPUT .\Chuong\Phu_luc_B.tex
 INPUT .\Chuong\Phu_luc_B.tex
 INPUT Chuong\Phu_luc_B.tex
 INPUT .\Chuong\Phu_luc_B.tex
 INPUT .\Chuong\Phu_luc_B.tex
 INPUT Chuong\Phu_luc_B.tex
-INPUT DoAn.aux
-INPUT .\DoAn.out
-INPUT .\DoAn.out
-INPUT DoAn.run.xml
-OUTPUT DoAn.run.xml
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.aux
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.out
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.out
+INPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.run.xml
+OUTPUT c:\Users\TumRoyal\Documents\GitHub\MoneyTrackerApp_GR2\Document\%OUTDIR%\DoAn.run.xml
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmex10.pfb
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmex10.pfb
 INPUT C:\Users\TumRoyal\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmmi12.pfb

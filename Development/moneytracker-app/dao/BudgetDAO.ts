@@ -1,9 +1,19 @@
-import { executeSQL, fetchOne, fetchRows } from "../db/init";
+import { executeSQL, fetchOne, fetchRows } from "@/db/init";
+
+/* ===================== UTILS ===================== */
+
+const generateUUID = (): string => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 /* ===================== TYPES ===================== */
 
 export interface Budget {
-  id: string;
+  budget_id: string;
   server_id?: number;
   user_id: string;
   category_id: string;
@@ -12,6 +22,7 @@ export interface Budget {
   end_date: string; // YYYY-MM-DD
   notify_threshold: number; // percentage
   version: number;
+  created_at: number;
   updated_at: number;
   deleted_at?: number;
   sync_status: string;
@@ -50,10 +61,12 @@ export const getBudgets = async (userId: string): Promise<Budget[]> => {
 /**
  * Get budget by ID
  */
-export const getBudgetById = async (id: string): Promise<Budget | null> => {
+export const getBudgetById = async (
+  budgetId: string,
+): Promise<Budget | null> => {
   return fetchOne<Budget>(
-    `SELECT * FROM budgets WHERE id = ? AND deleted_at IS NULL`,
-    [id],
+    `SELECT * FROM budgets WHERE budget_id = ? AND deleted_at IS NULL`,
+    [budgetId],
   );
 };
 
@@ -92,16 +105,16 @@ export const createBudget = async (
   userId: string,
   payload: CreateBudgetPayload,
 ): Promise<Budget> => {
-  const id = `budget_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const budgetId = generateUUID();
   const now = Date.now();
 
   await executeSQL(
     `INSERT INTO budgets (
-      id, user_id, category_id, amount_limit, start_date, end_date, 
-      notify_threshold, version, updated_at, sync_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      budget_id, user_id, category_id, amount_limit, start_date, end_date, 
+      notify_threshold, version, created_at, updated_at, sync_status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      id,
+      budgetId,
       userId,
       payload.category_id,
       payload.amount_limit,
@@ -110,12 +123,13 @@ export const createBudget = async (
       payload.notify_threshold,
       1,
       now,
+      now,
       "PENDING",
     ],
   );
 
   return {
-    id,
+    budget_id: budgetId,
     user_id: userId,
     category_id: payload.category_id,
     amount_limit: payload.amount_limit,
@@ -123,6 +137,7 @@ export const createBudget = async (
     end_date: payload.end_date,
     notify_threshold: payload.notify_threshold,
     version: 1,
+    created_at: now,
     updated_at: now,
     sync_status: "PENDING",
   };
@@ -132,11 +147,11 @@ export const createBudget = async (
  * Update budget
  */
 export const updateBudget = async (
-  id: string,
+  budgetId: string,
   payload: UpdateBudgetPayload,
 ): Promise<Budget | null> => {
   const now = Date.now();
-  const current = await getBudgetById(id);
+  const current = await getBudgetById(budgetId);
 
   if (!current) {
     throw new Error("Budget not found");
@@ -153,7 +168,7 @@ export const updateBudget = async (
     `UPDATE budgets SET 
       amount_limit = ?, start_date = ?, end_date = ?, notify_threshold = ?,
       version = version + 1, updated_at = ?, sync_status = ?
-     WHERE id = ?`,
+     WHERE budget_id = ?`,
     [
       updated.amount_limit,
       updated.start_date,
@@ -161,7 +176,7 @@ export const updateBudget = async (
       updated.notify_threshold,
       now,
       "PENDING",
-      id,
+      budgetId,
     ],
   );
 
@@ -171,11 +186,11 @@ export const updateBudget = async (
 /**
  * Delete budget (soft delete)
  */
-export const deleteBudget = async (id: string): Promise<void> => {
+export const deleteBudget = async (budgetId: string): Promise<void> => {
   const now = Date.now();
   await executeSQL(
-    `UPDATE budgets SET deleted_at = ?, sync_status = ? WHERE id = ?`,
-    [now, "PENDING", id],
+    `UPDATE budgets SET deleted_at = ?, sync_status = ? WHERE budget_id = ?`,
+    [now, "PENDING", budgetId],
   );
 };
 
