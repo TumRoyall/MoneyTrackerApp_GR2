@@ -19,8 +19,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +33,16 @@ public class TransactionService {
     public Page<TransactionResponse> getTransactions(
             TransactionFilterRequest filter,
             Pageable pageable,
-            Long userId
+            UUID userId
     ) {
+        //check owner account
+        Account acc = accountRepo.findById(filter.getAccountId())
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        if (!userId.equals(acc.getUserId())) {
+            throw new AccessDeniedException("Not your account");
+        }
+
         var spec = TransactionSpecification.filter(
                 userId,
                 filter.getAccountId(),
@@ -52,7 +60,7 @@ public class TransactionService {
     }
 
     @Transactional
-    public TransactionResponse create(CreateTransactionRequest req, Long userId) {
+    public TransactionResponse create(CreateTransactionRequest req, UUID userId) {
 
         // ===== CHECK ACCOUNT =====
         Account acc = accountRepo.findById(req.getAccountId())
@@ -97,7 +105,7 @@ public class TransactionService {
 
 
     @Transactional
-    public TransactionResponse update(Long transactionId, UpdateTransactionRequest req, Long userId) {
+    public TransactionResponse update(UUID transactionId, UpdateTransactionRequest req, UUID userId) {
 
         Transaction tx = txRepo
                 .findByTransactionIdAndCreatedBy(transactionId, userId)
@@ -144,7 +152,7 @@ public class TransactionService {
 
     // DELETE A TRANSACTION
     @Transactional
-    public void delete(Long transactionId, Long userId) {
+    public void delete(UUID transactionId, UUID userId) {
 
         // 1) Lấy transaction của chính user
         Transaction tx = txRepo.findByTransactionIdAndCreatedBy(transactionId, userId)

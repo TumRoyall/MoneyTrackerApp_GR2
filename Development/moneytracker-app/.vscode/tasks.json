@@ -1,0 +1,10 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Patch transactions.tsx with accountId filter",
+			"type": "shell",
+			"command": "echo Patching files"
+		}
+	]
+}

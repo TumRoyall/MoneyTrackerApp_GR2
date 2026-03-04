@@ -2,7 +2,6 @@ package com.examples.moneytracker.accounts.controller;
 
 import com.examples.moneytracker.accounts.dto.AccountResponse;
 import com.examples.moneytracker.accounts.dto.CreateAccountRequest;
-import com.examples.moneytracker.accounts.model.Account;
 import com.examples.moneytracker.accounts.service.AccountService;
 import com.examples.moneytracker.auth.security.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -11,8 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.attribute.UserPrincipal;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/accounts")
@@ -40,7 +39,7 @@ public class AccountController {
     // SOFT DELETE
     @DeleteMapping("/{accountId}")
     public void deleteAccount(
-            @PathVariable Long accountId,
+            @PathVariable UUID accountId,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         accountService.softDeleteAccount(accountId, user.getId());

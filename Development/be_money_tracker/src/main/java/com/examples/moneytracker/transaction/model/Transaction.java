@@ -7,6 +7,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Entity
 @Table(name = "transactions")
@@ -14,14 +15,14 @@ import java.time.LocalDate;
 public class Transaction {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long transactionId;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID transactionId;
 
     @Column(nullable = false)
-    private Long accountId;
+    private UUID accountId;
 
     @Column(nullable = false)
-    private Long createdBy;
+    private UUID createdBy;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
@@ -33,7 +34,7 @@ public class Transaction {
     @Column(columnDefinition = "TEXT")
     private String note;
 
-    @Column(nullable = false)
+    @Column(name = "tx_date", nullable = false)
     private LocalDate date;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -41,6 +42,12 @@ public class Transaction {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(nullable = false)
+    private Long version = 1L;
 
     // ===== AUDIT =====
     @PrePersist

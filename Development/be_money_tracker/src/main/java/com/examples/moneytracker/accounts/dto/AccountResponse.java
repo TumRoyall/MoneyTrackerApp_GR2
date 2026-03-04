@@ -7,12 +7,13 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 public class AccountResponse {
 
-    private Long accountId;
+    private UUID accountId;
     private String accountName;
     private AccountType type;
     private String currency;

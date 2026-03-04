@@ -1,42 +1,34 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
+
 \section{Đặt vấn đề}
 \label{section:1.1}
 
-Trong bối cảnh đời sống hiện đại, nhu cầu quản lý tài chính cá nhân ngày càng trở nên quan trọng. Sự phổ biến của các hình thức thanh toán điện tử như ví điện tử, thẻ ngân hàng hay chuyển khoản trực tuyến khiến việc kiểm soát chi tiêu trở nên phức tạp hơn. Đặc biệt với sinh viên và người trẻ tuổi – nhóm đối tượng có thu nhập hạn chế nhưng phải chi trả nhiều khoản khác nhau – việc quản lý tài chính hiệu quả đóng vai trò quan trọng trong việc cân đối ngân sách và hình thành thói quen chi tiêu khoa học.
+Trong bối cảnh kinh tế hiện đại, kĩ năng quản lý tài chính vẫn là một trong những kĩ năng quan trọng, cần thiết đối với mỗi cá nhân. Ghi chép lại chi tiêu là bước đầu trong việc quản lý tài chính, nhưng ghi chép như thế nào là thông minh và tiết kiệm thời gian.
 
-Nhiều người vẫn quản lý chi tiêu thủ công bằng sổ tay hoặc bảng tính, tuy nhiên các phương pháp này thiếu trực quan, khó tổng hợp, mất thời gian và không hỗ trợ phân tích dài hạn. Điều này khiến người dùng không nắm rõ thói quen chi tiêu của bản thân, dẫn đến lãng phí hoặc vượt ngân sách.
+Nhiều người vẫn đang ghi chép lại bằng thủ công như sổ tay, bảng excel tuy nhiên các phương pháp này thiếu trực quan, khó tổng hợp, mất thời gian và không hỗ trợ phân tích dài hạn. Điều này khiến người dùng không nắm rõ thói quen chi tiêu của bản thân, dẫn đến lãng phí hoặc vượt ngân sách. 
 
-Từ thực tế đó, bài toán đặt ra là xây dựng một giải pháp hỗ trợ ghi chép, theo dõi và quản lý chi tiêu nhanh chóng, tiện lợi và chính xác. Giải pháp phù hợp không chỉ giúp người dùng kiểm soát tài chính tốt hơn mà còn hỗ trợ lập kế hoạch chi tiêu và tiết kiệm.
+Từ đó, bài toán đặt ra là xây dựng một giải pháp hỗ trợ ghi chép, theo dõi và quản lý chi tiêu nhanh chóng, tiện lợi và chính xác. Giải pháp phù hợp không chỉ giúp người dùng kiểm soát tài chính tốt hơn mà còn hỗ trợ lập kế hoạch chi tiêu phù hợp với bản thân.
 
 \section{Mục tiêu và phạm vi đề tài}
 \label{section:1.2}
+Hiện nay, nhiều ứng dụng quản lý chi tiêu cá nhân như Money Lover, Misa MoneyKeeper hay Spendee đã cung cấp các chức năng ghi chép và thống kê cơ bản. Tuy nhiên, phần lớn các ứng dụng này chủ yếu tập trung vào việc lưu trữ và hiển thị dữ liệu, trong khi khả năng phân tích hành vi chi tiêu và đưa ra gợi ý cá nhân hóa cho người dùng còn hạn chế. Ngoài ra, một số tính năng nâng cao thường yêu cầu trả phí hoặc chưa tối ưu theo thói quen sử dụng của người dùng tại Việt Nam.
 
-Hiện nay, nhiều ứng dụng như Money Lover, Misa MoneyKeeper hay Spendee đã cung cấp các chức năng quản lý chi tiêu phổ biến. Tuy nhiên, các ứng dụng này vẫn tồn tại hạn chế như giao diện phức tạp, yêu cầu trả phí hoặc chưa phù hợp với thói quen người Việt Nam. Bên cạnh nhu cầu ghi chép thu–chi cá nhân, người dùng còn thường xuyên phát sinh các hoạt động chi tiêu chung (ăn uống, du lịch, sự kiện), nhưng thiếu công cụ đơn giản để chia sẻ và tổng hợp chi phí minh bạch giữa các thành viên.
+Từ đó, đề tài lựa chọn phát triển một ứng dụng \textit{quản lý chi tiêu cá nhân}. Ứng dụng cho phép người dùng ghi chép thu-chi một cách linh hoạt, tiện lợi cho người dùng, theo dõi thống kê tổng quan, đồng thời đưa ra nhắc nhở cũng như gợi ý, kế hoạch chi tiêu hợp lý cho người dùng.
 
-Từ đó, đề tài lựa chọn phát triển một ứng dụng \textit{quản lý chi tiêu cá nhân} kết hợp chức năng \textit{quản lý chi tiêu nhóm theo sự kiện}. Ứng dụng cho phép người dùng ghi chép thu–chi, phân loại theo danh mục, theo dõi thống kê tổng quan, đồng thời tạo nhóm tạm thời để ghi lại các khoản chi chung và hệ thống tự động tính toán phần chia hợp lý.
+Phạm vi đề tài tập trung vào 3 nhóm chức năng chính: (i) Hỗ trợ ghi chép thu–chi nhanh chóng, thuận tiện và chính xác, (ii) Thống kê và báo cáo tổng quan theo thời gian, danh mục và ngân sách, (iii) Gợi ý, đề xuất kế hoạch chi tiêu phù hợp cho người dùng trong tương lai.
 
-Phạm vi đề tài tập trung vào ba nhóm chức năng chính: (i) quản lý chi tiêu cá nhân, (ii) quản lý chi tiêu nhóm dựa trên sự kiện, và (iii) xuất, tổng hợp báo cáo. Đề tài không tích hợp thanh toán trực tuyến nhằm tập trung vào hiệu năng, tính chính xác dữ liệu và trải nghiệm người dùng.
-
-\section{Định hướng giải pháp}
-\label{section:1.3}
-
-Để giải quyết hiệu quả bài toán quản lý chi tiêu cá nhân và chi tiêu nhóm, đề tài lựa chọn xây dựng một hệ thống đa nền tảng, hỗ trợ đồng thời web và ứng dụng di động. Cách tiếp cận này giúp người dùng có thể ghi chép và theo dõi chi tiêu ở mọi thời điểm, trên nhiều thiết bị khác nhau, đồng thời đảm bảo trải nghiệm thống nhất và dễ sử dụng. Giao diện người dùng được phát triển bằng \textit{React} và \textit{React Native} để rút ngắn thời gian triển khai, tận dụng khả năng tái sử dụng mã nguồn và đảm bảo hiệu năng tốt trên cả hai môi trường.
-
-Ở phía máy chủ, hệ thống sử dụng \textit{Spring Boot} kết hợp với \textit{PostgreSQL} nhằm đảm bảo sự ổn định, bảo mật và độ tin cậy trong xử lý dữ liệu tài chính – một dạng dữ liệu đòi hỏi tính chính xác, toàn vẹn và khả năng mở rộng theo nhu cầu người dùng. Sự kết hợp này phù hợp với quy mô của bài toán, đồng thời cho phép phát triển nhanh mà vẫn giữ được cấu trúc rõ ràng và khả năng vận hành lâu dài.
-
-Giải pháp tổng thể tập trung vào hai nhóm chức năng chính: quản lý chi tiêu cá nhân và chi tiêu nhóm theo sự kiện. Cách tổ chức này đáp ứng trực tiếp nhu cầu thực tế của người dùng: quản lý chi tiêu hàng ngày và minh bạch hóa các khoản chi chung trong những hoạt động tập thể. Đây cũng là điểm mới và giá trị đóng góp chính của đề tài, tạo nền tảng để mở rộng thêm các tính năng hỗ trợ phân tích và tối ưu chi tiêu trong tương lai.
-
+Đề tài không tập trung vào các chức năng nâng cao như tích hợp trực tiếp với ngân hàng, đầu tư tài chính, hay quản lý tài sản phức tạp.
 
 \section{Bố cục đồ án}
-\label{section:1.4}
+\label{section:1.3}
 
 Phần còn lại của báo cáo đồ án tốt nghiệp này được tổ chức như sau.
 
-\textbf{Chương 2} trình bày quá trình phân tích yêu cầu của hệ thống, bao gồm khảo sát nhu cầu người dùng, xác định các yêu cầu chức năng, phi chức năng và các ràng buộc kỹ thuật. Đây là cơ sở để xây dựng mô hình và giải pháp ở các chương sau.
+\textbf{Chương 2} trình bày quá trình phân tích yêu cầu của hệ thống, bao gồm khảo sát nhu cầu người dùng, xác định các yêu cầu chức năng, phi chức năng và các ràng buộc kỹ thuật.
 
-\textbf{Chương 3} mô tả quá trình phân tích và thiết kế hệ thống với các mô hình kiến trúc, sơ đồ ca sử dụng, sơ đồ luồng dữ liệu và mô hình cơ sở dữ liệu. Chương này cũng giới thiệu cấu trúc các module chính và nguyên tắc thiết kế giao diện người dùng.
+\textbf{Chương 3} trình bày các công nghệ và nền tảng được sử dụng để xây dựng hệ thống.
 
 \textbf{Chương 4} trình bày quá trình cài đặt và thực nghiệm hệ thống. Nội dung bao gồm các công nghệ được sử dụng, mô tả các chức năng đã triển khai, kết quả kiểm thử và đánh giá mức độ đáp ứng so với yêu cầu đặt ra.
 

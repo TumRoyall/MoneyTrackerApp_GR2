@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "accounts")
@@ -12,10 +13,10 @@ import java.time.Instant;
 public class Account {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long accountId;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID accountId;
 
-    private Long userId;
+    private UUID userId;
 
     @Enumerated(EnumType.STRING)            // REGULAR / CASH / SAVING / DEBT / INVEST / EVENT
     @Column(length = 20, nullable = false)
@@ -30,8 +31,11 @@ public class Account {
 
     private String description;
 
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     @Column(nullable = false)
-    private Boolean deleted = false;
+    private Long version = 1L;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

@@ -9,8 +9,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +22,7 @@ public class AccountService {
     @Transactional
     public AccountResponse createDefaultAccount(
             CreateAccountRequest req,
-            Long userId
+            UUID userId
     ) {
         Account account = new Account();
         account.setAccountName(req.getAccountName());
@@ -44,21 +45,21 @@ public class AccountService {
     }
 
     // GET accounts của user (DTO)
-    public List<AccountResponse> getAccountsByUser(Long userId) {
+    public List<AccountResponse> getAccountsByUser(UUID userId) {
         return accountRepository
-                .findByUserIdAndDeletedFalse(userId)
+                .findByUserIdAndDeletedAtIsNull(userId)
                 .stream()
                 .map(AccountResponse::from)
                 .toList();
     }
 
     // SOFT DELETE
-    public void softDeleteAccount(Long accountId, Long userId) {
+    public void softDeleteAccount(UUID accountId, UUID userId) {
         Account account = accountRepository
-                .findByAccountIdAndUserIdAndDeletedFalse(accountId, userId)
+                .findByAccountIdAndUserIdAndDeletedAtIsNull(accountId, userId)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
 
-        account.setDeleted(true);
+        account.setDeletedAt(Instant.now());
         accountRepository.save(account);
     }
 }

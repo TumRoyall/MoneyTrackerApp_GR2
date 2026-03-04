@@ -1,15 +1,18 @@
 package com.examples.moneytracker.transaction.dto;
 
 import lombok.Data;
+import lombok.NonNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Data
 public class TransactionFilterRequest {
 
-    private Long accountId;
-    private Long categoryId;
+    @NonNull
+    private UUID accountId;
+    private UUID categoryId;
     private String type; // INCOME / EXPENSE
 
     private LocalDate fromDate;

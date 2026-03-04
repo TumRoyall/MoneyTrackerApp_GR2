@@ -1,4 +1,5 @@
 import { colors } from "@/constants/colors";
+import { typography } from "@/constants/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
@@ -8,15 +9,21 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: {
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 72,
+          paddingBottom: 12,
+          paddingTop: 12,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+          backgroundColor: colors.surface,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontFamily: "InterMedium",
+          ...typography.tabLabel,
+          marginTop: 6,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
         },
       }}
     >
@@ -25,8 +32,12 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "Trang chủ",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "home" : "home-outline"}
+              size={26}
+              color={color}
+            />
           ),
         }}
       />
@@ -36,8 +47,27 @@ export default function TabsLayout() {
         name="transactions"
         options={{
           title: "Giao dịch",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="swap-horizontal-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "swap-horizontal" : "swap-horizontal-outline"}
+              size={26}
+              color={color}
+            />
+          ),
+        }}
+      />
+
+      {/* Budget */}
+      <Tabs.Screen
+        name="budget"
+        options={{
+          title: "Budget",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "wallet" : "wallet-outline"}
+              size={26}
+              color={color}
+            />
           ),
         }}
       />
@@ -47,8 +77,12 @@ export default function TabsLayout() {
         name="tools"
         options={{
           title: "Công cụ",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "grid" : "grid-outline"}
+              size={26}
+              color={color}
+            />
           ),
         }}
       />
@@ -58,8 +92,12 @@ export default function TabsLayout() {
         name="settings"
         options={{
           title: "Cài đặt",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "settings" : "settings-outline"}
+              size={26}
+              color={color}
+            />
           ),
         }}
       />

@@ -6,12 +6,13 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Data
 public class CreateTransactionRequest {
     @NotNull
-    private Long accountId;
-    @NotNull private Long categoryId;
+    private UUID accountId;
+    @NotNull private UUID categoryId;
     @NotNull @Positive
     private BigDecimal amount;
     private String note;

@@ -6,13 +6,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.List;
+import java.util.UUID;
 
 @AllArgsConstructor
 public class CustomUserDetails implements UserDetails {
 
     private final User user;
 
-    public Long getId() {
+    public UUID getId() {
         return user.getUserId();
     }
 

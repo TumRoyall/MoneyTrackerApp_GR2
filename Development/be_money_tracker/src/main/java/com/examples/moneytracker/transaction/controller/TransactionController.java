@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/transactions")
 @RequiredArgsConstructor
@@ -24,11 +26,10 @@ public class TransactionController {
     // GET PAGE TRANSACTIONS OF A USER
     @GetMapping
     public Page<TransactionResponse> getTransactions(
-            @ModelAttribute TransactionFilterRequest filter,
+            @Valid @ModelAttribute TransactionFilterRequest filter,
             Pageable pageable,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        System.out.println("fromDate = " + filter.getFromDate());
         return transactionService.getTransactions(filter, pageable, user.getId());
     }
 
@@ -46,7 +47,7 @@ public class TransactionController {
     // UPDATE A TRANSACTION
     @PutMapping("/{id}")
     public ResponseEntity<TransactionResponse> updateTransaction(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @RequestBody @Valid UpdateTransactionRequest req,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
@@ -58,7 +59,7 @@ public class TransactionController {
     // DELETE A TRANSACTION
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTransaction(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         transactionService.delete(id, user.getId());

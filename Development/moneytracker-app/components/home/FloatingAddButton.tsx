@@ -1,9 +1,15 @@
 import { colors } from "@/constants/colors";
+import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text } from "react-native";
 
 export function FloatingAddButton() {
+  const router = useRouter();
+
   return (
-    <Pressable style={styles.fab}>
+    <Pressable
+      style={styles.fab}
+      onPress={() => router.push("/add-transaction")}
+    >
       <Text style={styles.plus}>＋</Text>
     </Pressable>
   );

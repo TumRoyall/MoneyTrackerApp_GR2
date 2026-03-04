@@ -1,35 +1,35 @@
 import { colors } from "@/constants/colors";
+import { typography } from "@/constants/typography";
 import { StyleSheet, Text, View } from "react-native";
 
 export function HomeHeader() {
+  const today = new Date();
+  const greeting =
+    today.getHours() < 12
+      ? "Buổi sáng tốt lành"
+      : today.getHours() < 18
+        ? "Buổi chiều tốt lành"
+        : "Buổi tối tốt lành";
+
   return (
-    <View style={styles.row}>
-      <View style={styles.chip}>
-        <Text style={styles.chipText}>🏆 Những cột mốc</Text>
-      </View>
-      <View style={styles.chip}>
-        <Text style={styles.chipText}>📊 Phân tích thêm</Text>
-      </View>
+    <View style={styles.container}>
+      <Text style={styles.greeting}>{greeting} 👋</Text>
+      <Text style={styles.subtitle}>Quản lý tài chính của bạn</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
+  container: {
+    marginBottom: 20,
   },
-  chip: {
-    backgroundColor: colors.white,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipText: {
+  greeting: {
+    ...typography.h3,
     color: colors.text,
-    fontSize: 14,
+    marginBottom: 4,
+  },
+  subtitle: {
+    ...typography.small,
+    color: colors.textSecondary,
   },
 });

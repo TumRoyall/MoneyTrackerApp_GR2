@@ -1,106 +1,346 @@
--- ==========================
---  BẢNG NGƯỜI DÙNG
--- ==========================
+-- =========================================
+-- EXTENSIONS
+-- =========================================
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- hoặc dùng pgcrypto:
+-- CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- =========================================
+-- COMMON: updated_at auto
+-- =========================================
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =========================================
+-- USERS
+-- =========================================
 CREATE TABLE users (
-    user_id BIGSERIAL PRIMARY KEY,
-    email VARCHAR(255) NOT NULL UNIQUE,            -- email đăng nhập
-    password_hash VARCHAR(255),                   -- có thể null nếu đăng nhập OAuth
-    provider VARCHAR(50) DEFAULT 'local',         -- 'local' | 'google' | 'facebook'...
-    full_name VARCHAR(255),
-    is_admin BOOLEAN DEFAULT FALSE,               -- true nếu là admin
-    is_verified BOOLEAN DEFAULT FALSE,            -- xác thực email chưa
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+  user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  provider VARCHAR(50) NOT NULL,
+  full_name VARCHAR(255),
+  is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+  is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+
+  verification_token VARCHAR(255),
+  verification_sent_at TIMESTAMPTZ,
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
+
+  -- sync
+  version BIGINT NOT NULL DEFAULT 1
 );
 
-COMMENT ON TABLE users IS 'Lưu thông tin người dùng, gồm tài khoản local và OAuth.';
+CREATE TRIGGER trg_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- ==========================
---  BẢNG VÍ (CÓ 1 CHỦ, NHIỀU NGƯỜI DÙNG)
--- ==========================
-CREATE TABLE wallets (
-    wallet_id BIGSERIAL PRIMARY KEY,
-    owner_id BIGINT NOT NULL REFERENCES users(user_id),
-    name VARCHAR(255) NOT NULL,                   -- tên ví (vd: Ví tiền mặt, Momo)
-    balance DECIMAL(15,2) DEFAULT 0,              -- số dư hiện tại
-    currency VARCHAR(10) NOT NULL,                -- loại tiền (VND, USD, JPY)
-    created_at TIMESTAMP DEFAULT now()
+-- =========================================
+-- ACCOUNTS
+-- =========================================
+-- REGULAR / CASH / SAVING / DEBT / INVEST
+CREATE TABLE accounts (
+  account_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL,
+  type VARCHAR(50) NOT NULL DEFAULT 'REGULAR',
+  account_name VARCHAR(255) NOT NULL,
+  currency VARCHAR(10) NOT NULL DEFAULT 'VND',
+  description TEXT,
+
+  -- NOTE: nếu sync multi-device, nên coi current_value là cache
+  current_value NUMERIC(18,2) NOT NULL DEFAULT 0,
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
+
+  -- sync
+  version BIGINT NOT NULL DEFAULT 1,
+
+  CONSTRAINT fk_accounts_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
-COMMENT ON TABLE wallets IS 'Mỗi ví có 1 chủ (owner_id) và 1 loại tiền cố định.';
+CREATE INDEX idx_accounts_user ON accounts(user_id);
 
--- ==========================
---  BẢNG THÀNH VIÊN CHIA SẺ VÍ
--- ==========================
-CREATE TABLE wallet_members (
-    id BIGSERIAL PRIMARY KEY,
-    wallet_id BIGINT NOT NULL REFERENCES wallets(wallet_id) ON DELETE CASCADE,
-    user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    role VARCHAR(20) DEFAULT 'member',            -- 'owner' | 'member'
-    joined_at TIMESTAMP DEFAULT now()
-);
+CREATE TRIGGER trg_accounts_updated_at
+BEFORE UPDATE ON accounts
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-COMMENT ON TABLE wallet_members IS 'Liên kết nhiều người dùng với ví (chia sẻ ví).';
-
--- ==========================
---  BẢNG DANH MỤC CHI TIÊU / THU NHẬP
--- ==========================
+-- =========================================
+-- CATEGORIES
+-- =========================================
 CREATE TABLE categories (
-    category_id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(user_id),     -- null = danh mục hệ thống
-    name VARCHAR(100) NOT NULL,
-    type VARCHAR(20) NOT NULL,                    -- 'expense' | 'income'
-    icon VARCHAR(50),
-    color VARCHAR(20)
+  category_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+  -- null = default/global category; có user_id = category riêng
+  user_id UUID NULL,
+
+  name VARCHAR(255) NOT NULL,
+  type VARCHAR(50) NOT NULL, -- EXPENSE / INCOME
+  icon VARCHAR(255),
+  color VARCHAR(50),
+  is_default BOOLEAN NOT NULL DEFAULT FALSE,
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
+
+  -- sync
+  version BIGINT NOT NULL DEFAULT 1,
+
+  CONSTRAINT fk_categories_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
-COMMENT ON TABLE categories IS 'Danh mục chi tiêu hoặc thu nhập. Người dùng có thể thêm riêng.';
+CREATE INDEX idx_categories_user ON categories(user_id);
 
--- ==========================
---  BẢNG GIAO DỊCH
--- ==========================
+CREATE TRIGGER trg_categories_updated_at
+BEFORE UPDATE ON categories
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- =========================================
+-- TRANSACTIONS
+-- =========================================
 CREATE TABLE transactions (
-    transaction_id BIGSERIAL PRIMARY KEY,
-    wallet_id BIGINT NOT NULL REFERENCES wallets(wallet_id) ON DELETE CASCADE,
-    created_by BIGINT NOT NULL REFERENCES users(user_id),
-    category_id BIGINT REFERENCES categories(category_id),
-    amount DECIMAL(15,2) NOT NULL,
-    note TEXT,
-    date DATE NOT NULL,
-    status VARCHAR(20) DEFAULT 'success',          -- 'pending' | 'success' | 'failed'
-    created_at TIMESTAMP DEFAULT now()
+  transaction_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  account_id UUID NOT NULL,
+  created_by UUID NOT NULL,
+  category_id UUID NOT NULL,
+
+  amount NUMERIC(18,2) NOT NULL,
+  note TEXT,
+  tx_date DATE NOT NULL, -- đổi tên tránh keyword "date"
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
+
+  -- sync
+  version BIGINT NOT NULL DEFAULT 1,
+
+  CONSTRAINT fk_transactions_account
+    FOREIGN KEY (account_id) REFERENCES accounts(account_id),
+
+  CONSTRAINT fk_transactions_user
+    FOREIGN KEY (created_by) REFERENCES users(user_id),
+
+  CONSTRAINT fk_transactions_category
+    FOREIGN KEY (category_id) REFERENCES categories(category_id)
 );
 
-COMMENT ON TABLE transactions IS 'Chi tiết các giao dịch trong ví (chi, thu, chuyển).';
+CREATE INDEX idx_tx_account_date ON transactions(account_id, tx_date);
+CREATE INDEX idx_tx_created_by ON transactions(created_by);
+CREATE INDEX idx_tx_category ON transactions(category_id);
 
--- ==========================
---  BẢNG NGÂN SÁCH
--- ==========================
+CREATE TRIGGER trg_transactions_updated_at
+BEFORE UPDATE ON transactions
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- =========================================
+-- BUDGETS
+-- =========================================
 CREATE TABLE budgets (
-    budget_id BIGSERIAL PRIMARY KEY,
-    wallet_id BIGINT NOT NULL REFERENCES wallets(wallet_id) ON DELETE CASCADE,
-    category_id BIGINT REFERENCES categories(category_id),
-    amount_limit DECIMAL(15,2) NOT NULL,           -- hạn mức
-    current_spent DECIMAL(15,2) DEFAULT 0,         -- chi tiêu hiện tại
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    notify_threshold DECIMAL(5,2) DEFAULT 0.8,     -- ví dụ 0.8 = cảnh báo 80%
-    currency VARCHAR(10) NOT NULL                  -- khớp với ví
+  budget_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL,
+  category_id UUID NOT NULL,
+
+  amount_limit NUMERIC(18,2) NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  notify_threshold NUMERIC(5,2) NOT NULL, -- 0.8 = 80%
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
+
+  -- sync
+  version BIGINT NOT NULL DEFAULT 1,
+
+  CONSTRAINT fk_budgets_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+
+  CONSTRAINT fk_budgets_category
+    FOREIGN KEY (category_id) REFERENCES categories(category_id)
 );
 
-COMMENT ON TABLE budgets IS 'Giới hạn chi tiêu cho danh mục trong 1 ví, có cảnh báo khi gần hết.';
+CREATE INDEX idx_budgets_user ON budgets(user_id);
+CREATE INDEX idx_budgets_category ON budgets(category_id);
 
--- ==========================
---  RÀNG BUỘC VÀ TỐI ƯU
--- ==========================
+CREATE TRIGGER trg_budgets_updated_at
+BEFORE UPDATE ON budgets
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- Chỉ cho phép 1 ngân sách active cùng category trong cùng ví
-CREATE UNIQUE INDEX uq_budget_wallet_category_period 
-ON budgets(wallet_id, category_id, start_date, end_date);
+-- =========================================
+-- SYNC SUPPORT TABLES (cloud side)
+-- =========================================
 
--- Khi xóa user => xóa các bảng liên quan
-ALTER TABLE wallets
-  ADD CONSTRAINT fk_wallets_owner
-  FOREIGN KEY (owner_id) REFERENCES users(user_id)
-  ON DELETE CASCADE;
+-- 1) Change log để pull delta theo cursor (server-controlled)
+DROP TABLE IF EXISTS sync_change_log;
 
+CREATE TABLE sync_change_log (
+  cursor     BIGSERIAL PRIMARY KEY,
+  user_id    UUID NOT NULL,
+  entity     VARCHAR(50) NOT NULL,   -- accounts/categories/transactions/budgets
+  entity_pk  UUID NOT NULL,          -- UUID của entity
+  op         VARCHAR(10) NOT NULL,   -- UPSERT / DELETE
+  changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_scl_user_cursor ON sync_change_log(user_id, cursor);
+CREATE INDEX idx_scl_user_entity_pk ON sync_change_log(user_id, entity, entity_pk);
+
+-- 2) Sync state theo (user_id, device_id)
+CREATE TABLE sync_state (
+  user_id UUID NOT NULL,
+  device_id VARCHAR(100) NOT NULL,
+  last_cursor BIGINT NOT NULL DEFAULT 0,
+  last_sync_at TIMESTAMPTZ,
+  PRIMARY KEY (user_id, device_id),
+  CONSTRAINT fk_sync_state_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- 3) Outbox server-side để idempotent push (chống gửi trùng)
+CREATE TABLE sync_push_dedup (
+  user_id UUID NOT NULL,
+  device_id VARCHAR(100) NOT NULL,
+  op_id UUID NOT NULL,
+  received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, device_id, op_id),
+  CONSTRAINT fk_sync_push_dedup_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- =========================================
+-- CHANGE LOG TRIGGERS (ghi vào sync_change_log)
+-- - Khi UPDATE/INSERT: op = UPSERT
+-- - Khi soft delete (deleted_at set): op = DELETE (hoặc UPSERT tùy API)
+-- =========================================
+CREATE OR REPLACE FUNCTION log_change()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_op VARCHAR(10);
+  v_entity VARCHAR(50);
+  v_entity_pk UUID;
+  v_user_id UUID;
+BEGIN
+  v_entity := TG_TABLE_NAME;
+
+  IF TG_OP = 'DELETE' THEN
+    v_op := 'DELETE';
+    -- Lấy thông tin từ OLD record
+    IF v_entity = 'users' THEN
+      v_entity_pk := OLD.user_id; v_user_id := OLD.user_id;
+    ELSIF v_entity = 'accounts' THEN
+      v_entity_pk := OLD.account_id; v_user_id := OLD.user_id;
+    ELSIF v_entity = 'categories' THEN
+      v_entity_pk := OLD.category_id; v_user_id := OLD.user_id;
+    ELSIF v_entity = 'transactions' THEN
+      v_entity_pk := OLD.transaction_id; v_user_id := OLD.created_by;
+    ELSIF v_entity = 'budgets' THEN
+      v_entity_pk := OLD.budget_id; v_user_id := OLD.user_id;
+    ELSE
+      RETURN OLD;
+    END IF;
+    
+    INSERT INTO sync_change_log(user_id, entity, entity_pk, op)
+    VALUES (v_user_id, v_entity, v_entity_pk, v_op);
+    
+    RETURN OLD;
+  END IF;
+
+  -- detect soft delete
+  IF NEW.deleted_at IS NOT NULL THEN
+    v_op := 'DELETE';
+  ELSE
+    v_op := 'UPSERT';
+  END IF;
+
+  -- get PK + user_id per table
+  IF v_entity = 'users' THEN
+    v_entity_pk := NEW.user_id; v_user_id := NEW.user_id;
+  ELSIF v_entity = 'accounts' THEN
+    v_entity_pk := NEW.account_id; v_user_id := NEW.user_id;
+  ELSIF v_entity = 'categories' THEN
+    v_entity_pk := NEW.category_id; v_user_id := NEW.user_id;
+  ELSIF v_entity = 'transactions' THEN
+    v_entity_pk := NEW.transaction_id; v_user_id := NEW.created_by;
+  ELSIF v_entity = 'budgets' THEN
+    v_entity_pk := NEW.budget_id; v_user_id := NEW.user_id;
+  ELSE
+    RETURN NEW;
+  END IF;
+
+  INSERT INTO sync_change_log(user_id, entity, entity_pk, op)
+  VALUES (v_user_id, v_entity, v_entity_pk, v_op);
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- version++ mỗi lần UPDATE (để conflict check)
+CREATE OR REPLACE FUNCTION bump_version()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.version = OLD.version + 1;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- attach triggers
+DO $$
+BEGIN
+  -- users
+  CREATE TRIGGER trg_users_bump_version
+  BEFORE UPDATE ON users
+  FOR EACH ROW EXECUTE FUNCTION bump_version();
+
+  CREATE TRIGGER trg_users_log_change
+  AFTER INSERT OR UPDATE ON users
+  FOR EACH ROW EXECUTE FUNCTION log_change();
+
+  -- accounts
+  CREATE TRIGGER trg_accounts_bump_version
+  BEFORE UPDATE ON accounts
+  FOR EACH ROW EXECUTE FUNCTION bump_version();
+
+  CREATE TRIGGER trg_accounts_log_change
+  AFTER INSERT OR UPDATE ON accounts
+  FOR EACH ROW EXECUTE FUNCTION log_change();
+
+  -- categories
+  CREATE TRIGGER trg_categories_bump_version
+  BEFORE UPDATE ON categories
+  FOR EACH ROW EXECUTE FUNCTION bump_version();
+
+  CREATE TRIGGER trg_categories_log_change
+  AFTER INSERT OR UPDATE ON categories
+  FOR EACH ROW EXECUTE FUNCTION log_change();
+
+  -- transactions
+  CREATE TRIGGER trg_transactions_bump_version
+  BEFORE UPDATE ON transactions
+  FOR EACH ROW EXECUTE FUNCTION bump_version();
+
+  CREATE TRIGGER trg_transactions_log_change
+  AFTER INSERT OR UPDATE ON transactions
+  FOR EACH ROW EXECUTE FUNCTION log_change();
+
+  -- budgets
+  CREATE TRIGGER trg_budgets_bump_version
+  BEFORE UPDATE ON budgets
+  FOR EACH ROW EXECUTE FUNCTION bump_version();
+
+  CREATE TRIGGER trg_budgets_log_change
+  AFTER INSERT OR UPDATE ON budgets
+  FOR EACH ROW EXECUTE FUNCTION log_change();
+END$$;

@@ -6,11 +6,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface CategoryRepository extends JpaRepository<Category, Long> {
+public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     /**
      * Lấy 1 category nhưng đảm bảo:
@@ -27,9 +29,11 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
           )
     """)
         Optional<Category> findAccessibleCategory(
-                @Param("categoryId") Long categoryId,
-                @Param("userId") Long userId
+                @Param("categoryId") UUID categoryId,
+                @Param("userId") UUID userId
         );
+
+    List<Category> findByUserIdAndCategoryIdInAndDeletedAtIsNull(UUID userId, Collection<UUID> categoryIds);
 
 
 }
