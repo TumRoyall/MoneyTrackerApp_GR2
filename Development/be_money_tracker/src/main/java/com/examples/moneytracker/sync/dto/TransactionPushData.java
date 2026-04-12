@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 @Data
 public class TransactionPushData {
-    private String accountId;
+    private String walletId;
     private String categoryId;
     private BigDecimal amount;
     private String note;

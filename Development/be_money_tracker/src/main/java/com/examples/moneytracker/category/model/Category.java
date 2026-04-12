@@ -42,6 +42,9 @@ public class Category {
     @Column(nullable = false)
     private Boolean isDefault = false;
 
+    @Column(name = "is_hidden", nullable = false)
+    private Boolean isHidden = false;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

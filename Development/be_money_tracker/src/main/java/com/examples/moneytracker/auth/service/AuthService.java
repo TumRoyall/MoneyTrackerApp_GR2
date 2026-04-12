@@ -3,6 +3,7 @@ package com.examples.moneytracker.auth.service;
 import com.examples.moneytracker.auth.dto.*;
 import com.examples.moneytracker.auth.email.EmailService;
 import com.examples.moneytracker.auth.jwt.JwtProvider;
+import com.examples.moneytracker.user.dto.UserResponse;
 import com.examples.moneytracker.user.model.User;
 import com.examples.moneytracker.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +47,7 @@ public class AuthService {
         userRepository.save(user);
 
         // send mail kèm token để xác thực
-        String verifyLink = appUrl + "/api/auth/verify?token=" + token;
+        String verifyLink = appUrl + "/verify-email?token=" + token;
         String logoUrl = appUrl + "/logo_money_tracker.png";
 
         String html = emailService.buildVerifyEmail(user.getFullName(), verifyLink, logoUrl);
@@ -58,7 +60,7 @@ public class AuthService {
     }
 
 
-    public AuthResponse login(LoginRequest req) {
+    public AuthLoginResponse login(LoginRequest req) {
         User user = userRepository.findByEmail(req.getEmail())
                 .orElseThrow(() -> new RuntimeException("Email không tồn tại!"));
 
@@ -67,13 +69,7 @@ public class AuthService {
 
         String token = jwtProvider.genarationToken(user.getUserId(), user.getEmail());
 
-        AuthResponse res = new AuthResponse();
-        res.setToken(token);
-        res.setUserId(user.getUserId());
-        res.setEmail(user.getEmail());
-        res.setFullname(user.getFullName());
-
-        return res;
+        return new AuthLoginResponse(token, UserResponse.from(user));
     }
 
     private String generateVerificationToken() {
@@ -86,6 +82,7 @@ public class AuthService {
 
         user.setIsVerified(true);
         user.setVerificationToken(null);
+        user.setVerificationSentAt(null);
         userRepository.save(user);
 
         return "Xác thực Email thành công!";
@@ -112,7 +109,7 @@ public class AuthService {
         userRepository.save(user);
 
         // send mail kèm token để xác thực
-        String verifyLink = appUrl + "/api/auth/verify?token=" + token;
+        String verifyLink = appUrl + "/verify-email?token=" + token;
         String logoUrl = appUrl + "/logo_money_tracker.png";
 
         String html = emailService.buildVerifyEmail(user.getFullName(), verifyLink, logoUrl);
@@ -124,6 +121,57 @@ public class AuthService {
         );
 
         return "Thư xác thực đã được gửi tới: "+ user.getEmail();
+    }
+
+    public String logout() {
+        return "Dang xuat thanh cong";
+    }
+
+    public String changePassword(UUID userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        if (!encoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Mat khau hien tai khong dung");
+        }
+
+        user.setPasswordHash(encoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        return "Doi mat khau thanh cong";
+    }
+
+    public String forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Email không tồn tại"));
+
+        String token = generateVerificationToken();
+        user.setResetPasswordToken(token);
+        user.setResetPasswordSentAt(Instant.now());
+        userRepository.save(user);
+
+        String resetLink = appUrl + "/reset-password?token=" + token;
+        String html = emailService.buildResetPasswordEmail(user.getFullName(), resetLink);
+
+        emailService.send(
+                user.getEmail(),
+                "Reset mat khau MoneyTracker",
+                html
+        );
+
+        return "Da gui email reset mat khau";
+    }
+
+    public String resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByResetPasswordToken(request.getToken())
+                .orElseThrow(() -> new RuntimeException("Token khong hop le"));
+
+        user.setPasswordHash(encoder.encode(request.getNewPassword()));
+        user.setResetPasswordToken(null);
+        user.setResetPasswordSentAt(null);
+        userRepository.save(user);
+
+        return "Reset mat khau thanh cong";
     }
 
     public boolean emailExists(String email) {

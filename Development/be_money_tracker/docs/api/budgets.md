@@ -1,0 +1,43 @@
+# budgets API
+
+## Base URL
+/api
+
+## Endpoints
+
+### POST /api/budgets
+- purpose: tao ngan sach
+- request body:
+  - categoryId (UUID, required)
+  - amountLimit (decimal)
+  - periodStart (YYYY-MM-DD)
+  - periodEnd (YYYY-MM-DD)
+  - periodType (custom, monthly)
+  - alertThreshold (decimal, optional)
+- response body:
+  - budgetId (UUID)
+  - categoryId (UUID, optional)
+  - amountLimit (decimal)
+  - periodStart (YYYY-MM-DD)
+  - periodEnd (YYYY-MM-DD)
+  - alertThreshold (decimal, optional)
+
+### GET /api/budgets
+- purpose: lay danh sach ngan sach
+- response: list of budgets
+
+### GET /api/budgets/{budgetId}
+- purpose: xem chi tiet ngan sach
+- response: budget detail
+
+### PUT /api/budgets/{budgetId}
+- purpose: cap nhat ngan sach
+- request body: same as create (optional fields)
+- response: budget detail
+
+### DELETE /api/budgets/{budgetId}
+- purpose: xoa ngan sach
+- response: 204 No Content
+
+## Notes
+- Ngan sach theo category, cho phep nhieu ngan sach trong 1 ky

@@ -12,7 +12,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class TransactionResponse {
     private UUID transactionId;
-    private UUID accountId;
+    private UUID walletId;
     private UUID categoryId;
     private BigDecimal amount;
     private String note;

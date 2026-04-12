@@ -18,8 +18,8 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID transactionId;
 
-    @Column(nullable = false)
-    private UUID accountId;
+    @Column(name = "wallet_id", nullable = false)
+    private UUID walletId;
 
     @Column(nullable = false)
     private UUID createdBy;

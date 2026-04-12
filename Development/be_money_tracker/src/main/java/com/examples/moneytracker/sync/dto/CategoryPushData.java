@@ -9,6 +9,7 @@ public class CategoryPushData {
     private String icon;
     private String color;
     private Boolean isDefault;
+    private Boolean isHidden;
     private Long version;
     private Long createdAt;
     private Long updatedAt;

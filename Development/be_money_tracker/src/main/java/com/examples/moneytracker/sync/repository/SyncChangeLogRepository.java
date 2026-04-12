@@ -8,5 +8,5 @@ import java.util.List;
 import java.util.UUID;
 
 public interface SyncChangeLogRepository extends JpaRepository<SyncChangeLog, Long> {
-    List<SyncChangeLog> findByUserIdAndCursorGreaterThanOrderByCursorAsc(UUID userId, Long cursor, Pageable pageable);
+    List<SyncChangeLog> findByUserIdAndCursorIdGreaterThanOrderByCursorIdAsc(UUID userId, Long cursorId, Pageable pageable);
 }

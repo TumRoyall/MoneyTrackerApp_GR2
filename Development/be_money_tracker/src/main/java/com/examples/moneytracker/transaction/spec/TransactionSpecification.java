@@ -18,12 +18,12 @@ public class TransactionSpecification {
                 cb.equal(root.get("createdBy"), userId);
     }
 
-    // ===== ACCOUNT =====
-    public static Specification<Transaction> hasAccount(UUID accountId) {
+    // ===== WALLET =====
+    public static Specification<Transaction> hasWallet(UUID walletId) {
         return (root, query, cb) ->
-                accountId == null
+                walletId == null
                         ? cb.conjunction()
-                        : cb.equal(root.get("accountId"), accountId);
+                        : cb.equal(root.get("walletId"), walletId);
     }
 
     // ===== CATEGORY =====
@@ -103,7 +103,7 @@ public class TransactionSpecification {
     // ===== COMPOSE ALL =====
     public static Specification<Transaction> filter(
             UUID userId,
-            UUID accountId,
+            UUID walletId,
             UUID categoryId,
             String type,
             LocalDate fromDate,
@@ -114,7 +114,7 @@ public class TransactionSpecification {
     ) {
         return Specification
                 .where(hasUser(userId))
-                .and(hasAccount(accountId))
+                .and(hasWallet(walletId))
                 .and(hasCategory(categoryId))
                 .and(hasType(type))
                 .and(fromDate(fromDate))
@@ -122,5 +122,16 @@ public class TransactionSpecification {
                 .and(minAmount(minAmount))
                 .and(maxAmount(maxAmount))
                 .and(hasKeyword(keyword));
+    }
+
+    public static Specification<Transaction> reportFilter(
+            UUID userId,
+            LocalDate fromDate,
+            LocalDate toDate
+    ) {
+        return Specification
+                .where(hasUser(userId))
+                .and(fromDate(fromDate))
+                .and(toDate(toDate));
     }
 }

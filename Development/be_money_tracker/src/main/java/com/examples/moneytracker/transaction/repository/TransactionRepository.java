@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface TransactionRepository extends JpaRepository<Transaction, UUID>, JpaSpecificationExecutor<Transaction> {
-    List<Transaction> findByAccountIdAndDateBetweenOrderByDateDesc(UUID accountId, LocalDate from, LocalDate to);
+    List<Transaction> findByWalletIdAndDateBetweenOrderByDateDesc(UUID walletId, LocalDate from, LocalDate to);
 
     Optional<Transaction> findByTransactionIdAndCreatedBy(UUID id, UUID createdBy);
 

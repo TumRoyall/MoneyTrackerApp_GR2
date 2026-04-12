@@ -1,19 +1,19 @@
 package com.examples.moneytracker.sync.service;
 
-import com.examples.moneytracker.accounts.dto.AccountResponse;
-import com.examples.moneytracker.accounts.model.Account;
 import com.examples.moneytracker.category.dto.CategoryResponse;
 import com.examples.moneytracker.sync.dto.*;
 import com.examples.moneytracker.sync.model.SyncChangeLog;
 import com.examples.moneytracker.sync.model.SyncPushDedup;
 import com.examples.moneytracker.sync.repository.SyncChangeLogRepository;
-import com.examples.moneytracker.accounts.repository.AccountRepository;
 import com.examples.moneytracker.category.model.Category;
 import com.examples.moneytracker.category.repository.CategoryRepository;
 import com.examples.moneytracker.sync.repository.SyncPushDedupRepository;
 import com.examples.moneytracker.transaction.dto.TransactionResponse;
 import com.examples.moneytracker.transaction.model.Transaction;
 import com.examples.moneytracker.transaction.repository.TransactionRepository;
+import com.examples.moneytracker.wallet.dto.WalletResponse;
+import com.examples.moneytracker.wallet.model.Wallet;
+import com.examples.moneytracker.wallet.repository.WalletRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -28,11 +28,11 @@ import java.util.*;
 @RequiredArgsConstructor
 public class SyncService {
 
-    private static final Set<String> SUPPORTED_ENTITIES = Set.of("accounts", "categories", "transactions", "budgets");
+    private static final Set<String> SUPPORTED_ENTITIES = Set.of("wallets", "categories", "transactions", "budgets");
 
     private final SyncChangeLogRepository syncChangeLogRepository;
     private final SyncPushDedupRepository syncPushDedupRepository;
-    private final AccountRepository accountRepository;
+    private final WalletRepository walletRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
     private final ObjectMapper objectMapper;
@@ -41,7 +41,7 @@ public class SyncService {
         long safeCursor = (cursor == null || cursor < 0) ? 0L : cursor;
         int safeLimit = limit == null ? 500 : Math.max(1, Math.min(limit, 1000));
 
-        List<SyncChangeLog> logs = syncChangeLogRepository.findByUserIdAndCursorGreaterThanOrderByCursorAsc(
+        List<SyncChangeLog> logs = syncChangeLogRepository.findByUserIdAndCursorIdGreaterThanOrderByCursorIdAsc(
                 userId,
                 safeCursor,
                 PageRequest.of(0, safeLimit + 1)
@@ -49,7 +49,7 @@ public class SyncService {
 
         boolean hasMore = logs.size() > safeLimit;
         List<SyncChangeLog> pageLogs = hasMore ? logs.subList(0, safeLimit) : logs;
-        long nextCursor = pageLogs.isEmpty() ? safeCursor : pageLogs.get(pageLogs.size() - 1).getCursor();
+        long nextCursor = pageLogs.isEmpty() ? safeCursor : pageLogs.get(pageLogs.size() - 1).getCursorId();
 
         Map<String, SyncChangeLog> latestPerEntityPk = new LinkedHashMap<>();
         for (SyncChangeLog log : pageLogs) {
@@ -59,11 +59,11 @@ public class SyncService {
             latestPerEntityPk.put(log.getEntity() + ":" + log.getEntityPk(), log);
         }
 
-        Set<UUID> accountUpserts = new LinkedHashSet<>();
+        Set<UUID> walletUpserts = new LinkedHashSet<>();
         Set<UUID> categoryUpserts = new LinkedHashSet<>();
         Set<UUID> transactionUpserts = new LinkedHashSet<>();
 
-        Set<UUID> accountDeletes = new LinkedHashSet<>();
+        Set<UUID> walletDeletes = new LinkedHashSet<>();
         Set<UUID> categoryDeletes = new LinkedHashSet<>();
         Set<UUID> transactionDeletes = new LinkedHashSet<>();
         Set<UUID> budgetDeletes = new LinkedHashSet<>();
@@ -73,9 +73,9 @@ public class SyncService {
             UUID id = log.getEntityPk();
 
             switch (log.getEntity()) {
-                case "accounts" -> {
-                    if (isDelete) accountDeletes.add(id);
-                    else accountUpserts.add(id);
+                case "wallets" -> {
+                    if (isDelete) walletDeletes.add(id);
+                    else walletUpserts.add(id);
                 }
                 case "categories" -> {
                     if (isDelete) categoryDeletes.add(id);
@@ -93,12 +93,12 @@ public class SyncService {
             }
         }
 
-        List<AccountResponse> accountChanges = accountUpserts.isEmpty()
-                ? List.of()
-                : accountRepository.findByUserIdAndAccountIdInAndDeletedAtIsNull(userId, accountUpserts)
-                .stream()
-                .map(AccountResponse::from)
-                .toList();
+        List<WalletResponse> walletChanges = walletUpserts.isEmpty()
+            ? List.of()
+            : walletRepository.findByUserIdAndWalletIdInAndDeletedAtIsNull(userId, walletUpserts)
+            .stream()
+            .map(WalletResponse::from)
+            .toList();
 
         List<CategoryResponse> categoryChanges = categoryUpserts.isEmpty()
                 ? List.of()
@@ -115,13 +115,13 @@ public class SyncService {
                 .toList();
 
         Map<String, List<?>> changes = new LinkedHashMap<>();
-        changes.put("accounts", accountChanges);
+        changes.put("wallets", walletChanges);
         changes.put("categories", categoryChanges);
         changes.put("budgets", List.of());
         changes.put("transactions", transactionChanges);
 
         Map<String, List<UUID>> deletes = new LinkedHashMap<>();
-        deletes.put("accounts", List.copyOf(accountDeletes));
+        deletes.put("wallets", List.copyOf(walletDeletes));
         deletes.put("categories", List.copyOf(categoryDeletes));
         deletes.put("budgets", List.copyOf(budgetDeletes));
         deletes.put("transactions", List.copyOf(transactionDeletes));
@@ -146,14 +146,14 @@ public class SyncService {
 
     private TransactionResponse toTransactionResponse(Transaction tx) {
         return new TransactionResponse(
-                tx.getTransactionId(),
-                tx.getAccountId(),
-                tx.getCategory().getCategoryId(),
-                tx.getAmount(),
-                tx.getNote(),
-                tx.getDate(),
-                tx.getCreatedAt(),
-                tx.getUpdatedAt()
+            tx.getTransactionId(),
+            tx.getWalletId(),
+            tx.getCategory().getCategoryId(),
+            tx.getAmount(),
+            tx.getNote(),
+            tx.getDate(),
+            tx.getCreatedAt(),
+            tx.getUpdatedAt()
         );
     }
 
@@ -192,8 +192,8 @@ public class SyncService {
     @Transactional
     protected SyncOperationResult processOperation(UUID userId, SyncOperation op) {
         switch (op.getEntity()) {
-            case "accounts":
-                return processAccountOperation(userId, op);
+            case "wallets":
+                return processWalletOperation(userId, op);
             case "categories":
                 return processCategoryOperation(userId, op);
             case "transactions":
@@ -207,18 +207,18 @@ public class SyncService {
     }
 
     @Transactional
-    protected SyncOperationResult processAccountOperation(UUID userId, SyncOperation op) {
+    protected SyncOperationResult processWalletOperation(UUID userId, SyncOperation op) {
         UUID entityId = UUID.fromString(op.getEntityId());
-        Optional<Account> existingOpt = accountRepository.findById(entityId);
+        Optional<Wallet> existingOpt = walletRepository.findById(entityId);
 
         // Check conflict
         if (existingOpt.isPresent()) {
-            Account existing = existingOpt.get();
+            Wallet existing = existingOpt.get();
             if (!existing.getUserId().equals(userId)) {
-                return buildErrorResult(op, "Access denied: not your account");
+                return buildErrorResult(op, "Access denied: not your wallet");
             }
             if (op.getBaseVersion() != null && !op.getBaseVersion().equals(existing.getVersion())) {
-                return buildConflictResult(op, existing.getVersion(), accountToMap(existing));
+                return buildConflictResult(op, existing.getVersion(), walletToMap(existing));
             }
         }
 
@@ -226,26 +226,26 @@ public class SyncService {
             if (existingOpt.isEmpty()) {
                 return buildOkResult(op, null);
             }
-            Account account = existingOpt.get();
-            account.setDeletedAt(Instant.now());
-            accountRepository.save(account);
-            return buildOkResult(op, account.getVersion());
+            Wallet wallet = existingOpt.get();
+            wallet.setDeletedAt(Instant.now());
+            walletRepository.save(wallet);
+            return buildOkResult(op, wallet.getVersion());
         } else {
             // UPSERT
-            AccountPushData data = objectMapper.convertValue(op.getData(), AccountPushData.class);
-            Account account = existingOpt.orElse(new Account());
-            account.setAccountId(entityId);
-            account.setUserId(userId);
-            account.setAccountName(data.getAccountName());
-            account.setType(data.getAccountType());
-            account.setCurrency(data.getCurrency() != null ? data.getCurrency() : "VND");
-            account.setCurrentValue(data.getCurrentValue() != null ? data.getCurrentValue() : java.math.BigDecimal.ZERO);
-            account.setDescription(data.getDescription());
+            WalletPushData data = objectMapper.convertValue(op.getData(), WalletPushData.class);
+            Wallet wallet = existingOpt.orElse(new Wallet());
+            wallet.setWalletId(entityId);
+            wallet.setUserId(userId);
+            wallet.setName(data.getName());
+            wallet.setType(data.getWalletType());
+            wallet.setCurrency(data.getCurrency() != null ? data.getCurrency() : "VND");
+            wallet.setCurrentBalance(data.getCurrentBalance() != null ? data.getCurrentBalance() : java.math.BigDecimal.ZERO);
+            wallet.setDescription(data.getDescription());
             if (data.getDeletedAt() != null) {
-                account.setDeletedAt(Instant.ofEpochMilli(data.getDeletedAt()));
+                wallet.setDeletedAt(Instant.ofEpochMilli(data.getDeletedAt()));
             }
-            accountRepository.save(account);
-            return buildOkResult(op, account.getVersion());
+            walletRepository.save(wallet);
+            return buildOkResult(op, wallet.getVersion());
         }
     }
 
@@ -284,6 +284,7 @@ public class SyncService {
             category.setIcon(data.getIcon());
             category.setColor(data.getColor());
             category.setIsDefault(data.getIsDefault() != null ? data.getIsDefault() : false);
+            category.setIsHidden(data.getIsHidden() != null ? data.getIsHidden() : false);
             if (data.getDeletedAt() != null) {
                 category.setDeletedAt(Instant.ofEpochMilli(data.getDeletedAt()));
             }
@@ -327,7 +328,7 @@ public class SyncService {
                     .orElseThrow(() -> new IllegalArgumentException("Category not found: " + categoryId));
 
             tx.setTransactionId(entityId);
-            tx.setAccountId(UUID.fromString(data.getAccountId()));
+            tx.setWalletId(UUID.fromString(data.getWalletId()));
             tx.setCreatedBy(userId);
             tx.setCategory(category);
             tx.setAmount(data.getAmount());
@@ -377,18 +378,18 @@ public class SyncService {
                 .build();
     }
 
-    private Map<String, Object> accountToMap(Account acc) {
+    private Map<String, Object> walletToMap(Wallet wallet) {
         Map<String, Object> map = new LinkedHashMap<>();
-        map.put("accountId", acc.getAccountId().toString());
-        map.put("accountName", acc.getAccountName());
-        map.put("type", acc.getType().name());
-        map.put("currency", acc.getCurrency());
-        map.put("currentValue", acc.getCurrentValue());
-        map.put("description", acc.getDescription());
-        map.put("version", acc.getVersion());
-        map.put("createdAt", acc.getCreatedAt().toEpochMilli());
-        map.put("updatedAt", acc.getUpdatedAt().toEpochMilli());
-        map.put("deletedAt", acc.getDeletedAt() != null ? acc.getDeletedAt().toEpochMilli() : null);
+        map.put("walletId", wallet.getWalletId().toString());
+        map.put("name", wallet.getName());
+        map.put("type", wallet.getType().name());
+        map.put("currency", wallet.getCurrency());
+        map.put("currentBalance", wallet.getCurrentBalance());
+        map.put("description", wallet.getDescription());
+        map.put("version", wallet.getVersion());
+        map.put("createdAt", wallet.getCreatedAt().toEpochMilli());
+        map.put("updatedAt", wallet.getUpdatedAt().toEpochMilli());
+        map.put("deletedAt", wallet.getDeletedAt() != null ? wallet.getDeletedAt().toEpochMilli() : null);
         return map;
     }
 
@@ -400,6 +401,7 @@ public class SyncService {
         map.put("icon", cat.getIcon());
         map.put("color", cat.getColor());
         map.put("isDefault", cat.getIsDefault());
+        map.put("isHidden", cat.getIsHidden());
         map.put("version", cat.getVersion());
         map.put("createdAt", cat.getCreatedAt().toEpochMilli());
         map.put("updatedAt", cat.getUpdatedAt().toEpochMilli());
@@ -410,7 +412,7 @@ public class SyncService {
     private Map<String, Object> transactionToMap(Transaction tx) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("transactionId", tx.getTransactionId().toString());
-        map.put("accountId", tx.getAccountId().toString());
+        map.put("walletId", tx.getWalletId().toString());
         map.put("categoryId", tx.getCategory().getCategoryId().toString());
         map.put("amount", tx.getAmount());
         map.put("note", tx.getNote());

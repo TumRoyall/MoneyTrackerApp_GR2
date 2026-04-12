@@ -11,7 +11,7 @@ import java.util.UUID;
 @Data
 public class CreateTransactionRequest {
     @NotNull
-    private UUID accountId;
+    private UUID walletId;
     @NotNull private UUID categoryId;
     @NotNull @Positive
     private BigDecimal amount;

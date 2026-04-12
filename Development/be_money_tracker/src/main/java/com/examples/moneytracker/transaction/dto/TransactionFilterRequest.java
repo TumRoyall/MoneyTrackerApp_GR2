@@ -1,7 +1,7 @@
 package com.examples.moneytracker.transaction.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.NonNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -10,8 +10,8 @@ import java.util.UUID;
 @Data
 public class TransactionFilterRequest {
 
-    @NonNull
-    private UUID accountId;
+    @NotNull
+    private UUID walletId;
     private UUID categoryId;
     private String type; // INCOME / EXPENSE
 
