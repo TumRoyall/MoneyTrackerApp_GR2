@@ -1,23 +1,21 @@
 export interface Category {
   categoryId: string;
-  userId: string;
   name: string;
-  type: string;
-  description?: string | null;
+  type: 'EXPENSE' | 'INCOME' | string;
+  icon?: string | null;
+  color?: string | null;
   createdAt: string;
-  updatedAt: string;
-  deletedAt?: string | null;
-  version: number;
 }
 
 export interface CategoryCreateInput {
   name: string;
-  type: string;
-  description?: string | null;
+  type: 'EXPENSE' | 'INCOME';
+  icon?: string | null;
+  color?: string | null;
 }
 
 export interface CategoryUpdateInput {
   name?: string;
-  type?: string;
-  description?: string | null;
+  icon?: string | null;
+  color?: string | null;
 }

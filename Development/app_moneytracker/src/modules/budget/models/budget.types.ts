@@ -1,29 +1,35 @@
 export interface Budget {
   budgetId: string;
-  userId: string;
+  userId?: string;
   walletId?: string | null;
   categoryId?: string | null;
-  amount: number;
+  amountLimit: number;
   periodStart: string;
   periodEnd: string;
-  createdAt: string;
-  updatedAt: string;
+  periodType?: 'custom' | 'monthly' | string;
+  alertThreshold?: number | null;
+  spentAmount?: number;
+  remainingAmount?: number;
+  createdAt?: string;
+  updatedAt?: string;
   deletedAt?: string | null;
-  version: number;
+  version?: number;
 }
 
 export interface BudgetCreateInput {
-  walletId?: string | null;
-  categoryId?: string | null;
-  amount: number;
+  categoryId: string;
+  amountLimit: number;
   periodStart: string;
   periodEnd: string;
+  periodType: 'custom' | 'monthly';
+  alertThreshold?: number | null;
 }
 
 export interface BudgetUpdateInput {
-  walletId?: string | null;
-  categoryId?: string | null;
-  amount?: number;
+  categoryId?: string;
+  amountLimit?: number;
   periodStart?: string;
   periodEnd?: string;
+  periodType?: 'custom' | 'monthly';
+  alertThreshold?: number | null;
 }

@@ -1,4 +1,4 @@
 export const ENV = {
-  apiBaseUrl: 'http://localhost:8080',
+  apiBaseUrl: 'http://172.28.240.1:8080',
   appName: 'MoneyTracker',
 };
