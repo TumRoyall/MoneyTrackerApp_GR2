@@ -3,7 +3,7 @@
 Ung dung mobile React Native + Expo + TypeScript.
 
 - Phase 1: online-first, goi backend REST API
-- Phase 2: them SQLite + sync (chua implement)
+- Phase 2: them local database + sync (chua implement)
 
 ## Yeu cau
 - Node.js LTS
