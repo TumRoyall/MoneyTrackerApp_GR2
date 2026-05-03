@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -11,10 +12,19 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Svg, { Circle, G, Path } from 'react-native-svg';
 
-import { Wallet, WalletCreateInput, WalletType } from '@/modules/wallet/models/wallet.types';
+import { Category } from '@/modules/category/models/category.types';
+import { useCategoryUsecases } from '@/modules/category/usecases';
+import { WalletCreateInput, WalletType } from '@/modules/wallet/models/wallet.types';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
+import { useTransactionUsecases } from '@/modules/transaction/usecases';
+import { TransactionFilters } from '@/modules/transaction/models/transaction.types';
 import { formatMoneyInput, parseMoneyInput, formatVndAmount } from '@/shared/utils/money';
+
+type CategoryType = 'EXPENSE' | 'INCOME';
+type TimeMode = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
+type CalendarTarget = 'customStart' | 'customEnd';
 
 const walletTypeOptions: Array<{ label: string; value: WalletType }> = [
   { label: 'Thường', value: 'REGULAR' },
@@ -27,25 +37,153 @@ const walletTypeOptions: Array<{ label: string; value: WalletType }> = [
 
 const currencyOptions = ['VND', 'USD', 'EUR'];
 
-  const formatCurrency = (amount: number, currency: string) => {
-  try {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return formatVndAmount(amount);
-  }
+const timeModeLabel: Record<TimeMode, string> = {
+  WEEK: 'Tuần này',
+  MONTH: 'Tháng này',
+  YEAR: 'Năm nay',
+  ALL: 'Mọi thời gian',
+  CUSTOM: 'Phạm vi tùy chỉnh',
 };
 
-const walletTypeLabel = (type: string) => {
-  const option = walletTypeOptions.find((item) => item.value === type);
-  return option?.label ?? type;
+const formatIsoDate = (value: Date) => {
+  const year = value.getFullYear();
+  const month = `${value.getMonth() + 1}`.padStart(2, '0');
+  const day = `${value.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const parseIsoDate = (value: string) => {
+  const [year, month, day] = value.split('-').map((item) => Number(item));
+  if (!year || !month || !day) {
+    return null;
+  }
+  const parsed = new Date(year, month - 1, day);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return parsed;
+};
+
+const formatDateShort = (value: Date) => `${value.getDate()} thg ${value.getMonth() + 1}`;
+
+const startOfWeek = (value: Date) => {
+  const cloned = new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  const day = cloned.getDay();
+  const diff = (day + 6) % 7;
+  cloned.setDate(cloned.getDate() - diff);
+  return cloned;
+};
+
+const endOfWeek = (value: Date) => {
+  const start = startOfWeek(value);
+  return new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+};
+
+const isSameDate = (left: Date, right: Date) =>
+  left.getFullYear() === right.getFullYear() &&
+  left.getMonth() === right.getMonth() &&
+  left.getDate() === right.getDate();
+
+const buildCalendarMatrix = (monthDate: Date) => {
+  const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const startDate = new Date(firstDay.getFullYear(), firstDay.getMonth(), 1 - startOffset);
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + index);
+    const inCurrentMonth = date.getMonth() === monthDate.getMonth();
+    return { date, inCurrentMonth };
+  });
+};
+
+const getMonthRange = (anchor: Date) => {
+  const year = anchor.getFullYear();
+  const monthIndex = anchor.getMonth();
+  const start = new Date(year, monthIndex, 1);
+  const end = new Date(year, monthIndex + 1, 0);
+  return { fromDate: formatIsoDate(start), toDate: formatIsoDate(end) };
+};
+
+const getTimeRange = (mode: TimeMode, anchorDate: Date, customStartDate: string, customEndDate: string) => {
+  if (mode === 'ALL') {
+    return { fromDate: undefined, toDate: undefined };
+  }
+  if (mode === 'CUSTOM') {
+    return { fromDate: customStartDate || undefined, toDate: customEndDate || undefined };
+  }
+  if (mode === 'WEEK') {
+    const start = startOfWeek(anchorDate);
+    const end = endOfWeek(anchorDate);
+    return { fromDate: formatIsoDate(start), toDate: formatIsoDate(end) };
+  }
+  if (mode === 'YEAR') {
+    const year = anchorDate.getFullYear();
+    const start = new Date(year, 0, 1);
+    const end = new Date(year, 11, 31);
+    return { fromDate: formatIsoDate(start), toDate: formatIsoDate(end) };
+  }
+  return getMonthRange(anchorDate);
+};
+
+const polarToCartesian = (center: number, radius: number, angleInDegrees: number) => {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+  return {
+    x: center + radius * Math.cos(angleInRadians),
+    y: center + radius * Math.sin(angleInRadians),
+  };
+};
+
+const describeArc = (center: number, radius: number, startAngle: number, endAngle: number) => {
+  const start = polarToCartesian(center, radius, endAngle);
+  const end = polarToCartesian(center, radius, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+};
+
+  const singleSlice = data.length === 1 && data[0]?.value > 0;
+  let startAngle = 0;
+
+  return (
+    <Svg width={size} height={size}>
+      <Circle cx={center} cy={center} r={radius} stroke="#eef1f4" strokeWidth={strokeWidth} fill="none" />
+      <G>
+        {singleSlice ? (
+          <Circle
+            cx={center}
+            cy={center}
+            r={radius}
+            stroke={data[0].color}
+            strokeWidth={strokeWidth}
+            fill="none"
+          />
+        ) : (
+          data.map((slice, index) => {
+            const angle = (slice.value / total) * 360;
+            const endAngle = startAngle + angle;
+            const path = describeArc(center, radius, startAngle, endAngle);
+            startAngle = endAngle;
+            return (
+              <Path
+                key={`slice-${index}`}
+                d={path}
+                stroke={slice.color}
+                strokeWidth={strokeWidth}
+                fill="none"
+                strokeLinecap="round"
+              />
+            );
+          })
+        )}
+      </G>
+    </Svg>
+  );
 };
 
 export const WalletHomeScreen = () => {
   const { getWallets, createWallet } = useWalletUsecases();
+  const { getCategories } = useCategoryUsecases();
+  const { getTransactions } = useTransactionUsecases();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [walletName, setWalletName] = useState('');
@@ -53,17 +191,246 @@ export const WalletHomeScreen = () => {
   const [currency, setCurrency] = useState('VND');
   const [balance, setBalance] = useState('0');
   const [description, setDescription] = useState('');
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
+  const [categoryMode, setCategoryMode] = useState<CategoryType>('EXPENSE');
+  const [timeMode, setTimeMode] = useState<TimeMode>('MONTH');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showTimeModal, setShowTimeModal] = useState(false);
+  const [showRangeModal, setShowRangeModal] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [calendarTarget, setCalendarTarget] = useState<CalendarTarget>('customStart');
+  const [calendarMonth, setCalendarMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState(new Date());
+  const [customStartDate, setCustomStartDate] = useState(formatIsoDate(new Date()));
+  const [customEndDate, setCustomEndDate] = useState(formatIsoDate(new Date()));
+  const [tempCustomStartDate, setTempCustomStartDate] = useState(customStartDate);
+  const [tempCustomEndDate, setTempCustomEndDate] = useState(customEndDate);
 
   const walletsQuery = useQuery({
     queryKey: ['wallets'],
     queryFn: getWallets,
   });
 
+  const categoriesQuery = useQuery({
+    queryKey: ['categories'],
+    queryFn: getCategories,
+  });
+
   const wallets = walletsQuery.data ?? [];
-  const totalBalance = useMemo(
-    () => wallets.reduce((sum, wallet) => sum + (wallet.currentBalance ?? 0), 0),
-    [wallets],
+  const categories = categoriesQuery.data ?? [];
+
+  useEffect(() => {
+    if (!selectedWalletId && wallets.length > 0) {
+      setSelectedWalletId(wallets[0].walletId);
+    }
+  }, [wallets, selectedWalletId]);
+
+  const normalizeCategoryType = (value: unknown): CategoryType =>
+    String(value || '').toUpperCase() === 'INCOME' ? 'INCOME' : 'EXPENSE';
+
+  const currentWallet = wallets.find((wallet) => wallet.walletId === selectedWalletId) ?? null;
+
+  const transactionFilters: TransactionFilters | undefined = useMemo(() => {
+    if (!selectedWalletId) {
+      return undefined;
+    }
+
+    const range = getTimeRange(timeMode, selectedDate, customStartDate, customEndDate);
+
+    return {
+      walletId: selectedWalletId,
+      fromDate: range.fromDate,
+      toDate: range.toDate,
+      page: 0,
+      size: 200,
+      sort: 'date,desc',
+    };
+  }, [selectedWalletId, timeMode, selectedDate, customStartDate, customEndDate]);
+
+  const transactionsQuery = useQuery({
+    queryKey: ['transactions', transactionFilters],
+    queryFn: () => getTransactions(transactionFilters),
+    enabled: Boolean(transactionFilters?.walletId),
+  });
+
+  const transactions = transactionsQuery.data ?? [];
+
+  const categoryMap = useMemo(
+    () => new Map(categories.map((category) => [category.categoryId, category])),
+    [categories],
   );
+
+  const categoryBreakdown = useMemo(() => {
+    const palette = ['#60c5d1', '#8bc3ed', '#f6c04b', '#ef7d83', '#a98ff0', '#79d7a5'];
+    const fallback: Category = {
+      categoryId: 'unknown',
+      name: 'Chưa được phân loại',
+      type: categoryMode,
+      icon: '❓',
+      color: '#bfeff3',
+      createdAt: new Date().toISOString(),
+    };
+
+    const totals = new Map<string, { category: Category; amount: number }>();
+    let totalAmount = 0;
+
+    transactions.forEach((item) => {
+      const category = categoryMap.get(item.categoryId) ?? fallback;
+      const categoryType = normalizeCategoryType(category.type);
+      if (categoryType !== categoryMode) {
+        return;
+      }
+      totalAmount += item.amount;
+      const current = totals.get(category.categoryId) ?? { category, amount: 0 };
+      current.amount += item.amount;
+      totals.set(category.categoryId, current);
+    });
+
+    const sorted = Array.from(totals.values()).sort((a, b) => b.amount - a.amount);
+
+    return sorted.map((item, index) => {
+      const percentage = totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0;
+      const paletteColor = palette[index % palette.length];
+      const rawColor = item.category.color || '';
+      const color = rawColor && rawColor !== '#BFEFF3' ? rawColor : paletteColor;
+      return {
+        ...item,
+        percentage,
+        color,
+      };
+    });
+  }, [transactions, categoryMap, categoryMode]);
+
+  const transactionSummary = useMemo(() => {
+    let expense = 0;
+    let income = 0;
+
+    transactions.forEach((item) => {
+      const category = categoryMap.get(item.categoryId);
+      if (normalizeCategoryType(category?.type) === 'INCOME') {
+        income += item.amount;
+      } else {
+        expense += item.amount;
+      }
+    });
+
+    return {
+      expense,
+      income,
+      net: income - expense,
+    };
+  }, [transactions, categoryMap]);
+
+  const totalCategoryAmount = useMemo(
+    () => categoryBreakdown.reduce((sum, item) => sum + item.amount, 0),
+    [categoryBreakdown],
+  );
+
+  const donutData = useMemo(
+    () => categoryBreakdown.map((item) => ({ value: item.amount, color: item.color })),
+    [categoryBreakdown],
+  );
+
+  const donutMarkers = useMemo(() => {
+    const total = donutData.reduce((sum, item) => sum + item.value, 0);
+    if (total <= 0) {
+      return [];
+    }
+    let startAngle = 0;
+    return categoryBreakdown.slice(0, 6).map((item) => {
+      const angle = (item.amount / total) * 360;
+      const midAngle = startAngle + angle / 2;
+      startAngle += angle;
+      return {
+        key: item.category.categoryId,
+        icon: item.category.icon || '•',
+        angle: midAngle,
+        color: item.color,
+      };
+    });
+  }, [categoryBreakdown, donutData]);
+
+  const timeRangeLabel = useMemo(() => {
+    if (timeMode === 'ALL') {
+      return 'Mọi thời gian';
+    }
+    if (timeMode === 'CUSTOM') {
+      const start = parseIsoDate(customStartDate);
+      const end = parseIsoDate(customEndDate);
+      if (!start || !end) {
+        return 'Chọn phạm vi';
+      }
+      return `${formatDateShort(start)} - ${formatDateShort(end)}`;
+    }
+    if (timeMode === 'WEEK') {
+      const start = startOfWeek(selectedDate);
+      const end = endOfWeek(selectedDate);
+      return `${formatDateShort(start)} - ${formatDateShort(end)}`;
+    }
+    if (timeMode === 'YEAR') {
+      return `Năm ${selectedDate.getFullYear()}`;
+    }
+    return `${formatDateShort(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1))} - ${formatDateShort(
+      new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0),
+    )}`;
+  }, [timeMode, selectedDate, customStartDate, customEndDate]);
+
+  const shiftTimeRange = (direction: -1 | 1) => {
+    if (timeMode === 'CUSTOM' || timeMode === 'ALL') {
+      return;
+    }
+    if (timeMode === 'WEEK') {
+      setSelectedDate((current) => {
+        const next = new Date(current.getFullYear(), current.getMonth(), current.getDate());
+        next.setDate(next.getDate() + 7 * direction);
+        return next;
+      });
+      return;
+    }
+    if (timeMode === 'MONTH') {
+      setSelectedDate((current) => new Date(current.getFullYear(), current.getMonth() + direction, 1));
+      return;
+    }
+    setSelectedDate((current) => new Date(current.getFullYear() + direction, 0, 1));
+  };
+
+  const openCalendarPicker = (target: CalendarTarget, valueIso?: string) => {
+    const parsed = valueIso ? parseIsoDate(valueIso) : null;
+    const base = parsed ?? new Date();
+    setCalendarTarget(target);
+    setCalendarSelectedDate(base);
+    setCalendarMonth(new Date(base.getFullYear(), base.getMonth(), 1));
+    setShowCalendarModal(true);
+  };
+
+  const applyCalendarSelection = () => {
+    const value = formatIsoDate(calendarSelectedDate);
+    if (calendarTarget === 'customStart') {
+      setTempCustomStartDate(value);
+    }
+    if (calendarTarget === 'customEnd') {
+      setTempCustomEndDate(value);
+    }
+    setShowCalendarModal(false);
+  };
+
+  const calendarCells = useMemo(() => buildCalendarMatrix(calendarMonth), [calendarMonth]);
+
+  const applyCustomRange = () => {
+    const start = parseIsoDate(tempCustomStartDate);
+    const end = parseIsoDate(tempCustomEndDate);
+    if (!start || !end) {
+      Alert.alert('Ngày không hợp lệ', 'Vui lòng nhập đúng định dạng YYYY-MM-DD.');
+      return;
+    }
+    if (start > end) {
+      Alert.alert('Khoảng ngày không hợp lệ', 'Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.');
+      return;
+    }
+    setCustomStartDate(tempCustomStartDate);
+    setCustomEndDate(tempCustomEndDate);
+    setShowRangeModal(false);
+  };
 
   const walletDistribution = useMemo(() => {
     const colors = ['#8BC3ED', '#58C9D2', '#F6C04B', '#EF7D83', '#A98FF0'];
@@ -135,25 +502,41 @@ export const WalletHomeScreen = () => {
           </View>
         </View>
 
-        <View style={styles.balanceCard}>
-          <View>
-            <Text style={styles.balanceLabel}>Tổng số dư</Text>
-            <Text style={styles.balanceValue}>{formatCurrency(totalBalance, 'VND')}</Text>
-          </View>
-          <View style={styles.balanceIcon}>
-            <MaterialIcons name="account-balance-wallet" size={28} color="#1f6681" />
-          </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Số dư ví</Text>
+          <Text style={styles.sectionSubtitle}>Chọn ví để xem chi tiết</Text>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Ví của bạn</Text>
-          <View style={styles.sectionActions}>
-            <Text style={styles.sectionSubtitle}>{wallets.length} ví</Text>
-            <Pressable onPress={() => setShowCreateModal(true)} style={styles.inlineCreateBtn}>
-              <Text style={styles.inlineCreateBtnText}>Tạo ví</Text>
-            </Pressable>
-          </View>
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletCarouselContent}>
+          {wallets.map((wallet) => {
+            const selected = wallet.walletId === selectedWalletId;
+            return (
+              <Pressable
+                key={wallet.walletId}
+                onPress={() => setSelectedWalletId(wallet.walletId)}
+                style={[styles.walletTile, selected ? styles.walletTileActive : null]}
+              >
+                <View style={styles.walletTileHeader}>
+                  <MaterialIcons name="account-balance-wallet" size={18} color={selected ? '#1f6681' : '#5d707a'} />
+                  <Text style={[styles.walletTileName, selected ? styles.walletTileNameActive : null]} numberOfLines={1}>
+                    {wallet.name}
+                  </Text>
+                </View>
+                <Text style={[styles.walletTileBalance, selected ? styles.walletTileBalanceActive : null]}>
+                  {formatCurrency(wallet.currentBalance ?? 0, wallet.currency || 'VND')}
+                </Text>
+                <Text style={styles.walletTileCurrency}>{wallet.currency}</Text>
+              </Pressable>
+            );
+          })}
+
+          <Pressable style={[styles.walletTile, styles.walletAddTile]} onPress={() => setShowCreateModal(true)}>
+            <View style={styles.walletAddIcon}>
+              <Ionicons name="add" size={20} color="#7a8a92" />
+            </View>
+            <Text style={styles.walletAddText}>Ví mới</Text>
+          </Pressable>
+        </ScrollView>
 
         <View style={styles.chartCard}>
           <Text style={styles.chartTitle}>Cơ cấu số dư theo ví</Text>
@@ -173,50 +556,166 @@ export const WalletHomeScreen = () => {
           )}
         </View>
 
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Phân tích theo ví</Text>
+          <Text style={styles.sectionSubtitle}>Lọc giao dịch</Text>
+        </View>
+
+        <View style={styles.filterRow}>
+          <Pressable style={styles.filterBox} onPress={() => setShowTimeModal(true)}>
+            <Text style={styles.filterBoxText}>{timeModeLabel[timeMode]}</Text>
+            <Ionicons name="chevron-down" size={18} color="#1f1f1f" />
+          </Pressable>
+        </View>
+
+        <View style={styles.rangeRow}>
+          <Pressable style={styles.rangeNav} onPress={() => shiftTimeRange(-1)}>
+            <Ionicons
+              name="chevron-back"
+              size={18}
+              color={timeMode === 'CUSTOM' || timeMode === 'ALL' ? '#c0c0c0' : '#1f1f1f'}
+            />
+          </Pressable>
+          <Pressable style={styles.rangeLabel} onPress={() => timeMode === 'CUSTOM' && setShowRangeModal(true)}>
+            <Text style={styles.rangeText} numberOfLines={1}>
+              {timeRangeLabel}
+            </Text>
+          </Pressable>
+          <Pressable style={styles.rangeNav} onPress={() => shiftTimeRange(1)}>
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={timeMode === 'CUSTOM' || timeMode === 'ALL' ? '#c0c0c0' : '#1f1f1f'}
+            />
+          </Pressable>
+        </View>
+
+        <View style={styles.netGroupCard}>
+          <View style={styles.netSummaryRow}>
+            <Text style={styles.netTitle}>Thay đổi ròng</Text>
+            <Text style={styles.netValue}> {formatCurrency(transactionSummary.net, currentWallet?.currency || 'VND')}</Text>
+          </View>
+
+          <View style={styles.netBreakRow}>
+            <View style={styles.netBreakCard}>
+              <Text style={styles.netBreakLabel}>Chi phí</Text>
+              <Text style={styles.netBreakValueExpense}>▼ {formatCurrency(transactionSummary.expense, currentWallet?.currency || 'VND')}</Text>
+            </View>
+            <View style={styles.netBreakCard}>
+              <Text style={styles.netBreakLabel}>Thu nhập</Text>
+              <Text style={styles.netBreakValueIncome}>▲ {formatCurrency(transactionSummary.income, currentWallet?.currency || 'VND')}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.segmentRow}>
+          <Pressable
+            style={[styles.segmentPill, categoryMode === 'EXPENSE' ? styles.segmentPillActive : null]}
+            onPress={() => setCategoryMode('EXPENSE')}
+          >
+            <Text style={[styles.segmentText, categoryMode === 'EXPENSE' ? styles.segmentTextActive : null]}>
+              Chi phí
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.segmentPill, categoryMode === 'INCOME' ? styles.segmentPillActive : null]}
+            onPress={() => setCategoryMode('INCOME')}
+          >
+            <Text style={[styles.segmentText, categoryMode === 'INCOME' ? styles.segmentTextActive : null]}>
+              Thu nhập
+            </Text>
+          </Pressable>
+        </View>
+
         <View style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Xu hướng số dư ví</Text>
-          {walletDistribution.length === 0 ? (
-            <Text style={styles.chartEmpty}>Chưa có dữ liệu để hiển thị biểu đồ.</Text>
+          <View style={styles.chartHeaderRow}>
+            <Text style={styles.chartTitle}>
+              Cơ cấu {categoryMode === 'EXPENSE' ? 'chi phí' : 'thu nhập'}
+            </Text>
+            <Text style={styles.chartHint}>{currentWallet?.name ?? 'Chọn ví'}</Text>
+          </View>
+          {transactionsQuery.isLoading || categoriesQuery.isLoading ? (
+            <Text style={styles.chartEmpty}>Đang tải dữ liệu...</Text>
+          ) : categoryBreakdown.length === 0 ? (
+            <Text style={styles.chartEmpty}>Chưa có giao dịch để hiển thị biểu đồ.</Text>
           ) : (
-            <View style={styles.trendWrap}>
-              {walletDistribution.map((item) => (
-                <View key={`trend-${item.wallet.walletId}`} style={styles.trendItem}>
-                  <View style={styles.trendTrack}>
-                    <View
-                      style={[
-                        styles.trendFill,
-                        {
-                          height: `${Math.max(item.percentage, 6)}%`,
-                          backgroundColor: item.color,
-                        },
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.trendLabel} numberOfLines={1}>
-                    {item.wallet.name}
+            <>
+              <View style={styles.donutWrap}>
+                <DonutChart data={donutData} size={190} strokeWidth={28} />
+                <View style={styles.donutMarkers}>
+                  {donutMarkers.map((marker) => {
+                    const center = 95;
+                    const orbit = 88;
+                    const angle = ((marker.angle - 90) * Math.PI) / 180;
+                    const x = center + orbit * Math.cos(angle) - 18;
+                    const y = center + orbit * Math.sin(angle) - 18;
+                    return (
+                      <View
+                        key={marker.key}
+                        style={[styles.donutMarker, { left: x, top: y, borderColor: marker.color }]}
+                      >
+                        <Text style={styles.donutMarkerText}>{marker.icon}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+                <View style={styles.donutCenter}>
+                  <Text style={styles.donutValue}>
+                    {formatCurrency(totalCategoryAmount, currentWallet?.currency || 'VND')}
+                  </Text>
+                  <Text style={styles.donutLabel}>
+                    Tổng {categoryMode === 'EXPENSE' ? 'chi phí' : 'thu nhập'}
                   </Text>
                 </View>
+              </View>
+
+              {categoryBreakdown.map((item) => (
+                <View key={item.category.categoryId} style={styles.categoryRow}>
+                  <View style={[styles.categoryIcon, { backgroundColor: `${item.color}22` }]}>
+                    <Text style={styles.categoryIconText}>{item.category.icon || '•'}</Text>
+                  </View>
+                  <View style={styles.categoryInfo}>
+                    <View style={styles.categoryHeaderRow}>
+                      <Text style={styles.categoryName} numberOfLines={1}>
+                        {item.category.name}
+                      </Text>
+                      <Text style={styles.categoryAmount} numberOfLines={1}>
+                        {formatCurrency(item.amount, currentWallet?.currency || 'VND')}
+                      </Text>
+                    </View>
+                    <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { width: `${Math.max(item.percentage, 2)}%`, backgroundColor: item.color },
+                        ]}
+                      />
+                      <View style={styles.progressBadge}>
+                        <Text style={styles.progressBadgeText}>{item.percentage.toFixed(0)}%</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
               ))}
-            </View>
+            </>
           )}
         </View>
 
-        {walletsQuery.isLoading ? (
-          <View style={styles.loadingCard}>
-            <Text style={styles.loadingText}>Đang tải ví...</Text>
-          </View>
-        ) : wallets.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Chưa có ví nào</Text>
-            <Text style={styles.emptyText}>Hãy tạo ví đầu tiên của bạn bên dưới.</Text>
-          </View>
-        ) : (
-          wallets.map((wallet) => <WalletItem key={wallet.walletId} wallet={wallet} />)
-        )}
-
       </ScrollView>
 
-      <Pressable style={styles.fab} onPress={() => setShowCreateModal(true)}>
+      <Pressable
+        style={styles.fab}
+        onPress={() => {
+          if (!selectedWalletId) {
+            Alert.alert('Chưa chọn ví', 'Vui lòng chọn một ví để tạo giao dịch.');
+            return;
+          }
+          router.push({
+            pathname: '/(tabs)/transactions',
+            params: { walletId: selectedWalletId, openCreate: '1' },
+          });
+        }}
+      >
         <Ionicons name="add" size={36} color="#fff" />
       </Pressable>
 
@@ -294,29 +793,152 @@ export const WalletHomeScreen = () => {
           </View>
         </View>
       </Modal>
-    </View>
-  );
-};
 
-const WalletItem = ({ wallet }: { wallet: Wallet }) => {
-  return (
-    <View style={styles.walletCard}>
-      <View style={styles.walletHeader}>
-        <View>
-          <Text style={styles.walletName}>{wallet.name}</Text>
-          <Text style={styles.walletType}>{walletTypeLabel(wallet.type)}</Text>
+      <Modal visible={showTimeModal} animationType="fade" transparent onRequestClose={() => setShowTimeModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.timeModalSheet}>
+            <Text style={styles.timeModalTitle}>Chọn phạm vi</Text>
+            {(['WEEK', 'MONTH', 'YEAR', 'ALL', 'CUSTOM'] as TimeMode[]).map((mode) => (
+              <Pressable
+                key={mode}
+                onPress={() => {
+                  setTimeMode(mode);
+                  setShowTimeModal(false);
+                  if (mode === 'CUSTOM') {
+                    setTempCustomStartDate(customStartDate);
+                    setTempCustomEndDate(customEndDate);
+                    setShowRangeModal(true);
+                  }
+                }}
+                style={[styles.timeOption, timeMode === mode ? styles.timeOptionActive : null]}
+              >
+                <Text style={[styles.timeOptionText, timeMode === mode ? styles.timeOptionTextActive : null]}>
+                  {timeModeLabel[mode]}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable style={styles.timeCloseButton} onPress={() => setShowTimeModal(false)}>
+              <Text style={styles.timeCloseText}>Đóng</Text>
+            </Pressable>
+          </View>
         </View>
-        <MaterialIcons name="account-balance-wallet" size={22} color="#1f6681" />
-      </View>
+      </Modal>
 
-      <Text style={styles.walletAmount}>{formatCurrency(wallet.currentBalance ?? 0, wallet.currency || 'VND')}</Text>
+      <Modal visible={showRangeModal} animationType="slide" transparent onRequestClose={() => setShowRangeModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.rangeModalSheet}>
+            <Text style={styles.timeModalTitle}>Phạm vi tùy chỉnh</Text>
+            <View style={styles.customModalRangeRow}>
+              <View style={styles.customModalCol}>
+                <Text style={styles.modalLabel}>Ngày bắt đầu</Text>
+                <Pressable
+                  style={styles.calendarInput}
+                  onPress={() => openCalendarPicker('customStart', tempCustomStartDate)}
+                >
+                  <Ionicons name="calendar" size={18} color="#29bcc8" />
+                  <Text style={styles.calendarInputText}>{tempCustomStartDate}</Text>
+                </Pressable>
+              </View>
+              <View style={styles.customModalCol}>
+                <Text style={styles.modalLabel}>Ngày kết thúc</Text>
+                <Pressable
+                  style={styles.calendarInput}
+                  onPress={() => openCalendarPicker('customEnd', tempCustomEndDate)}
+                >
+                  <Ionicons name="calendar" size={18} color="#29bcc8" />
+                  <Text style={styles.calendarInputText}>{tempCustomEndDate}</Text>
+                </Pressable>
+              </View>
+            </View>
 
-      <View style={styles.walletFooter}>
-        <Text style={styles.walletCurrency}>{wallet.currency}</Text>
-        <Text style={styles.walletDescription} numberOfLines={1}>
-          {wallet.description || 'Không có mô tả'}
-        </Text>
-      </View>
+            <View style={styles.rangeActionRow}>
+              <Pressable style={styles.rangeGhostBtn} onPress={() => setShowRangeModal(false)}>
+                <Text style={styles.rangeGhostBtnText}>Hủy</Text>
+              </Pressable>
+              <Pressable style={styles.rangeConfirmBtn} onPress={applyCustomRange}>
+                <Text style={styles.rangeConfirmBtnText}>Áp dụng</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showCalendarModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCalendarModal(false)}
+      >
+        <View style={styles.modalOverlayCenter}>
+          <View style={styles.calendarCard}>
+            <Text style={styles.timeModalTitle}>Chọn ngày</Text>
+
+            <View style={styles.calendarHeaderRow}>
+              <Pressable
+                onPress={() =>
+                  setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))
+                }
+                style={styles.monthNavBtn}
+              >
+                <Ionicons name="chevron-back" size={18} color="#555" />
+              </Pressable>
+
+              <Text style={styles.calendarMonthTitle}>
+                {calendarMonth.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}
+              </Text>
+
+              <Pressable
+                onPress={() =>
+                  setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))
+                }
+                style={styles.monthNavBtn}
+              >
+                <Ionicons name="chevron-forward" size={18} color="#555" />
+              </Pressable>
+            </View>
+
+            <View style={styles.calendarWeekdays}>
+              {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day) => (
+                <Text key={day} style={styles.calendarWeekdayText}>
+                  {day}
+                </Text>
+              ))}
+            </View>
+
+            <View style={styles.calendarGrid}>
+              {calendarCells.map((cell, index) => {
+                const selected = isSameDate(cell.date, calendarSelectedDate);
+                return (
+                  <Pressable
+                    key={`${cell.date.toISOString()}-${index}`}
+                    onPress={() => setCalendarSelectedDate(cell.date)}
+                    style={[styles.calendarCell, selected ? styles.calendarCellSelected : null]}
+                  >
+                    <Text
+                      style={[
+                        styles.calendarCellText,
+                        !cell.inCurrentMonth ? styles.calendarCellTextMuted : null,
+                        selected ? styles.calendarCellTextSelected : null,
+                      ]}
+                    >
+                      {cell.date.getDate()}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.rangeActionRow}>
+              <Pressable style={styles.rangeGhostBtn} onPress={() => setShowCalendarModal(false)}>
+                <Text style={styles.rangeGhostBtnText}>Hủy</Text>
+              </Pressable>
+              <Pressable style={styles.rangeConfirmBtn} onPress={applyCalendarSelection}>
+                <Text style={styles.rangeConfirmBtnText}>OK</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -386,42 +1008,11 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
   },
-  balanceCard: {
-    borderRadius: 24,
-    backgroundColor: '#d8f5f8',
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  balanceLabel: {
-    fontSize: 14,
-    color: '#4c676b',
-  },
-  balanceValue: {
-    marginTop: 6,
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#1b2a2d',
-  },
-  balanceIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 4,
-  },
-  sectionActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   sectionTitle: {
     fontSize: 20,
@@ -432,15 +1023,69 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#757575',
   },
-  inlineCreateBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#29bcc8',
+  walletCarouselContent: {
+    paddingHorizontal: 2,
+    gap: 12,
   },
-  inlineCreateBtnText: {
-    color: '#fff',
+  walletTile: {
+    width: 160,
+    borderRadius: 18,
+    padding: 14,
+    backgroundColor: '#eef7f8',
+    borderWidth: 1,
+    borderColor: '#dce7eb',
+    gap: 10,
+  },
+  walletTileActive: {
+    backgroundColor: '#d8f5f8',
+    borderColor: '#29bcc8',
+  },
+  walletTileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  walletTileName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#3b4a52',
+  },
+  walletTileNameActive: {
+    color: '#1f2f36',
+  },
+  walletTileBalance: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1f2f36',
+  },
+  walletTileBalanceActive: {
+    color: '#154b5a',
+  },
+  walletTileCurrency: {
     fontSize: 12,
+    color: '#6a7a82',
+  },
+  walletAddTile: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f3f5',
+    borderStyle: 'dashed',
+  },
+  walletAddIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#d6dde2',
+  },
+  walletAddText: {
+    marginTop: 8,
+    fontSize: 13,
+    color: '#6f7c84',
     fontWeight: '700',
   },
   chartCard: {
@@ -455,6 +1100,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#28333b',
+  },
+  chartHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  chartHint: {
+    fontSize: 12,
+    color: '#7b878f',
   },
   chartEmpty: {
     fontSize: 13,
@@ -488,33 +1142,437 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#5c6872',
   },
-  trendWrap: {
+  filterRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  filterBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e2e6ea',
+  },
+  filterBoxText: {
+    fontSize: 13,
+    color: '#1f1f1f',
+    fontWeight: '600',
+  },
+  rangeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+  },
+  rangeNav: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e2e6ea',
+  },
+  rangeLabel: {
+    flex: 1,
+    marginHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e2e6ea',
+  },
+  rangeText: {
+    fontSize: 13,
+    color: '#1f1f1f',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  segmentRow: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    padding: 4,
+    gap: 8,
+    borderRadius: 20,
+    backgroundColor: '#eef1f4',
+  },
+  segmentPill: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: '#dde2e6',
+  },
+  segmentPillActive: {
+    backgroundColor: '#23b8c2',
+  },
+  segmentText: {
+    fontSize: 13,
+    color: '#56616a',
+    fontWeight: '600',
+  },
+  segmentTextActive: {
+    color: '#fff',
+  },
+  netGroupCard: {
+    borderRadius: 18,
+    backgroundColor: '#dff7f5',
+    padding: 12,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#cfecec',
+  },
+  netSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  netTitle: {
+    fontSize: 13,
+    color: '#6b7782',
+    fontWeight: '600',
+  },
+  netValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1b2a2d',
+  },
+  netBreakRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  netBreakCard: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e3e8ec',
+    alignItems: 'center',
+  },
+  netBreakLabel: {
+    fontSize: 12,
+    color: '#6b7782',
+    fontWeight: '600',
+  },
+  netBreakValueExpense: {
+    marginTop: 4,
+    fontSize: 13,
+    color: '#f36e79',
+    fontWeight: '700',
+  },
+  netBreakValueIncome: {
+    marginTop: 4,
+    fontSize: 13,
+    color: '#34a795',
+    fontWeight: '700',
+  },
+  categoryHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-    minHeight: 160,
   },
-  trendItem: {
+  categoryName: {
     flex: 1,
+    fontSize: 14,
+    color: '#2f3a42',
+    fontWeight: '600',
+  },
+  progressTrack: {
+    position: 'relative',
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: '#eef1f4',
+    overflow: 'visible',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  categoryAmount: {
+    fontSize: 12,
+    color: '#2f3a42',
+    fontWeight: '700',
+  },
+  progressBadge: {
+    position: 'absolute',
+    left: '50%',
+    top: -10,
+    zIndex: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#d3dbe0',
+    backgroundColor: '#fff',
+    transform: [{ translateX: -18 }],
+    elevation: 2,
+  },
+  progressBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#5f6b75',
+  },
+  timeModalSheet: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    borderRadius: 18,
+    padding: 16,
+    gap: 10,
+  },
+  timeModalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#28333b',
+  },
+  timeOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: '#f4f6f8',
+  },
+  timeOptionActive: {
+    backgroundColor: '#23b8c2',
+  },
+  timeOptionText: {
+    fontSize: 14,
+    color: '#39434a',
+    fontWeight: '600',
+  },
+  timeOptionTextActive: {
+    color: '#fff',
+  },
+  timeCloseButton: {
+    alignSelf: 'flex-end',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  timeCloseText: {
+    fontSize: 14,
+    color: '#23b8c2',
+    fontWeight: '600',
+  },
+  rangeModalSheet: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    borderRadius: 18,
+    padding: 16,
+    gap: 12,
+  },
+  modalOverlayCenter: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  monthNavBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 99,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f3f6',
+  },
+  calendarCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 16,
+    gap: 10,
+  },
+  calendarHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  calendarMonthTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2f3a42',
+  },
+  calendarWeekdays: {
+    flexDirection: 'row',
+  categoryAmount: {
+    width: 110,
+    textAlign: 'right',
+    fontSize: 12,
+    color: '#2f3a42',
+    fontWeight: '700',
+  },
+  progressTrack: {
+    position: 'relative',
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: '#eef1f4',
+    overflow: 'visible',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  progressBadge: {
+    position: 'absolute',
+    left: '50%',
+    top: -10,
+    zIndex: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#d3dbe0',
+    backgroundColor: '#fff',
+    transform: [{ translateX: -18 }],
+    elevation: 2,
+  },
+  progressBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#5f6b75',
+  },
+    color: '#7b848d',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 2,
+  },
+  calendarCell: {
+    flexBasis: '14.2857%',
+    maxWidth: '14.2857%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+  calendarCellSelected: {
+    backgroundColor: '#29bcc8',
+  },
+  calendarCellText: {
+    color: '#2d3942',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  calendarCellTextMuted: {
+    color: '#b1b8be',
+  },
+  calendarCellTextSelected: {
+    color: '#fff',
+  },
+  calendarInput: {
+    minHeight: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d7dde2',
+    backgroundColor: '#fff',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  trendTrack: {
-    width: 22,
-    height: 120,
-    borderRadius: 99,
-    backgroundColor: '#edf1f4',
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
+  calendarInputText: {
+    flex: 1,
+    color: '#25323b',
+    fontSize: 15,
+    fontWeight: '600',
   },
-  trendFill: {
-    width: '100%',
-    borderRadius: 99,
+  modalLabel: {
+    fontSize: 13,
+    color: '#5f6b75',
+    fontWeight: '600',
   },
-  trendLabel: {
-    fontSize: 11,
-    color: '#64707a',
+  customModalRangeRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  customModalCol: {
+    flex: 1,
+    gap: 6,
+  },
+  rangeActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  rangeGhostBtn: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d5dde3',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rangeGhostBtnText: {
+    color: '#56616a',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  rangeConfirmBtn: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 12,
+    backgroundColor: '#29bcc8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rangeConfirmBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  donutWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    position: 'relative',
+  },
+  donutCenter: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  donutMarkers: {
+    position: 'absolute',
+    width: 190,
+    height: 190,
+  },
+  donutMarker: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  donutMarkerText: {
+    fontSize: 16,
+  },
+  donutValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#263238',
+  },
+  donutLabel: {
+    fontSize: 12,
+    color: '#7b878f',
+    marginTop: 4,
   },
   loadingCard: {
     borderRadius: 18,

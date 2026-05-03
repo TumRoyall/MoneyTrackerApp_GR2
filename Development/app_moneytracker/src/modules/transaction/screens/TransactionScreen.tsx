@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocalSearchParams } from 'expo-router';
 import {
   Alert,
   Modal,
@@ -265,6 +266,8 @@ export const TransactionScreen = () => {
   const { getTransactions, createTransaction, updateTransaction } = useTransactionUsecases();
   const seededDefaultCategoriesRef = useRef(false);
   const seedingInProgressRef = useRef(false);
+  const openCreateRef = useRef(false);
+  const params = useLocalSearchParams<{ walletId?: string; openCreate?: string }>();
 
   const normalizeCategoryType = (value: unknown): CategoryType =>
     String(value || '').toUpperCase() === 'INCOME' ? 'INCOME' : 'EXPENSE';
@@ -324,10 +327,14 @@ export const TransactionScreen = () => {
   );
 
   useEffect(() => {
+    if (params.walletId && wallets.some((wallet) => wallet.walletId === params.walletId)) {
+      setSelectedWalletId(params.walletId);
+      return;
+    }
     if (!selectedWalletId && wallets.length > 0) {
       setSelectedWalletId(wallets[0].walletId);
     }
-  }, [wallets, selectedWalletId]);
+  }, [wallets, selectedWalletId, params.walletId]);
 
   useEffect(() => {
     if (!categoriesQuery.isSuccess || seededDefaultCategoriesRef.current || seedingInProgressRef.current) {
@@ -607,6 +614,20 @@ export const TransactionScreen = () => {
     setFormDate(formatIsoDate(new Date()));
     setShowTransactionModal(true);
   };
+
+  useEffect(() => {
+    if (params.openCreate !== '1' || openCreateRef.current) {
+      return;
+    }
+    if (wallets.length === 0) {
+      return;
+    }
+    if (params.walletId && wallets.some((wallet) => wallet.walletId === params.walletId)) {
+      setSelectedWalletId(params.walletId);
+    }
+    openCreateTransactionModal();
+    openCreateRef.current = true;
+  }, [params.openCreate, params.walletId, wallets, openCreateTransactionModal]);
 
   const openEditTransactionModal = (item: Transaction) => {
     const category = categories.find((entry) => entry.categoryId === item.categoryId);
