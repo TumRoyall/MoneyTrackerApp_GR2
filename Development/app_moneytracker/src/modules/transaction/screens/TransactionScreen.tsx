@@ -28,7 +28,7 @@ import { formatMoneyInput, parseMoneyInput, formatVndAmount } from '@/shared/uti
 type CategoryType = 'EXPENSE' | 'INCOME';
 
 type TimeMode = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
-type CalendarTarget = 'day' | 'customStart' | 'customEnd';
+type CalendarTarget = 'day' | 'customStart' | 'customEnd' | 'formDate';
 
 const defaultCategoryTemplates: Array<{
   name: string;
@@ -36,21 +36,21 @@ const defaultCategoryTemplates: Array<{
   icon: string;
   color: string;
 }> = [
-  { name: 'Chưa được phân loại', type: 'EXPENSE', icon: '❓', color: '#BFEFF3' },
-  { name: 'Thực phẩm', type: 'EXPENSE', icon: '🛒', color: '#BFEFF3' },
-  { name: 'Thú cưng', type: 'EXPENSE', icon: '🐾', color: '#BFEFF3' },
-  { name: 'Làm đẹp', type: 'EXPENSE', icon: '💄', color: '#BFEFF3' },
-  { name: 'Điện tử', type: 'EXPENSE', icon: '📱', color: '#BFEFF3' },
-  { name: 'Giáo dục', type: 'EXPENSE', icon: '🎓', color: '#BFEFF3' },
-  { name: 'Thể thao', type: 'EXPENSE', icon: '⚽', color: '#BFEFF3' },
-  { name: 'Sức khỏe', type: 'EXPENSE', icon: '💊', color: '#BFEFF3' },
-  { name: 'Du lịch', type: 'EXPENSE', icon: '✈️', color: '#BFEFF3' },
-  { name: 'Giải trí', type: 'EXPENSE', icon: '🎮', color: '#BFEFF3' },
-  { name: 'Lương', type: 'INCOME', icon: '💼', color: '#BFEFF3' },
-  { name: 'Thưởng', type: 'INCOME', icon: '🎁', color: '#BFEFF3' },
-  { name: 'Đầu tư', type: 'INCOME', icon: '📈', color: '#BFEFF3' },
-  { name: 'Khác', type: 'INCOME', icon: '💰', color: '#BFEFF3' },
-];
+    { name: 'Chưa được phân loại', type: 'EXPENSE', icon: '❓', color: '#BFEFF3' },
+    { name: 'Thực phẩm', type: 'EXPENSE', icon: '🛒', color: '#BFEFF3' },
+    { name: 'Thú cưng', type: 'EXPENSE', icon: '🐾', color: '#BFEFF3' },
+    { name: 'Làm đẹp', type: 'EXPENSE', icon: '💄', color: '#BFEFF3' },
+    { name: 'Điện tử', type: 'EXPENSE', icon: '📱', color: '#BFEFF3' },
+    { name: 'Giáo dục', type: 'EXPENSE', icon: '🎓', color: '#BFEFF3' },
+    { name: 'Thể thao', type: 'EXPENSE', icon: '⚽', color: '#BFEFF3' },
+    { name: 'Sức khỏe', type: 'EXPENSE', icon: '💊', color: '#BFEFF3' },
+    { name: 'Du lịch', type: 'EXPENSE', icon: '✈️', color: '#BFEFF3' },
+    { name: 'Giải trí', type: 'EXPENSE', icon: '🎮', color: '#BFEFF3' },
+    { name: 'Lương', type: 'INCOME', icon: '💼', color: '#BFEFF3' },
+    { name: 'Thưởng', type: 'INCOME', icon: '🎁', color: '#BFEFF3' },
+    { name: 'Đầu tư', type: 'INCOME', icon: '📈', color: '#BFEFF3' },
+    { name: 'Khác', type: 'INCOME', icon: '💰', color: '#BFEFF3' },
+  ];
 
 const categoryIconOptions: Array<{ label: string; icon: string }> = [
   { label: 'Giỏ hàng', icon: '🛒' },
@@ -198,7 +198,7 @@ const getTimeDisplayLabel = (
   }
 
   if (mode === 'YEAR') {
-    return `năm ${selectedDate.getFullYear()}`;
+    return `${selectedDate.getFullYear()}`;
   }
 
   if (mode === 'ALL') {
@@ -326,13 +326,25 @@ export const TransactionScreen = () => {
     [categories, formCategoryType],
   );
 
+  const lastParamWalletIdRef = useRef(params.walletId);
+
   useEffect(() => {
-    if (params.walletId && wallets.some((wallet) => wallet.walletId === params.walletId)) {
-      setSelectedWalletId(params.walletId);
+    if (
+      params.walletId &&
+      params.walletId !== lastParamWalletIdRef.current &&
+      wallets.some((wallet) => wallet.walletId === params.walletId)
+    ) {
+      setSelectedWalletId(params.walletId as string);
+      lastParamWalletIdRef.current = params.walletId;
       return;
     }
     if (!selectedWalletId && wallets.length > 0) {
-      setSelectedWalletId(wallets[0].walletId);
+      if (params.walletId && wallets.some((wallet) => wallet.walletId === params.walletId)) {
+        setSelectedWalletId(params.walletId as string);
+        lastParamWalletIdRef.current = params.walletId;
+      } else {
+        setSelectedWalletId(wallets[0].walletId);
+      }
     }
   }, [wallets, selectedWalletId, params.walletId]);
 
@@ -599,6 +611,9 @@ export const TransactionScreen = () => {
     if (calendarTarget === 'customEnd') {
       setTempCustomEndDate(value);
     }
+    if (calendarTarget === 'formDate') {
+      setFormDate(value);
+    }
     setShowCalendarModal(false);
   };
 
@@ -803,7 +818,7 @@ export const TransactionScreen = () => {
                 return (
                   <Pressable key={item.transactionId} style={styles.transactionCard} onPress={() => openEditTransactionModal(item)}>
                     <View style={styles.transactionIconWrap}>
-                      <Ionicons name={isIncome ? 'trending-up' : 'basket'} size={24} color="#3f6f8a" />
+                      <Text style={styles.transactionIconText}>{category?.icon || (isIncome ? '💰' : '🛒')}</Text>
                     </View>
 
                     <View style={styles.transactionInfo}>
@@ -882,12 +897,13 @@ export const TransactionScreen = () => {
             />
 
             <Text style={styles.modalLabel}>Ngày</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="YYYY-MM-DD"
-              value={formDate}
-              onChangeText={setFormDate}
-            />
+            <Pressable
+              style={styles.calendarInput}
+              onPress={() => openCalendarPicker('formDate', formDate)}
+            >
+              <Ionicons name="calendar" size={18} color="#29bcc8" />
+              <Text style={styles.calendarInputText}>{formDate}</Text>
+            </Pressable>
 
             <Text style={styles.modalLabel}>Ghi chú</Text>
             <TextInput
@@ -1745,26 +1761,29 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#d6f6f9',
+    backgroundColor: '#e6f7f9',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  transactionIconText: {
+    fontSize: 24,
+  },
   transactionInfo: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   transactionName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f1f1f',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#28333b',
   },
   transactionNote: {
-    fontSize: 15,
-    color: '#636a70',
+    fontSize: 13,
+    color: '#7b858c',
   },
   transactionAmount: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
   },
   transactionExpense: {
     color: '#f36e79',

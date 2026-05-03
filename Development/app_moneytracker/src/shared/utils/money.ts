@@ -14,3 +14,9 @@ export const parseMoneyInput = (value: string) => {
 };
 
 export const formatVndAmount = (amount: number) => `₫${amount.toLocaleString('vi-VN')}`;
+
+export const formatCurrency = (amount: number, currency: string) => {
+  if (currency === 'USD') return `$${amount.toLocaleString('en-US')}`;
+  if (currency === 'EUR') return `€${amount.toLocaleString('de-DE')}`;
+  return `₫${amount.toLocaleString('vi-VN')}`; // default VND
+};

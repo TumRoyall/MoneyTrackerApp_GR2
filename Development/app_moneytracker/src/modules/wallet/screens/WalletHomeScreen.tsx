@@ -16,11 +16,11 @@ import Svg, { Circle, G, Path } from 'react-native-svg';
 
 import { Category } from '@/modules/category/models/category.types';
 import { useCategoryUsecases } from '@/modules/category/usecases';
-import { WalletCreateInput, WalletType } from '@/modules/wallet/models/wallet.types';
+import { Wallet, WalletCreateInput, WalletType, WalletUpdateInput } from '@/modules/wallet/models/wallet.types';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
 import { TransactionFilters } from '@/modules/transaction/models/transaction.types';
-import { formatMoneyInput, parseMoneyInput, formatVndAmount } from '@/shared/utils/money';
+import { formatMoneyInput, parseMoneyInput, formatVndAmount, formatCurrency } from '@/shared/utils/money';
 
 type CategoryType = 'EXPENSE' | 'INCOME';
 type TimeMode = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
@@ -140,6 +140,19 @@ const describeArc = (center: number, radius: number, startAngle: number, endAngl
   return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
 };
 
+const DonutChart = ({
+  data,
+  size,
+  strokeWidth,
+}: {
+  data: Array<{ value: number; color: string }>;
+  size: number;
+  strokeWidth: number;
+}) => {
+  const center = size / 2;
+  const radius = center - strokeWidth / 2;
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+
   const singleSlice = data.length === 1 && data[0]?.value > 0;
   let startAngle = 0;
 
@@ -180,7 +193,7 @@ const describeArc = (center: number, radius: number, startAngle: number, endAngl
 };
 
 export const WalletHomeScreen = () => {
-  const { getWallets, createWallet } = useWalletUsecases();
+  const { getWallets, createWallet, updateWallet, deleteWallet } = useWalletUsecases();
   const { getCategories } = useCategoryUsecases();
   const { getTransactions } = useTransactionUsecases();
   const router = useRouter();
@@ -190,6 +203,13 @@ export const WalletHomeScreen = () => {
   const [walletType, setWalletType] = useState<WalletType>('REGULAR');
   const [currency, setCurrency] = useState('VND');
   const [balance, setBalance] = useState('0');
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editWalletId, setEditWalletId] = useState<string | null>(null);
+  const [editWalletName, setEditWalletName] = useState('');
+  const [editWalletType, setEditWalletType] = useState<WalletType>('REGULAR');
+  const [editWalletCurrency, setEditWalletCurrency] = useState('VND');
+  const [editWalletBalance, setEditWalletBalance] = useState('0');
   const [description, setDescription] = useState('');
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
   const [categoryMode, setCategoryMode] = useState<CategoryType>('EXPENSE');
@@ -481,6 +501,62 @@ export const WalletHomeScreen = () => {
     }
   };
 
+  const openEditWalletModal = (wallet: Wallet) => {
+    setEditWalletId(wallet.walletId);
+    setEditWalletName(wallet.name);
+    setEditWalletType(wallet.type as WalletType);
+    setEditWalletCurrency(wallet.currency || 'VND');
+    setEditWalletBalance(wallet.currentBalance?.toString() || '0');
+    setShowEditModal(true);
+  };
+
+  const updateWalletHandler = async () => {
+    if (!editWalletId || !editWalletName.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập tên ví');
+      return;
+    }
+    const payload: WalletUpdateInput = {
+      name: editWalletName.trim(),
+      type: editWalletType,
+      currency: editWalletCurrency.trim().toUpperCase() || 'VND',
+    };
+    try {
+      await updateWallet(editWalletId, payload);
+      await queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      setShowEditModal(false);
+      Alert.alert('Thành công', 'Đã cập nhật ví.');
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Lỗi', 'Không thể cập nhật ví. Vui lòng thử lại.');
+    }
+  };
+
+  const deleteWalletHandler = () => {
+    if (!editWalletId) return;
+    Alert.alert(
+      'Xoá ví',
+      'Bạn có chắc chắn muốn xoá ví này? Hành động này không thể hoàn tác và sẽ xoá toàn bộ giao dịch trong ví.',
+      [
+        { text: 'Huỷ', style: 'cancel' },
+        {
+          text: 'Xoá',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteWallet(editWalletId);
+              await queryClient.invalidateQueries({ queryKey: ['wallets'] });
+              setShowEditModal(false);
+              Alert.alert('Thành công', 'Đã xoá ví.');
+            } catch (error) {
+              console.error(error);
+              Alert.alert('Lỗi', 'Không thể xoá ví. Vui lòng thử lại.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -516,11 +592,16 @@ export const WalletHomeScreen = () => {
                 onPress={() => setSelectedWalletId(wallet.walletId)}
                 style={[styles.walletTile, selected ? styles.walletTileActive : null]}
               >
-                <View style={styles.walletTileHeader}>
-                  <MaterialIcons name="account-balance-wallet" size={18} color={selected ? '#1f6681' : '#5d707a'} />
-                  <Text style={[styles.walletTileName, selected ? styles.walletTileNameActive : null]} numberOfLines={1}>
-                    {wallet.name}
-                  </Text>
+                <View style={[styles.walletTileHeader, { justifyContent: 'space-between' }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                    <MaterialIcons name="account-balance-wallet" size={18} color={selected ? '#1f6681' : '#5d707a'} />
+                    <Text style={[styles.walletTileName, selected ? styles.walletTileNameActive : null]} numberOfLines={1}>
+                      {wallet.name}
+                    </Text>
+                  </View>
+                  <Pressable hitSlop={10} onPress={() => openEditWalletModal(wallet)}>
+                    <Ionicons name="pencil" size={16} color={selected ? '#1f6681' : '#5d707a'} />
+                  </Pressable>
                 </View>
                 <Text style={[styles.walletTileBalance, selected ? styles.walletTileBalanceActive : null]}>
                   {formatCurrency(wallet.currentBalance ?? 0, wallet.currency || 'VND')}
@@ -668,35 +749,36 @@ export const WalletHomeScreen = () => {
                   </Text>
                 </View>
               </View>
-
-              {categoryBreakdown.map((item) => (
-                <View key={item.category.categoryId} style={styles.categoryRow}>
-                  <View style={[styles.categoryIcon, { backgroundColor: `${item.color}22` }]}>
-                    <Text style={styles.categoryIconText}>{item.category.icon || '•'}</Text>
-                  </View>
-                  <View style={styles.categoryInfo}>
-                    <View style={styles.categoryHeaderRow}>
-                      <Text style={styles.categoryName} numberOfLines={1}>
-                        {item.category.name}
-                      </Text>
-                      <Text style={styles.categoryAmount} numberOfLines={1}>
-                        {formatCurrency(item.amount, currentWallet?.currency || 'VND')}
-                      </Text>
+              <View style={styles.categoryList}>
+                {categoryBreakdown.map((item) => (
+                  <View key={item.category.categoryId} style={styles.categoryRow}>
+                    <View style={styles.categoryIcon}>
+                      <Text style={styles.categoryIconText}>{item.category.icon || '•'}</Text>
                     </View>
-                    <View style={styles.progressTrack}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          { width: `${Math.max(item.percentage, 2)}%`, backgroundColor: item.color },
-                        ]}
-                      />
-                      <View style={styles.progressBadge}>
-                        <Text style={styles.progressBadgeText}>{item.percentage.toFixed(0)}%</Text>
+                    <View style={styles.categoryInfo}>
+                      <View style={styles.categoryHeaderRow}>
+                        <Text style={styles.categoryName} numberOfLines={1}>
+                          {item.category.name}
+                        </Text>
+                        <Text style={styles.categoryAmount} numberOfLines={1}>
+                          {formatCurrency(item.amount, currentWallet?.currency || 'VND')}
+                        </Text>
+                      </View>
+                      <View style={styles.progressTrack}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            { width: `${Math.max(item.percentage, 2)}%`, backgroundColor: item.color },
+                          ]}
+                        />
+                        <View style={styles.progressBadge}>
+                          <Text style={styles.progressBadgeText}>{item.percentage.toFixed(0)}%</Text>
+                        </View>
                       </View>
                     </View>
                   </View>
-                </View>
-              ))}
+                ))}
+              </View>
             </>
           )}
         </View>
@@ -937,6 +1019,82 @@ export const WalletHomeScreen = () => {
               </Pressable>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showEditModal} animationType="slide" onRequestClose={() => setShowEditModal(false)}>
+        <View style={styles.editModalContainer}>
+          <View style={styles.editModalHeader}>
+            <Pressable hitSlop={10} onPress={() => setShowEditModal(false)}>
+              <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
+            </Pressable>
+            <Text style={styles.editModalTitle}>Chỉnh sửa ví</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          <ScrollView contentContainerStyle={styles.editModalBody}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Tên ví</Text>
+              <TextInput
+                style={styles.textInput}
+                value={editWalletName}
+                onChangeText={setEditWalletName}
+                placeholder="Nhập tên ví"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Loại ví</Text>
+              <View style={styles.pillWrap}>
+                {(['REGULAR', 'CASH', 'SAVING', 'DEBT', 'INVEST', 'EVENT'] as WalletType[]).map((type) => (
+                  <Pressable
+                    key={type}
+                    onPress={() => setEditWalletType(type)}
+                    style={[styles.pillBtn, editWalletType === type ? styles.pillBtnActive : null]}
+                  >
+                    <Text style={[styles.pillBtnText, editWalletType === type ? styles.pillBtnTextActive : null]}>
+                      {type}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Tiền tệ</Text>
+              <View style={styles.pillWrap}>
+                {['VND', 'USD', 'EUR'].map((cur) => (
+                  <Pressable
+                    key={cur}
+                    onPress={() => setEditWalletCurrency(cur)}
+                    style={[styles.pillBtn, editWalletCurrency === cur ? styles.pillBtnActive : null]}
+                  >
+                    <Text style={[styles.pillBtnText, editWalletCurrency === cur ? styles.pillBtnTextActive : null]}>
+                      {cur}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Số dư ban đầu</Text>
+              <TextInput
+                style={[styles.textInput, styles.textInputDisabled]}
+                value={formatMoneyInput(editWalletBalance)}
+                editable={false}
+              />
+            </View>
+
+            <View style={styles.editActionRow}>
+              <Pressable style={styles.btnSave} onPress={updateWalletHandler}>
+                <Text style={styles.btnSaveText}>Lưu</Text>
+              </Pressable>
+              <Pressable style={styles.btnDelete} onPress={deleteWalletHandler}>
+                <Text style={styles.btnDeleteText}>Xóa ví</Text>
+              </Pressable>
+            </View>
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -1273,6 +1431,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#34a795',
     fontWeight: '700',
+  },
+  categoryList: {
+    borderTopWidth: 1,
+    borderTopColor: '#f1f3f5',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f3f5',
+    gap: 16,
+  },
+  categoryIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#e8f8f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryIconText: {
+    fontSize: 26,
+  },
+  categoryInfo: {
+    flex: 1,
+    gap: 8,
   },
   categoryHeaderRow: {
     flexDirection: 'row',
@@ -1776,5 +1961,76 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  editModalContainer: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  editModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: '#f8fafc',
+  },
+  editModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f1f1f',
+  },
+  editModalBody: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    gap: 24,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#636a70',
+    fontWeight: '500',
+  },
+  textInput: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#1f1f1f',
+  },
+  textInputDisabled: {
+    backgroundColor: '#f3f4f6',
+    color: '#9ca3af',
+  },
+  editActionRow: {
+    marginTop: 20,
+    gap: 16,
+  },
+  btnSave: {
+    backgroundColor: '#1dc4c0',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  btnSaveText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  btnDelete: {
+    backgroundColor: '#fb7185',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  btnDeleteText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
