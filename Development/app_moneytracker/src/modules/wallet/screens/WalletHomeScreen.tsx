@@ -577,12 +577,6 @@ export const WalletHomeScreen = () => {
             <Ionicons name="sparkles" size={34} color="#4c88ff" />
           </View>
         </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Số dư ví</Text>
-          <Text style={styles.sectionSubtitle}>Chọn ví để xem chi tiết</Text>
-        </View>
-
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletCarouselContent}>
           {wallets.map((wallet) => {
             const selected = wallet.walletId === selectedWalletId;
@@ -620,7 +614,7 @@ export const WalletHomeScreen = () => {
         </ScrollView>
 
         <View style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Cơ cấu số dư theo ví</Text>
+          <Text style={styles.chartTitle}>Cơ cấu tài sản</Text>
           {walletDistribution.length === 0 ? (
             <Text style={styles.chartEmpty}>Chưa có dữ liệu để hiển thị biểu đồ.</Text>
           ) : (
@@ -638,7 +632,7 @@ export const WalletHomeScreen = () => {
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Phân tích theo ví</Text>
+          <Text style={styles.sectionTitle}>Phân tích</Text>
           <Text style={styles.sectionSubtitle}>Lọc giao dịch</Text>
         </View>
 

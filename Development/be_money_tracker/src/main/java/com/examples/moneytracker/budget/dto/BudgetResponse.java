@@ -13,22 +13,28 @@ import java.util.UUID;
 @AllArgsConstructor
 public class BudgetResponse {
     private UUID budgetId;
+    private UUID walletId;
     private UUID categoryId;
     private BigDecimal amountLimit;
     private LocalDate periodStart;
     private LocalDate periodEnd;
     private BudgetPeriodType periodType;
     private BigDecimal alertThreshold;
+    private BigDecimal spentAmount;
+    private BigDecimal remainingAmount;
 
-    public static BudgetResponse from(Budget budget) {
+    public static BudgetResponse from(Budget budget, BigDecimal spentAmount, BigDecimal remainingAmount) {
         return new BudgetResponse(
                 budget.getBudgetId(),
+                budget.getWalletId(),
                 budget.getCategoryId(),
                 budget.getAmountLimit(),
                 budget.getPeriodStart(),
                 budget.getPeriodEnd(),
                 budget.getPeriodType(),
-                budget.getAlertThreshold()
+                budget.getAlertThreshold(),
+                spentAmount,
+                remainingAmount
         );
     }
 }

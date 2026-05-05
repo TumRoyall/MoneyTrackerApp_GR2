@@ -8,6 +8,7 @@
 ### POST /api/budgets
 - purpose: tao ngan sach
 - request body:
+  - walletId (UUID, required)
   - categoryId (UUID, required)
   - amountLimit (decimal)
   - periodStart (YYYY-MM-DD)
@@ -16,11 +17,14 @@
   - alertThreshold (decimal, optional)
 - response body:
   - budgetId (UUID)
+  - walletId (UUID, required)
   - categoryId (UUID, optional)
   - amountLimit (decimal)
   - periodStart (YYYY-MM-DD)
   - periodEnd (YYYY-MM-DD)
   - alertThreshold (decimal, optional)
+  - spentAmount (decimal)
+  - remainingAmount (decimal)
 
 ### GET /api/budgets
 - purpose: lay danh sach ngan sach
@@ -41,3 +45,4 @@
 
 ## Notes
 - Ngan sach theo category, cho phep nhieu ngan sach trong 1 ky
+- spentAmount/remainingAmount tinh theo giao dich chi phi trong khoang thoi gian cua budget, loc theo vi va category

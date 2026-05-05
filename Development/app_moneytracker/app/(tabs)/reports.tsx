@@ -81,14 +81,14 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 4,
-    fontSize: 40,
-    fontWeight: '800',
+    fontSize: 30,
+    fontWeight: '700',
     color: '#1f1f1f',
   },
   subtitle: {
     marginTop: -4,
     marginBottom: 10,
-    fontSize: 16,
+    fontSize: 14,
     color: '#6c737a',
   },
   card: {
@@ -119,13 +119,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   cardTitle: {
-    fontSize: 34,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '600',
     color: '#1f1f1f',
   },
   cardDescription: {
-    fontSize: 16,
+    fontSize: 13,
     color: '#6a7279',
-    lineHeight: 21,
+    lineHeight: 18,
   },
 });

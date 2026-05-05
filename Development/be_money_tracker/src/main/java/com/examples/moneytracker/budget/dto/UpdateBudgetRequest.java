@@ -9,6 +9,7 @@ import java.util.UUID;
 
 @Data
 public class UpdateBudgetRequest {
+    private UUID walletId;
     private UUID categoryId;
     private BigDecimal amountLimit;
     private LocalDate periodStart;

@@ -11,6 +11,9 @@ import java.util.UUID;
 @Data
 public class CreateBudgetRequest {
     @NotNull
+    private UUID walletId;
+
+    @NotNull
     private UUID categoryId;
 
     @NotNull

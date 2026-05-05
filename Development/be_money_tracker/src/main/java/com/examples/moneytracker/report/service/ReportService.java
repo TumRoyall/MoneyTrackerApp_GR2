@@ -182,13 +182,21 @@ public class ReportService {
         List<BudgetHealthItem> items = budgetRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .stream()
                 .map(budget -> {
-                    BigDecimal spent = transactionRepository.findAll(
-                            TransactionSpecification.reportFilter(userId, budget.getPeriodStart(), budget.getPeriodEnd())
-                    ).stream()
-                            .filter(tx -> tx.getCategory().getCategoryId().equals(budget.getCategoryId()))
-                            .filter(tx -> "EXPENSE".equalsIgnoreCase(tx.getCategory().getType()))
-                            .map(Transaction::getAmount)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal spent = transactionRepository.findAll(
+                    TransactionSpecification.filter(
+                        userId,
+                        budget.getWalletId(),
+                        budget.getCategoryId(),
+                        "EXPENSE",
+                        budget.getPeriodStart(),
+                        budget.getPeriodEnd(),
+                        null,
+                        null,
+                        null
+                    )
+                ).stream()
+                    .map(Transaction::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                     BigDecimal ratio = budget.getAmountLimit().compareTo(BigDecimal.ZERO) == 0
                             ? BigDecimal.ZERO

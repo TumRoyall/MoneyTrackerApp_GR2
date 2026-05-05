@@ -4,10 +4,11 @@
 Quan ly ngan sach theo category.
 
 ## 2. Data Model
-- budgets: budget_id, user_id, category_id, amount_limit, period_start, period_end, period_type, alert_threshold
+- budgets: budget_id, user_id, wallet_id, category_id, amount_limit, period_start, period_end, period_type, alert_threshold
 
 ## 3. Business Logic
 - Tao ngan sach theo category
+- Budget bat buoc theo vi
 - Nhieu ngan sach trong 1 ky
 - Ky co the la custom hoac monthly
 - Cap nhat ngan sach

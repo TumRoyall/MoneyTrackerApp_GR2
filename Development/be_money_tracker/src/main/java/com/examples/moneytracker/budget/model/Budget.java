@@ -21,6 +21,9 @@ public class Budget {
     private UUID userId;
 
     @Column(nullable = false)
+    private UUID walletId;
+
+    @Column(nullable = false)
     private UUID categoryId;
 
     @Column(nullable = false, precision = 18, scale = 2)

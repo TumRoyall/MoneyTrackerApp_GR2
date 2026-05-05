@@ -17,6 +17,7 @@ export interface Budget {
 }
 
 export interface BudgetCreateInput {
+  walletId: string;
   categoryId: string;
   amountLimit: number;
   periodStart: string;
@@ -26,6 +27,7 @@ export interface BudgetCreateInput {
 }
 
 export interface BudgetUpdateInput {
+  walletId?: string;
   categoryId?: string;
   amountLimit?: number;
   periodStart?: string;

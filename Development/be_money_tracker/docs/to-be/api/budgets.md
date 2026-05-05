@@ -8,6 +8,7 @@
 ### POST /api/budgets
 - purpose: tao ngan sach
 - request body:
+  - walletId (required)
   - categoryId (required)
   - amountLimit
   - periodStart
@@ -35,3 +36,4 @@
 
 ## Notes
 - Budget theo category, nhieu ngan sach trong 1 ky
+- Budget theo vi, tinh spentAmount/remainingAmount tu giao dich chi phi trong ky

@@ -90,6 +90,7 @@ CREATE TABLE transactions (
 CREATE TABLE budgets (
     budget_id        CHAR(36) PRIMARY KEY,
     user_id          CHAR(36) NOT NULL,
+    wallet_id        CHAR(36) NOT NULL,
     category_id      CHAR(36) NOT NULL,
     amount_limit     DECIMAL(18,2) NOT NULL,
     period_start     DATE NOT NULL,
@@ -103,6 +104,8 @@ CREATE TABLE budgets (
 
     CONSTRAINT fk_budgets_user
         FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_budgets_wallet
+        FOREIGN KEY (wallet_id) REFERENCES wallets(wallet_id),
     CONSTRAINT fk_budgets_category
         FOREIGN KEY (category_id) REFERENCES categories(category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -153,5 +156,5 @@ CREATE INDEX idx_tx_created_by
 CREATE INDEX idx_tx_category
     ON transactions(category_id);
 
-CREATE INDEX idx_budget_user_cat_period
-    ON budgets(user_id, category_id, period_start, period_end);
+CREATE INDEX idx_budget_user_wallet_cat_period
+    ON budgets(user_id, wallet_id, category_id, period_start, period_end);

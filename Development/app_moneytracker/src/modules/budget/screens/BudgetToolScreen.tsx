@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -15,7 +16,8 @@ import { useRouter } from 'expo-router';
 
 import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
-import { formatMoneyInput, parseMoneyInput, formatVndAmount } from '@/shared/utils/money';
+import { useWalletUsecases } from '@/modules/wallet/usecases';
+import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/money';
 
 type PeriodType = 'monthly' | 'custom';
 
@@ -50,6 +52,7 @@ export const BudgetToolScreen = () => {
   const queryClient = useQueryClient();
   const { getBudgets, createBudget } = useBudgetUsecases();
   const { getCategories } = useCategoryUsecases();
+  const { getWallets } = useWalletUsecases();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [amountLimitInput, setAmountLimitInput] = useState('');
@@ -57,6 +60,8 @@ export const BudgetToolScreen = () => {
   const [periodStart, setPeriodStart] = useState(toIsoDate(new Date()));
   const [periodEndCustom, setPeriodEndCustom] = useState(toIsoDate(new Date()));
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
+  const [showAllWallets, setShowAllWallets] = useState(true);
 
   const budgetsQuery = useQuery({
     queryKey: ['budgets'],
@@ -68,8 +73,14 @@ export const BudgetToolScreen = () => {
     queryFn: getCategories,
   });
 
+  const walletsQuery = useQuery({
+    queryKey: ['wallets'],
+    queryFn: getWallets,
+  });
+
   const budgets = budgetsQuery.data ?? [];
   const categories = categoriesQuery.data ?? [];
+  const wallets = walletsQuery.data ?? [];
 
   const expenseCategories = useMemo(
     () => categories.filter((item) => String(item.type || '').toUpperCase() === 'EXPENSE'),
@@ -81,8 +92,30 @@ export const BudgetToolScreen = () => {
     [categories],
   );
 
+  const walletMap = useMemo(
+    () => new Map(wallets.map((item) => [item.walletId, item])),
+    [wallets],
+  );
+
+  useEffect(() => {
+    if (!selectedWalletId && wallets.length > 0) {
+      setSelectedWalletId(wallets[0].walletId);
+    }
+  }, [selectedWalletId, wallets]);
+
+  const filteredBudgets = useMemo(() => {
+    if (showAllWallets || !selectedWalletId) {
+      return budgets;
+    }
+    return budgets.filter((budget) => budget.walletId === selectedWalletId);
+  }, [budgets, selectedWalletId, showAllWallets]);
+
   const createBudgetHandler = async () => {
     const amountLimit = parseMoneyInput(amountLimitInput);
+    if (!selectedWalletId) {
+      Alert.alert('Thiếu ví', 'Vui lòng chọn ví cho ngân sách.');
+      return;
+    }
     if (!selectedCategoryId) {
       Alert.alert('Thiếu danh mục', 'Vui lòng chọn danh mục cho ngân sách.');
       return;
@@ -96,6 +129,7 @@ export const BudgetToolScreen = () => {
 
     try {
       await createBudget({
+        walletId: selectedWalletId,
         categoryId: selectedCategoryId,
         amountLimit,
         periodStart,
@@ -126,26 +160,65 @@ export const BudgetToolScreen = () => {
           <View style={{ width: 24 }} />
         </View>
 
+        <View style={styles.walletToggleRow}>
+          <Text style={styles.walletToggleLabel}>Hiển thị tất cả ví</Text>
+          <Switch
+            value={showAllWallets}
+            onValueChange={setShowAllWallets}
+            trackColor={{ false: '#d4dde3', true: '#33c3cd' }}
+            thumbColor={showAllWallets ? '#ffffff' : '#f1f5f8'}
+          />
+        </View>
+
+        {!showAllWallets ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletRow}
+          >
+            {wallets.map((wallet) => {
+              const selected = selectedWalletId === wallet.walletId;
+              return (
+                <Pressable
+                  key={wallet.walletId}
+                  style={[styles.walletChip, selected ? styles.walletChipActive : null]}
+                  onPress={() => setSelectedWalletId(wallet.walletId)}
+                >
+                  <Text style={[styles.walletChipText, selected ? styles.walletChipTextActive : null]}>
+                    {wallet.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : null}
+
         {budgetsQuery.isLoading ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>Đang tải ngân sách...</Text>
           </View>
-        ) : budgets.length === 0 ? (
+        ) : filteredBudgets.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>Chưa có ngân sách</Text>
             <Text style={styles.emptyText}>Bạn có thể tạo ngân sách đầu tiên bằng nút bên dưới.</Text>
           </View>
         ) : (
-          budgets.map((budget) => {
+          filteredBudgets.map((budget) => {
             const category = budget.categoryId ? categoryMap.get(budget.categoryId) : undefined;
+            const wallet = budget.walletId ? walletMap.get(budget.walletId) : undefined;
             const spent = Number(
               budget.spentAmount ?? (budget.remainingAmount == null ? 0 : budget.amountLimit - budget.remainingAmount),
             );
-            const remaining = Number(budget.remainingAmount ?? budget.amountLimit - spent);
             const percent = budget.amountLimit > 0 ? Math.min((spent / budget.amountLimit) * 100, 100) : 0;
 
             return (
-              <View key={budget.budgetId} style={styles.budgetCard}>
+              <Pressable
+                key={budget.budgetId}
+                style={styles.budgetCard}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(tabs)/budgets/[budgetId]',
+                    params: { budgetId: budget.budgetId },
+                  })
+                }
+              >
                 <Text style={styles.budgetTitle}>{category?.name || 'Ngân sách'}</Text>
 
                 <View style={styles.categoryChip}>
@@ -153,10 +226,10 @@ export const BudgetToolScreen = () => {
                   <Text style={styles.categoryChipText}>{category?.name || 'Danh mục'}</Text>
                 </View>
 
+                {wallet ? <Text style={styles.walletName}>{wallet.name}</Text> : null}
+
                 <Text style={styles.budgetSummary}>
-                  <Text style={styles.remainingText}>{formatVndAmount(remaining)}</Text>
-                  {' còn lại từ ngân sách '}
-                  <Text style={styles.totalText}>{formatVndAmount(budget.amountLimit)}</Text>
+                  Đã dùng <Text style={styles.remainingText}>{Math.round(percent)}%</Text> ngân sách
                 </Text>
 
                 <View style={styles.progressTrack}>
@@ -167,7 +240,7 @@ export const BudgetToolScreen = () => {
                   <Text style={styles.footerText}>{formatDateVi(budget.periodStart)}</Text>
                   <Text style={styles.footerText}>{formatDateVi(budget.periodEnd)}</Text>
                 </View>
-              </View>
+              </Pressable>
             );
           })
         )}
@@ -229,6 +302,31 @@ export const BudgetToolScreen = () => {
               />
             ) : null}
 
+            <Text style={styles.sectionLabel}>Chọn ví</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletRow}
+            >
+              {wallets.length === 0 ? (
+                <View style={styles.walletEmptyChip}>
+                  <Text style={styles.walletEmptyText}>Chưa có ví</Text>
+                </View>
+              ) : (
+                wallets.map((wallet) => {
+                  const selected = selectedWalletId === wallet.walletId;
+                  return (
+                    <Pressable
+                      key={wallet.walletId}
+                      onPress={() => setSelectedWalletId(wallet.walletId)}
+                      style={[styles.walletChip, selected ? styles.walletChipActive : null]}
+                    >
+                      <Text style={[styles.walletChipText, selected ? styles.walletChipTextActive : null]}>
+                        {wallet.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })
+              )}
+            </ScrollView>
+
             <Text style={styles.sectionLabel}>Danh mục chi phí</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
               {expenseCategories.map((item) => {
@@ -285,6 +383,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1f1f1f',
   },
+  walletToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  walletToggleLabel: {
+    fontSize: 14,
+    color: '#4b5963',
+    fontWeight: '600',
+  },
   emptyCard: {
     borderRadius: 14,
     backgroundColor: '#fff',
@@ -331,6 +440,11 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: 22,
     color: '#2a333a',
+    fontWeight: '600',
+  },
+  walletName: {
+    fontSize: 14,
+    color: '#5b6770',
     fontWeight: '600',
   },
   budgetSummary: {
@@ -440,6 +554,45 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#5d6972',
+  },
+  walletRow: {
+    gap: 8,
+    paddingBottom: 6,
+  },
+  walletChip: {
+    minHeight: 40,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#d9e2e8',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walletChipActive: {
+    borderColor: '#29bcc8',
+    backgroundColor: '#e9fbfd',
+  },
+  walletChipText: {
+    fontSize: 13,
+    color: '#3a464e',
+    fontWeight: '600',
+  },
+  walletChipTextActive: {
+    color: '#0f8c95',
+  },
+  walletEmptyChip: {
+    minHeight: 40,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f5f8',
+  },
+  walletEmptyText: {
+    fontSize: 13,
+    color: '#7b868d',
+    fontWeight: '600',
   },
   categoryRow: {
     gap: 8,
