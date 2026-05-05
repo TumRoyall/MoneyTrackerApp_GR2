@@ -62,8 +62,8 @@ export const BudgetDetailScreen = () => {
     queryKey: ['budget-transactions', budget?.budgetId],
     queryFn: () =>
       getTransactions({
-        walletId: budget?.walletId,
-        categoryId: budget?.categoryId,
+        walletId: budget?.walletId ?? undefined,
+        categoryId: budget?.categoryId ?? undefined,
         fromDate: budget?.periodStart,
         toDate: budget?.periodEnd,
         type: 'EXPENSE',
@@ -94,7 +94,21 @@ export const BudgetDetailScreen = () => {
             <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
           </Pressable>
           <Text style={styles.title}>{category?.name || 'Ngân sách'}</Text>
-          <View style={{ width: 24 }} />
+          {budget ? (
+            <Pressable
+              style={styles.editButton}
+              onPress={() =>
+                router.push({
+                  pathname: '/(tabs)/budgets/[budgetId]/edit',
+                  params: { budgetId },
+                })
+              }
+            >
+              <Ionicons name="pencil" size={20} color="#1f1f1f" />
+            </Pressable>
+          ) : (
+            <View style={{ width: 24 }} />
+          )}
         </View>
 
         {budgetQuery.isLoading ? (
@@ -176,6 +190,13 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 32,
     height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },

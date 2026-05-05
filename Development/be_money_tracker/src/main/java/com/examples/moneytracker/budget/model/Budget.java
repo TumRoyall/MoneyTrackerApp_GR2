@@ -35,7 +35,6 @@ public class Budget {
     @Column(name = "period_end", nullable = false)
     private LocalDate periodEnd;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "period_type", nullable = false)
     private BudgetPeriodType periodType;
 

@@ -1,0 +1,289 @@
+src/modules/budget/screens/BudgetDetailScreen.tsx(7,35): error TS2307: Cannot find module '@/modules/budget/usecases' or its corresponding type declarations.
+src/modules/budget/screens/BudgetDetailScreen.tsx(8,37): error TS2307: Cannot find module '@/modules/category/usecases' or its corresponding type declarations.
+src/modules/budget/screens/BudgetDetailScreen.tsx(9,40): error TS2307: Cannot find module '@/modules/transaction/usecases' or its corresponding type declarations.
+src/modules/budget/screens/BudgetDetailScreen.tsx(10,35): error TS2307: Cannot find module '@/modules/wallet/usecases' or its corresponding type declarations.
+src/modules/budget/screens/BudgetDetailScreen.tsx(11,33): error TS2307: Cannot find module '@/shared/utils/money' or its corresponding type declarations.
+src/modules/budget/screens/BudgetDetailScreen.tsx(52,22): error TS2339: Property 'find' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetDetailScreen.tsx(57,19): error TS2339: Property 'find' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetDetailScreen.tsx(90,5): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(91,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(92,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(93,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(94,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(96,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(98,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(107,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(110,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(115,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(116,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(119,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(120,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(123,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(124,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(125,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(126,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(128,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(130,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(133,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(135,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(136,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(139,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(140,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(141,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(144,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(148,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(151,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(152,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(155,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(156,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(160,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(161,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(162,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(163,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetDetailScreen.tsx(164,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(17,35): error TS2307: Cannot find module '@/modules/budget/usecases' or its corresponding type declarations.
+src/modules/budget/screens/BudgetEditScreen.tsx(18,37): error TS2307: Cannot find module '@/modules/category/usecases' or its corresponding type declarations.
+src/modules/budget/screens/BudgetEditScreen.tsx(19,35): error TS2307: Cannot find module '@/modules/wallet/usecases' or its corresponding type declarations.
+src/modules/budget/screens/BudgetEditScreen.tsx(20,51): error TS2307: Cannot find module '@/shared/utils/money' or its corresponding type declarations.
+src/modules/budget/screens/BudgetEditScreen.tsx(182,41): error TS2339: Property 'find' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetEditScreen.tsx(194,38): error TS2339: Property 'length' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetEditScreen.tsx(200,22): error TS2339: Property 'filter' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetEditScreen.tsx(205,20): error TS2339: Property 'length' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetEditScreen.tsx(211,40): error TS2339: Property 'length' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetEditScreen.tsx(214,22): error TS2339: Property 'filter' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetEditScreen.tsx(288,5): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(289,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(290,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(291,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(292,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(294,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(295,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(299,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(300,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(303,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(304,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(307,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(308,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(312,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(320,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(328,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(329,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(330,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(339,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(342,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(349,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(357,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(364,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(370,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(377,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(378,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(379,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(380,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(383,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(384,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(385,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(388,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(389,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(391,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(394,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(399,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(400,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(401,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(406,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(407,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(408,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(411,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(412,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(413,24): error TS2339: Property 'length' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetEditScreen.tsx(414,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(415,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(418,25): error TS2339: Property 'map' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetEditScreen.tsx(421,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(426,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(435,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(436,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(442,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(448,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(449,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(450,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(452,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(453,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(457,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(460,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(464,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(468,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(472,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(474,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(480,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(484,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(489,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(503,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(504,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(505,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(507,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(508,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(515,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(521,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(521,29): error TS2339: Property 'modalOverlay' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'.
+src/modules/budget/screens/BudgetEditScreen.tsx(522,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(522,31): error TS2339: Property 'categoryPickerSheet' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'.
+src/modules/budget/screens/BudgetEditScreen.tsx(523,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(523,33): error TS2339: Property 'modalHeader' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'.
+src/modules/budget/screens/BudgetEditScreen.tsx(524,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(525,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(526,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(530,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(530,55): error TS2339: Property 'categoryPickerContent' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'.
+src/modules/budget/screens/BudgetEditScreen.tsx(532,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(537,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(540,38): error TS2339: Property 'categoryPickerItem' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'.
+src/modules/budget/screens/BudgetEditScreen.tsx(540,76): error TS2339: Property 'categoryPickerItemSelected' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'.
+src/modules/budget/screens/BudgetEditScreen.tsx(542,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(542,43): error TS2339: Property 'categoryPickerIconWrap' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'.
+src/modules/budget/screens/BudgetEditScreen.tsx(543,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(543,45): error TS2339: Property 'categoryPickerIcon' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'.
+src/modules/budget/screens/BudgetEditScreen.tsx(545,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(545,44): error TS2339: Property 'categoryPickerName' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'.
+src/modules/budget/screens/BudgetEditScreen.tsx(545,82): error TS2339: Property 'categoryPickerNameSelected' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'.
+src/modules/budget/screens/BudgetEditScreen.tsx(548,35): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(548,55): error TS2339: Property 'categoryPickerSelectedMark' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'.
+src/modules/budget/screens/BudgetEditScreen.tsx(555,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(555,38): error TS2551: Property 'categoryPickerDoneButton' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'. Did you mean 'openCategoryPickerButton'?
+src/modules/budget/screens/BudgetEditScreen.tsx(556,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetEditScreen.tsx(556,35): error TS2551: Property 'categoryPickerDoneButtonText' does not exist on type '{ screen: { flex: number; backgroundColor: string; }; content: { padding: number; paddingBottom: number; gap: number; }; headerRow: { flexDirection: "row"; alignItems: "center"; justifyContent: "space-between"; marginBottom: number; }; ... 58 more ...; saveBtnText: { ...; }; }'. Did you mean 'openCategoryPickerButtonText'?
+src/modules/budget/screens/BudgetToolScreen.tsx(17,35): error TS2307: Cannot find module '@/modules/budget/usecases' or its corresponding type declarations.
+src/modules/budget/screens/BudgetToolScreen.tsx(18,37): error TS2307: Cannot find module '@/modules/category/usecases' or its corresponding type declarations.
+src/modules/budget/screens/BudgetToolScreen.tsx(19,35): error TS2307: Cannot find module '@/modules/wallet/usecases' or its corresponding type declarations.
+src/modules/budget/screens/BudgetToolScreen.tsx(20,68): error TS2307: Cannot find module '@/shared/utils/money' or its corresponding type declarations.
+src/modules/budget/screens/BudgetToolScreen.tsx(166,22): error TS2339: Property 'filter' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(171,30): error TS2339: Property 'map' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(176,27): error TS2339: Property 'map' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(181,38): error TS2339: Property 'length' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(190,20): error TS2339: Property 'filter' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(194,22): error TS2339: Property 'filter' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(273,5): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(274,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(275,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(276,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(277,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(279,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(280,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(283,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(284,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(285,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(294,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(296,22): error TS2339: Property 'map' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(299,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(304,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(314,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(315,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(318,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(319,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(320,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(330,61): error TS2339: Property 'name' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(331,40): error TS2339: Property 'type' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(340,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(350,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(351,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(352,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(363,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(367,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(368,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(368,70): error TS2339: Property 'icon' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(369,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(369,70): error TS2339: Property 'name' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(373,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(374,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(375,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(375,63): error TS2339: Property 'name' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(379,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(385,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(386,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(389,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(390,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(391,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(399,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(400,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(401,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(404,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(405,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(406,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(407,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(408,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(411,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(412,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(416,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(420,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(428,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(436,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(437,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(441,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(450,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(453,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(460,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(468,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(475,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(481,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(488,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(489,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(490,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(491,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(494,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(495,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(496,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(499,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(500,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(502,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(505,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(510,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(511,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(512,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(517,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(518,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(519,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(522,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(523,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(525,24): error TS2339: Property 'length' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(526,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(527,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(530,25): error TS2339: Property 'map' does not exist on type 'unknown'.
+src/modules/budget/screens/BudgetToolScreen.tsx(533,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(538,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(547,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(548,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(554,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(560,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(561,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(562,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(564,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(565,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(569,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(572,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(576,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(580,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(584,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(586,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(592,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(596,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(601,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(615,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(616,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(617,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(619,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(620,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(627,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(633,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(634,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(635,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(636,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(637,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(638,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(642,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(644,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(649,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(654,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(655,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(657,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(660,35): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(667,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+src/modules/budget/screens/BudgetToolScreen.tsx(668,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.

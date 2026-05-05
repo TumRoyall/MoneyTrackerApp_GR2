@@ -34,6 +34,8 @@ Cap nhat file `src/main/resources/application.properties`:
 
 Luu y: hien tai file nay co chua thong tin nhay cam (mat khau/secret). Nen dua cac gia tri nay ra bien moi truong truoc khi deploy.
 
+Neu property `security.jwt.secret` khong duoc cau hinh, backend van co the khoi dong voi gia tri mac dinh, nhung nen thay doi sang mot chuoi bi mat rieng truoc khi chay tren moi truong thuc.
+
 ### 3) Run ung dung
 
 Windows:

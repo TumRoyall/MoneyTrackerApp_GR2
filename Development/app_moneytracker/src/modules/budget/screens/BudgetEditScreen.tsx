@@ -12,17 +12,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
-import { formatMoneyInput, formatVndAmount, parseMoneyInput } from '@/shared/utils/money';
+import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/money';
 
 type PeriodType = 'monthly' | 'biweekly' | 'weekly' | 'yearly';
-
 type CategoryType = 'EXPENSE' | 'INCOME';
-
 type CalendarTarget = 'day';
 
 const formatDateVi = (isoDate: string) => {
@@ -43,11 +41,6 @@ const parseIsoDate = (value: string) => {
     return null;
   }
   return parsed;
-};
-
-const normalizeCategoryType = (value: unknown): CategoryType => {
-  const stringValue = String(value || '').toUpperCase();
-  return stringValue === 'INCOME' ? 'INCOME' : 'EXPENSE';
 };
 
 const isSameDate = (left: Date, right: Date) =>
@@ -120,32 +113,47 @@ const toIsoDate = (value: Date) => {
 
 const formatIsoDate = (value: Date) => toIsoDate(value);
 
-export const BudgetToolScreen = () => {
+const normalizeCategoryType = (value: unknown): CategoryType => {
+  const stringValue = String(value || '').toUpperCase();
+  return stringValue === 'INCOME' ? 'INCOME' : 'EXPENSE';
+};
+
+const normalizePeriodType = (value?: string): PeriodType => {
+  if (value === 'weekly' || value === 'biweekly' || value === 'yearly') {
+    return value;
+  }
+  return 'monthly';
+};
+
+export const BudgetEditScreen = () => {
   const router = useRouter();
+  const params = useLocalSearchParams<{ budgetId?: string }>();
+  const budgetId = params.budgetId || '';
+
   const queryClient = useQueryClient();
-  const { getBudgets, createBudget } = useBudgetUsecases();
+  const { getBudget, updateBudget } = useBudgetUsecases();
   const { getCategories } = useCategoryUsecases();
   const { getWallets } = useWalletUsecases();
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showCategoryPickerModal, setShowCategoryPickerModal] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const [amountLimitInput, setAmountLimitInput] = useState('');
   const [periodType, setPeriodType] = useState<PeriodType>('monthly');
   const [periodStart, setPeriodStart] = useState(toIsoDate(new Date()));
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
-  const [showAllWallets, setShowAllWallets] = useState(true);
   const [budgetType, setBudgetType] = useState<CategoryType>('EXPENSE');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showCategoryPickerModal, setShowCategoryPickerModal] = useState(false);
   const [calendarTarget, setCalendarTarget] = useState<CalendarTarget>('day');
   const [calendarMonth, setCalendarMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [calendarSelectedDate, setCalendarSelectedDate] = useState(new Date());
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  const budgetsQuery = useQuery({
-    queryKey: ['budgets'],
-    queryFn: getBudgets,
+  const budgetQuery = useQuery({
+    queryKey: ['budget', budgetId],
+    queryFn: () => getBudget(budgetId),
+    enabled: Boolean(budgetId),
   });
 
   const categoriesQuery = useQuery({
@@ -158,24 +166,29 @@ export const BudgetToolScreen = () => {
     queryFn: getWallets,
   });
 
-  const budgets = budgetsQuery.data ?? [];
+  const budget = budgetQuery.data;
   const categories = categoriesQuery.data ?? [];
   const wallets = walletsQuery.data ?? [];
 
-  const budgetTypeCategories = useMemo(
-    () => categories.filter((item) => normalizeCategoryType(item.type) === budgetType),
-    [categories, budgetType],
-  );
+  useEffect(() => {
+    if (!hasInitialized && budget) {
+      setTitleInput(budget.title ?? '');
+      setAmountLimitInput(formatMoneyInput(String(budget.amountLimit)));
+      setPeriodType(normalizePeriodType(budget.periodType));
+      setPeriodStart(budget.periodStart || toIsoDate(new Date()));
+      setSelectedCategoryIds(budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []));
+      setSelectedWalletId(budget.walletId ?? null);
 
-  const categoryMap = useMemo(
-    () => new Map(categories.map((item) => [item.categoryId, item])),
-    [categories],
-  );
+      const budgetCategory = categories.find(
+        (item) => budget.categoryIds?.includes(item.categoryId) || item.categoryId === budget.categoryId,
+      );
+      if (budgetCategory) {
+        setBudgetType(normalizeCategoryType(budgetCategory.type));
+      }
 
-  const walletMap = useMemo(
-    () => new Map(wallets.map((item) => [item.walletId, item])),
-    [wallets],
-  );
+      setHasInitialized(true);
+    }
+  }, [budget, categories, hasInitialized]);
 
   useEffect(() => {
     if (!selectedWalletId && wallets.length > 0) {
@@ -183,12 +196,19 @@ export const BudgetToolScreen = () => {
     }
   }, [selectedWalletId, wallets]);
 
-  const filteredBudgets = useMemo(() => {
-    if (showAllWallets || !selectedWalletId) {
-      return budgets;
+  const budgetTypeCategories = useMemo(
+    () => categories.filter((item) => normalizeCategoryType(item.type) === budgetType),
+    [categories, budgetType],
+  );
+
+  useEffect(() => {
+    if (categories.length === 0) {
+      return;
     }
-    return budgets.filter((budget) => budget.walletId === selectedWalletId);
-  }, [budgets, selectedWalletId, showAllWallets]);
+    setSelectedCategoryIds((current) =>
+      current.filter((id) => budgetTypeCategories.some((item) => item.categoryId === id)),
+    );
+  }, [budgetTypeCategories, categories.length]);
 
   const selectedCategories = useMemo(
     () => categories.filter((item) => selectedCategoryIds.includes(item.categoryId)),
@@ -212,12 +232,6 @@ export const BudgetToolScreen = () => {
     setShowCalendarModal(false);
   };
 
-  useEffect(() => {
-    setSelectedCategoryIds((current) =>
-      current.filter((id) => budgetTypeCategories.some((item) => item.categoryId === id)),
-    );
-  }, [budgetTypeCategories]);
-
   const periodEnd = useMemo(() => getPeriodEndDate(periodStart, periodType), [periodStart, periodType]);
 
   const toggleCategoryId = (categoryId: string) => {
@@ -226,7 +240,12 @@ export const BudgetToolScreen = () => {
     );
   };
 
-  const createBudgetHandler = async () => {
+  const saveBudgetHandler = async () => {
+    if (!budgetId) {
+      Alert.alert('Lỗi', 'Không tìm thấy ngân sách để cập nhật.');
+      return;
+    }
+
     const amountLimit = parseMoneyInput(amountLimitInput);
     if (!titleInput.trim()) {
       Alert.alert('Thiếu tiêu đề', 'Vui lòng nhập tiêu đề cho ngân sách.');
@@ -246,7 +265,7 @@ export const BudgetToolScreen = () => {
     }
 
     try {
-      await createBudget({
+      await updateBudget(budgetId, {
         walletId: selectedWalletId,
         categoryId: selectedCategoryIds[0],
         categoryIds: selectedCategoryIds,
@@ -257,15 +276,11 @@ export const BudgetToolScreen = () => {
         periodType,
       });
       await queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      setShowCreateModal(false);
-      setAmountLimitInput('');
-      setTitleInput('');
-      setPeriodType('monthly');
-      setPeriodStart(toIsoDate(new Date()));
-      setSelectedCategoryIds([]);
-      Alert.alert('Thành công', 'Đã tạo ngân sách mới.');
+      await queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
+      Alert.alert('Thành công', 'Đã cập nhật ngân sách.');
+      router.back();
     } catch {
-      Alert.alert('Lỗi', 'Không thể tạo ngân sách. Vui lòng thử lại.');
+      Alert.alert('Lỗi', 'Không thể cập nhật ngân sách. Vui lòng thử lại.');
     }
   };
 
@@ -276,160 +291,20 @@ export const BudgetToolScreen = () => {
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
           </Pressable>
-          <Text style={styles.title}>Ngân sách</Text>
+          <Text style={styles.title}>Chỉnh sửa ngân sách</Text>
           <View style={{ width: 24 }} />
         </View>
 
-        <View style={styles.walletToggleRow}>
-          <Text style={styles.walletToggleLabel}>Hiển thị tất cả ví</Text>
-          <Switch
-            value={showAllWallets}
-            onValueChange={setShowAllWallets}
-            trackColor={{ false: '#d4dde3', true: '#33c3cd' }}
-            thumbColor={showAllWallets ? '#ffffff' : '#f1f5f8'}
-          />
-        </View>
-
-        {!showAllWallets ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletRow}
-          >
-            {wallets.map((wallet) => {
-              const selected = selectedWalletId === wallet.walletId;
-              return (
-                <Pressable
-                  key={wallet.walletId}
-                  style={[styles.walletChip, selected ? styles.walletChipActive : null]}
-                  onPress={() => setSelectedWalletId(wallet.walletId)}
-                >
-                  <Text style={[styles.walletChipText, selected ? styles.walletChipTextActive : null]}>
-                    {wallet.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        ) : null}
-
-        {budgetsQuery.isLoading ? (
+        {budgetQuery.isLoading ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>Đang tải ngân sách...</Text>
           </View>
-        ) : filteredBudgets.length === 0 ? (
+        ) : !budget ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Chưa có ngân sách</Text>
-            <Text style={styles.emptyText}>Bạn có thể tạo ngân sách đầu tiên bằng nút bên dưới.</Text>
+            <Text style={styles.emptyText}>Không tìm thấy ngân sách.</Text>
           </View>
         ) : (
-          filteredBudgets.map((budget) => {
-            const categoriesForBudget = (budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []))
-              .map((id) => categoryMap.get(id))
-              .filter(Boolean);
-            const wallet = budget.walletId ? walletMap.get(budget.walletId) : undefined;
-            const spent = Number(
-              budget.spentAmount ?? (budget.remainingAmount == null ? 0 : budget.amountLimit - budget.remainingAmount),
-            );
-            const percent = budget.amountLimit > 0 ? Math.min((spent / budget.amountLimit) * 100, 100) : 0;
-            const title = budget.title?.trim() || 'Ngân sách';
-            const isIncome = categoriesForBudget.length > 0 && categoriesForBudget[0]?.type === 'INCOME';
-            const remainingAmount = Math.max(
-              budget.remainingAmount ?? budget.amountLimit - spent,
-              0,
-            );
-            const targetAmount = budget.amountLimit;
-            const neededAmount = Math.max(targetAmount - spent, 0);
-
-            return (
-              <Pressable
-                key={budget.budgetId}
-                style={styles.budgetCard}
-                onPress={() =>
-                  router.push({
-                    pathname: '/(tabs)/budgets/[budgetId]',
-                    params: { budgetId: budget.budgetId },
-                  })
-                }
-              >
-                <View style={styles.budgetCardHeader}>
-                  <Text style={styles.budgetTitle}>{title}</Text>
-                  <Pressable
-                    hitSlop={10}
-                    onPress={(event) => {
-                      event.stopPropagation();
-                      router.push({
-                        pathname: '/(tabs)/budgets/[budgetId]/edit',
-                        params: { budgetId: budget.budgetId },
-                      });
-                    }}
-                    style={styles.editButton}
-                  >
-                    <Ionicons name="pencil" size={16} color="#1f1f1f" />
-                  </Pressable>
-                </View>
-
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.categoriesRow}
-                >
-                  {categoriesForBudget.length === 0 ? (
-                    <View style={styles.categoryChip}>
-                      <Text style={styles.categoryChipIcon}>💸</Text>
-                      <Text style={styles.categoryChipText}>Danh mục</Text>
-                    </View>
-                  ) : (
-                    categoriesForBudget.map((cat) => (
-                      <View key={cat.categoryId} style={styles.categoryChip}>
-                        <Text style={styles.categoryChipIcon}>{cat.icon || '💸'}</Text>
-                        <Text style={styles.categoryChipText}>{cat.name}</Text>
-                      </View>
-                    ))
-                  )}
-                </ScrollView>
-
-                {wallet ? (
-                  <View style={styles.walletInfoRow}>
-                    <Ionicons name="wallet" size={12} color="#5b6770" />
-                    <Text style={styles.walletName}>{wallet.name}</Text>
-                  </View>
-                ) : null}
-
-                <Text style={styles.budgetSummary}>
-                  {isIncome
-                    ? `cần thêm ${formatVndAmount(neededAmount)} để đạt mục tiêu ${formatVndAmount(targetAmount)}`
-                    : `${formatVndAmount(remainingAmount)} còn lại từ ngân sách ${formatVndAmount(targetAmount)}`}
-                </Text>
-
-                <View style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width: `${percent}%` }]} />
-                </View>
-
-                <View style={styles.footerRow}>
-                  <Text style={styles.footerText}>{formatDateVi(budget.periodStart)}</Text>
-                  <Text style={styles.footerText}>{formatDateVi(budget.periodEnd)}</Text>
-                </View>
-              </Pressable>
-            );
-          })
-        )}
-      </ScrollView>
-
-      <Pressable style={styles.fab} onPress={() => setShowCreateModal(true)}>
-        <Ionicons name="add" size={24} color="#fff" />
-        <Text style={styles.fabText}>Thêm ngân sách</Text>
-      </Pressable>
-
-      <Modal visible={showCreateModal} transparent animationType="slide" onRequestClose={() => setShowCreateModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {budgetType === 'EXPENSE' ? 'Tạo ngân sách' : 'Tạo mục tiêu'}
-              </Text>
-              <Pressable onPress={() => setShowCreateModal(false)}>
-                <Ionicons name="close" size={24} color="#333" />
-              </Pressable>
-            </View>
-
+          <>
             <View style={styles.typeToggleTopRow}>
               {(['EXPENSE', 'INCOME'] as CategoryType[]).map((type) => {
                 const selected = budgetType === type;
@@ -451,10 +326,7 @@ export const BudgetToolScreen = () => {
             </View>
 
             <View style={styles.dropdownWrapper}>
-              <Pressable
-                style={styles.dropdownInput}
-                onPress={() => setShowPeriodDropdown((current) => !current)}
-              >
+              <Pressable style={styles.dropdownInput} onPress={() => setShowPeriodDropdown((current) => !current)}>
                 <Text style={styles.dropdownText}>
                   {periodType === 'monthly'
                     ? 'Hàng tháng'
@@ -537,8 +409,7 @@ export const BudgetToolScreen = () => {
             </Pressable>
 
             <Text style={styles.sectionLabel}>Chọn ví</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletRow}
-            >
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletRow}>
               {wallets.length === 0 ? (
                 <View style={styles.walletEmptyChip}>
                   <Text style={styles.walletEmptyText}>Chưa có ví</Text>
@@ -561,12 +432,12 @@ export const BudgetToolScreen = () => {
               )}
             </ScrollView>
 
-            <Pressable style={styles.saveBtn} onPress={createBudgetHandler}>
-              <Text style={styles.saveBtnText}>Lưu</Text>
+            <Pressable style={styles.saveBtn} onPress={saveBudgetHandler}>
+              <Text style={styles.saveBtnText}>Lưu thay đổi</Text>
             </Pressable>
-          </View>
-        </View>
-      </Modal>
+          </>
+        )}
+      </ScrollView>
 
       <Modal
         visible={showCalendarModal}
@@ -718,17 +589,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1f1f1f',
   },
-  walletToggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-  },
-  walletToggleLabel: {
-    fontSize: 14,
-    color: '#4b5963',
-    fontWeight: '600',
-  },
   emptyCard: {
     borderRadius: 14,
     backgroundColor: '#fff',
@@ -737,224 +597,14 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 6,
   },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f1f1f',
-  },
   emptyText: {
     fontSize: 14,
     color: '#667179',
-  },
-  budgetCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#14b8c4',
-    backgroundColor: '#fff',
-    padding: 12,
-    gap: 8,
-  },
-  budgetCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  editButton: {
-    padding: 4,
-    borderRadius: 8,
-  },
-  budgetTitle: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1f1f1f',
-  },
-  categoriesRow: {
-    gap: 6,
-    paddingBottom: 4,
-  },
-  categoryChip: {
-    alignSelf: 'flex-start',
-    minHeight: 32,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    backgroundColor: '#f1f5f8',
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  categoryChipIcon: {
-    fontSize: 16,
-  },
-  categoryChipText: {
-    fontSize: 16,
-    color: '#2a333a',
-    fontWeight: '600',
-  },
-  walletInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  walletName: {
-    fontSize: 12,
-    color: '#5b6770',
-    fontWeight: '600',
-  },
-  budgetSummary: {
-    fontSize: 13,
-    color: '#4b5963',
-  },
-  remainingText: {
-    color: '#129f8a',
-    fontWeight: '700',
-  },
-  totalText: {
-    color: '#1f1f1f',
-    fontWeight: '700',
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: '#e8edf0',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: 6,
-    backgroundColor: '#29bcc8',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  footerText: {
-    fontSize: 11,
-    color: '#667179',
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 18,
-    borderRadius: 999,
-    backgroundColor: '#22648e',
-    paddingHorizontal: 18,
-    minHeight: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    elevation: 5,
-  },
-  fabText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 16,
-    gap: 10,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  modalTitle: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#1f1f1f',
-  },
-  periodRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  periodChip: {
-    flex: 1,
-    minHeight: 40,
-    minWidth: 120,
-    borderRadius: 999,
-    backgroundColor: '#edf1f5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  endDateRow: {
-    marginTop: 8,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#f3fafb',
-    borderWidth: 1,
-    borderColor: '#d9f0f2',
-  },
-  endDateLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#5d6972',
-    marginBottom: 4,
-  },
-  endDateText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1f1f1f',
-  },
-  periodChipActive: {
-    backgroundColor: '#29bcc8',
-  },
-  periodChipText: {
-    color: '#3b4750',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  periodChipTextActive: {
-    color: '#fff',
-  },
-  input: {
-    minHeight: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#d5dde3',
-    paddingHorizontal: 12,
-    backgroundColor: '#fff',
-  },
-  dateTypeRow: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  calendarInput: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#d5dde3',
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  calendarInputText: {
-    fontSize: 14,
-    color: '#1f1f1f',
   },
   typeToggleTopRow: {
     flexDirection: 'row',
     gap: 8,
     marginBottom: 10,
-  },
-  typeToggleRow: {
-    flexDirection: 'row',
-    gap: 8,
   },
   dropdownWrapper: {
     marginBottom: 10,
@@ -1014,6 +664,60 @@ const styles = StyleSheet.create({
   typeToggleTextActive: {
     color: '#0f8c95',
   },
+  input: {
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d5dde3',
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+  },
+  dateTypeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  calendarInput: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d5dde3',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  calendarInputText: {
+    fontSize: 14,
+    color: '#1f1f1f',
+  },
+  endDateRow: {
+    marginTop: 8,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#f3fafb',
+    borderWidth: 1,
+    borderColor: '#d9f0f2',
+  },
+  endDateLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#5d6972',
+    marginBottom: 4,
+  },
+  endDateText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f1f1f',
+  },
+  sectionLabel: {
+    marginTop: 2,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#5d6972',
+  },
   selectedCategoryRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1062,75 +766,6 @@ const styles = StyleSheet.create({
     color: '#179ea9',
     fontSize: 14,
     fontWeight: '700',
-  },
-  categoryPickerSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 16,
-    maxHeight: '80%',
-  },
-  categoryPickerContent: {
-    gap: 10,
-    paddingBottom: 16,
-  },
-  categoryPickerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: '#f7fbfc',
-    borderWidth: 1,
-    borderColor: '#d9e2e8',
-    gap: 12,
-  },
-  categoryPickerItemSelected: {
-    backgroundColor: '#e9fbfd',
-    borderColor: '#29bcc8',
-  },
-  categoryPickerIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: '#eef9fb',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryPickerIcon: {
-    fontSize: 18,
-  },
-  categoryPickerName: {
-    flex: 1,
-    fontSize: 15,
-    color: '#3a464e',
-    fontWeight: '600',
-  },
-  categoryPickerNameSelected: {
-    color: '#0f8c95',
-  },
-  categoryPickerSelectedMark: {
-    fontSize: 16,
-    color: '#0f8c95',
-    fontWeight: '700',
-  },
-  categoryPickerDoneButton: {
-    minHeight: 48,
-    borderRadius: 12,
-    backgroundColor: '#29bcc8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  categoryPickerDoneButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  sectionLabel: {
-    marginTop: 2,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#5d6972',
   },
   walletRow: {
     gap: 8,
@@ -1185,6 +820,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 16,
     gap: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f1f1f',
+    marginBottom: 8,
   },
   calendarHeaderRow: {
     flexDirection: 'row',
@@ -1274,36 +915,6 @@ const styles = StyleSheet.create({
   rangeConfirmBtnText: {
     color: '#fff',
     fontWeight: '700',
-  },
-  categoryRow: {
-    gap: 8,
-    paddingBottom: 6,
-  },
-  categoryOption: {
-    minHeight: 42,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#d9e2e8',
-    backgroundColor: '#fff',
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  categoryOptionActive: {
-    borderColor: '#29bcc8',
-    backgroundColor: '#e9fbfd',
-  },
-  categoryOptionIcon: {
-    fontSize: 16,
-  },
-  categoryOptionText: {
-    fontSize: 13,
-    color: '#3a464e',
-    fontWeight: '600',
-  },
-  categoryOptionTextActive: {
-    color: '#0f8c95',
   },
   saveBtn: {
     minHeight: 48,

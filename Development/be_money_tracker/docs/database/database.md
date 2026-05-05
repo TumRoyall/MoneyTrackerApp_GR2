@@ -63,7 +63,7 @@
 - amount_limit
 - period_start
 - period_end
-- period_type (custom, monthly)
+- period_type (custom, monthly, weekly, biweekly, yearly)
 - alert_threshold (nullable)
 - created_at, updated_at, deleted_at
 - version

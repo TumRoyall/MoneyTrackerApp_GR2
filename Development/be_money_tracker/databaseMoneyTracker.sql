@@ -111,6 +111,19 @@ CREATE TABLE budgets (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ===========================
+-- BUDGET_CATEGORIES (join table for multi-category budgets)
+-- ===========================
+CREATE TABLE budget_categories (
+    budget_id   CHAR(36) NOT NULL,
+    category_id CHAR(36) NOT NULL,
+    PRIMARY KEY (budget_id, category_id),
+    CONSTRAINT fk_budget_categories_budget
+        FOREIGN KEY (budget_id) REFERENCES budgets(budget_id),
+    CONSTRAINT fk_budget_categories_category
+        FOREIGN KEY (category_id) REFERENCES categories(category_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===========================
 -- PLANNED: SYNC
 -- ===========================
 CREATE TABLE sync_change_log (

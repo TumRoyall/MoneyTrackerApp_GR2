@@ -13,7 +13,7 @@
   - amountLimit
   - periodStart
   - periodEnd
-  - periodType (custom, monthly)
+  - periodType (custom, monthly, weekly, biweekly, yearly)
   - alertThreshold (optional)
 - response: { data: budget }
 

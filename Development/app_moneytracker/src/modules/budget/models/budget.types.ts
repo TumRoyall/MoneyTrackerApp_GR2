@@ -3,10 +3,12 @@ export interface Budget {
   userId?: string;
   walletId?: string | null;
   categoryId?: string | null;
+  categoryIds?: string[];
+  title?: string;
   amountLimit: number;
   periodStart: string;
   periodEnd: string;
-  periodType?: 'custom' | 'monthly' | string;
+  periodType?: 'custom' | 'monthly' | 'weekly' | 'biweekly' | 'yearly' | string;
   alertThreshold?: number | null;
   spentAmount?: number;
   remainingAmount?: number;
@@ -18,20 +20,24 @@ export interface Budget {
 
 export interface BudgetCreateInput {
   walletId: string;
-  categoryId: string;
+  categoryId?: string;
+  categoryIds?: string[];
+  title: string;
   amountLimit: number;
   periodStart: string;
   periodEnd: string;
-  periodType: 'custom' | 'monthly';
+  periodType: 'weekly' | 'biweekly' | 'monthly' | 'yearly';
   alertThreshold?: number | null;
 }
 
 export interface BudgetUpdateInput {
   walletId?: string;
   categoryId?: string;
+  categoryIds?: string[];
+  title?: string;
   amountLimit?: number;
   periodStart?: string;
   periodEnd?: string;
-  periodType?: 'custom' | 'monthly';
+  periodType?: 'weekly' | 'biweekly' | 'monthly' | 'yearly';
   alertThreshold?: number | null;
 }

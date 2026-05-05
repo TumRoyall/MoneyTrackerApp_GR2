@@ -39,6 +39,19 @@ public class TransactionSpecification {
         };
     }
 
+    // ===== CATEGORIES (IN LIST) =====
+    public static Specification<Transaction> hasCategories(java.util.Collection<UUID> categoryIds) {
+        return (root, query, cb) -> {
+            if (categoryIds == null || categoryIds.isEmpty())
+                return cb.conjunction();
+
+            Join<Transaction, Category> category =
+                    root.join("category", JoinType.INNER);
+
+            return category.get("categoryId").in(categoryIds);
+        };
+    }
+
     // ===== TYPE (INCOME / EXPENSE – case insensitive) =====
     public static Specification<Transaction> hasType(String type) {
         return (root, query, cb) -> {
