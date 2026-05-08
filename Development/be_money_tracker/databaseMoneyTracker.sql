@@ -92,6 +92,7 @@ CREATE TABLE budgets (
     user_id          CHAR(36) NOT NULL,
     wallet_id        CHAR(36) NOT NULL,
     category_id      CHAR(36) NOT NULL,
+    title            VARCHAR(255),
     amount_limit     DECIMAL(18,2) NOT NULL,
     period_start     DATE NOT NULL,
     period_end       DATE NOT NULL,

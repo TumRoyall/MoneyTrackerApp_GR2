@@ -34,18 +34,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="reports"
+        name="tools"
         options={{
           title: 'Công cụ tiền tệ',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="cash-multiple" size={size} color={color} />
           ),
-        }}
-      />
-      <Tabs.Screen
-        name="budgets"
-        options={{
-          href: null,
         }}
       />
       <Tabs.Screen

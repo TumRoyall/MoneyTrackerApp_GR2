@@ -727,6 +727,10 @@ export const TransactionScreen = () => {
 
       await queryClient.invalidateQueries({ queryKey: ['transactions'] });
       await queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      await queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      await queryClient.invalidateQueries({ queryKey: ['budget'] });
+      await queryClient.invalidateQueries({ queryKey: ['budget-transactions'] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions-for-budgets'] });
       setFormAmount('');
       setFormNote('');
       setFormDate(formatIsoDate(new Date()));

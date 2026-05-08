@@ -47,8 +47,8 @@ public class AuthService {
         userRepository.save(user);
 
         // send mail kèm token để xác thực
-        String verifyLink = appUrl + "/verify-email?token=" + token;
-        String logoUrl = appUrl + "/logo_money_tracker.png";
+        String verifyLink = appUrl + "/api/auth/verify-email?token=" + token;
+        String logoUrl = appUrl + "/api/auth/logo_money_tracker.png";
 
         String html = emailService.buildVerifyEmail(user.getFullName(), verifyLink, logoUrl);
 
@@ -109,8 +109,8 @@ public class AuthService {
         userRepository.save(user);
 
         // send mail kèm token để xác thực
-        String verifyLink = appUrl + "/verify-email?token=" + token;
-        String logoUrl = appUrl + "/logo_money_tracker.png";
+        String verifyLink = appUrl + "/api/auth/verify-email?token=" + token;
+        String logoUrl = appUrl + "/api/auth/logo_money_tracker.png";
 
         String html = emailService.buildVerifyEmail(user.getFullName(), verifyLink, logoUrl);
 
@@ -150,7 +150,7 @@ public class AuthService {
         user.setResetPasswordSentAt(Instant.now());
         userRepository.save(user);
 
-        String resetLink = appUrl + "/reset-password?token=" + token;
+        String resetLink = appUrl + "/api/auth/reset-password?token=" + token;
         String html = emailService.buildResetPasswordEmail(user.getFullName(), resetLink);
 
         emailService.send(

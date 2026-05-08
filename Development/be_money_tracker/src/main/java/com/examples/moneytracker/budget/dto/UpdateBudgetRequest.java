@@ -15,6 +15,7 @@ public class UpdateBudgetRequest {
     private UUID walletId;
     private UUID categoryId;
     private List<UUID> categoryIds;
+    private String title;
     private BigDecimal amountLimit;
     private LocalDate periodStart;
     private LocalDate periodEnd;

@@ -17,6 +17,7 @@ public class BudgetResponse {
     private UUID walletId;
     private UUID categoryId;
     private List<UUID> categoryIds;
+    private String title;
     private BigDecimal amountLimit;
     private LocalDate periodStart;
     private LocalDate periodEnd;
@@ -31,6 +32,7 @@ public class BudgetResponse {
                 budget.getWalletId(),
                 budget.getCategoryId(),
                 categoryIds,
+                budget.getTitle(),
                 budget.getAmountLimit(),
                 budget.getPeriodStart(),
                 budget.getPeriodEnd(),

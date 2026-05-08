@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Modal,
@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 
 import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
+import { useTransactionUsecases } from '@/modules/transaction/usecases';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { formatMoneyInput, formatVndAmount, parseMoneyInput } from '@/shared/utils/money';
 
@@ -125,6 +126,7 @@ export const BudgetToolScreen = () => {
   const queryClient = useQueryClient();
   const { getBudgets, createBudget } = useBudgetUsecases();
   const { getCategories } = useCategoryUsecases();
+  const { getTransactions } = useTransactionUsecases();
   const { getWallets } = useWalletUsecases();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -158,9 +160,22 @@ export const BudgetToolScreen = () => {
     queryFn: getWallets,
   });
 
+  const transactionsQuery = useQuery({
+    queryKey: ['transactions-for-budgets', showAllWallets ? 'all' : selectedWalletId],
+    queryFn: () =>
+      getTransactions({
+        walletId: showAllWallets ? undefined : selectedWalletId ?? undefined,
+        page: 0,
+        size: 1000,
+        sort: 'date,desc',
+      }),
+    enabled: showAllWallets || Boolean(selectedWalletId),
+  });
+
   const budgets = budgetsQuery.data ?? [];
   const categories = categoriesQuery.data ?? [];
   const wallets = walletsQuery.data ?? [];
+  const transactions = transactionsQuery.data ?? [];
 
   const budgetTypeCategories = useMemo(
     () => categories.filter((item) => normalizeCategoryType(item.type) === budgetType),
@@ -189,6 +204,33 @@ export const BudgetToolScreen = () => {
     }
     return budgets.filter((budget) => budget.walletId === selectedWalletId);
   }, [budgets, selectedWalletId, showAllWallets]);
+
+  const allWalletBudgetTransactionQueries = useQueries({
+    queries: showAllWallets
+      ? filteredBudgets.map((budget) => ({
+          queryKey: ['budget-card-transactions', budget.budgetId, budget.walletId, budget.periodStart, budget.periodEnd],
+          queryFn: () =>
+            getTransactions({
+              walletId: budget.walletId ?? undefined,
+              fromDate: budget.periodStart,
+              toDate: budget.periodEnd,
+              page: 0,
+              size: 1000,
+              sort: 'date,desc',
+            }),
+          enabled: Boolean(budget.walletId),
+        }))
+      : [],
+  });
+
+  const allWalletTransactionsByBudgetId = useMemo(() => {
+    if (!showAllWallets) {
+      return new Map<string, typeof transactions>();
+    }
+    return new Map(
+      filteredBudgets.map((budget, index) => [budget.budgetId, allWalletBudgetTransactionQueries[index]?.data ?? []]),
+    );
+  }, [showAllWallets, filteredBudgets, allWalletBudgetTransactionQueries, transactions]);
 
   const selectedCategories = useMemo(
     () => categories.filter((item) => selectedCategoryIds.includes(item.categoryId)),
@@ -323,16 +365,31 @@ export const BudgetToolScreen = () => {
           filteredBudgets.map((budget) => {
             const categoriesForBudget = (budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []))
               .map((id) => categoryMap.get(id))
-              .filter(Boolean);
+              .filter((item): item is NonNullable<typeof item> => Boolean(item));
             const wallet = budget.walletId ? walletMap.get(budget.walletId) : undefined;
-            const spent = Number(
-              budget.spentAmount ?? (budget.remainingAmount == null ? 0 : budget.amountLimit - budget.remainingAmount),
+            const categoryIdSet = new Set(
+              budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []),
             );
+            const sourceTransactions = showAllWallets
+              ? allWalletTransactionsByBudgetId.get(budget.budgetId) ?? []
+              : transactions;
+            const spent = sourceTransactions.reduce((sum, item) => {
+              if (budget.walletId && item.walletId !== budget.walletId) {
+                return sum;
+              }
+              if (!categoryIdSet.has(item.categoryId)) {
+                return sum;
+              }
+              if (item.date < budget.periodStart || item.date > budget.periodEnd) {
+                return sum;
+              }
+              return sum + Number(item.amount || 0);
+            }, 0);
             const percent = budget.amountLimit > 0 ? Math.min((spent / budget.amountLimit) * 100, 100) : 0;
             const title = budget.title?.trim() || 'Ngân sách';
             const isIncome = categoriesForBudget.length > 0 && categoriesForBudget[0]?.type === 'INCOME';
             const remainingAmount = Math.max(
-              budget.remainingAmount ?? budget.amountLimit - spent,
+              budget.amountLimit - spent,
               0,
             );
             const targetAmount = budget.amountLimit;

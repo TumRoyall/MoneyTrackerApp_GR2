@@ -26,6 +26,9 @@ public class Budget {
     @Column(nullable = false)
     private UUID categoryId;
 
+    @Column(name = "title")
+    private String title;
+
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal amountLimit;
 

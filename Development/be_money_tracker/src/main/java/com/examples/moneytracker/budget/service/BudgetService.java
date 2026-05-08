@@ -14,6 +14,7 @@ import com.examples.moneytracker.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -31,6 +32,7 @@ public class BudgetService {
     private final TransactionRepository transactionRepository;
     private final BudgetCategoryRepository budgetCategoryRepository;
 
+    @Transactional
     public BudgetResponse createBudget(CreateBudgetRequest request, UUID userId) {
         walletRepository.findByWalletIdAndUserIdAndDeletedAtIsNull(request.getWalletId(), userId)
                 .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
@@ -47,6 +49,7 @@ public class BudgetService {
         }
         // keep legacy column populated with first category for compatibility
         budget.setCategoryId(categoryIds.get(0));
+        budget.setTitle(request.getTitle());
         budget.setAmountLimit(request.getAmountLimit());
         budget.setPeriodStart(request.getPeriodStart());
         budget.setPeriodEnd(request.getPeriodEnd());
@@ -83,6 +86,7 @@ public class BudgetService {
         return buildResponse(budget, userId, categoryIds);
     }
 
+    @Transactional
     public BudgetResponse updateBudget(UUID budgetId, UpdateBudgetRequest request, UUID userId) {
         Budget budget = budgetRepository.findByBudgetIdAndUserIdAndDeletedAtIsNull(budgetId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Budget not found"));
@@ -107,6 +111,9 @@ public class BudgetService {
             budgetCategoryRepository.deleteByIdBudgetId(budget.getBudgetId());
             budgetCategoryRepository.saveAll(List.of(new BudgetCategory(budget.getBudgetId(), request.getCategoryId())));
         }
+        if (request.getTitle() != null) {
+            budget.setTitle(request.getTitle());
+        }
         if (request.getAmountLimit() != null) {
             budget.setAmountLimit(request.getAmountLimit());
         }
@@ -129,6 +136,7 @@ public class BudgetService {
         return buildResponse(budget, userId, categoryIds);
     }
 
+    @Transactional
     public void deleteBudget(UUID budgetId, UUID userId) {
         Budget budget = budgetRepository.findByBudgetIdAndUserIdAndDeletedAtIsNull(budgetId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Budget not found"));

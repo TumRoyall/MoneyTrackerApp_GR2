@@ -47,6 +47,10 @@ export const BudgetDetailScreen = () => {
   const budget = budgetQuery.data;
   const categories = categoriesQuery.data ?? [];
   const wallets = walletsQuery.data ?? [];
+  const budgetCategoryIds = useMemo(
+    () => budget?.categoryIds ?? (budget?.categoryId ? [budget.categoryId] : []),
+    [budget?.categoryId, budget?.categoryIds],
+  );
 
   const category = useMemo(
     () => categories.find((item) => item.categoryId === budget?.categoryId),
@@ -59,29 +63,37 @@ export const BudgetDetailScreen = () => {
   );
 
   const transactionsQuery = useQuery({
-    queryKey: ['budget-transactions', budget?.budgetId],
+    queryKey: ['budget-transactions', budget?.budgetId, budget?.walletId, budget?.periodStart, budget?.periodEnd],
     queryFn: () =>
       getTransactions({
         walletId: budget?.walletId ?? undefined,
-        categoryId: budget?.categoryId ?? undefined,
         fromDate: budget?.periodStart,
         toDate: budget?.periodEnd,
-        type: 'EXPENSE',
         page: 0,
-        size: 200,
+        size: 500,
         sort: 'date,desc',
       }),
-    enabled: Boolean(budget?.walletId && budget?.categoryId),
+    enabled: Boolean(budget?.walletId && budget?.periodStart && budget?.periodEnd && budgetCategoryIds.length > 0),
   });
 
-  const transactions = transactionsQuery.data ?? [];
-
-  const spentAmount = useMemo(() => {
-    if (budget?.spentAmount != null) {
-      return budget.spentAmount;
+  const transactions = useMemo(() => {
+    const rows = transactionsQuery.data ?? [];
+    if (!budget) {
+      return [];
     }
-    return transactions.reduce((sum, item) => sum + item.amount, 0);
-  }, [budget?.spentAmount, transactions]);
+    const categorySet = new Set(budgetCategoryIds);
+    return rows.filter((item) => {
+      if (item.walletId !== budget.walletId) {
+        return false;
+      }
+      if (!categorySet.has(item.categoryId)) {
+        return false;
+      }
+      return item.date >= budget.periodStart && item.date <= budget.periodEnd;
+    });
+  }, [transactionsQuery.data, budget, budgetCategoryIds]);
+
+  const spentAmount = useMemo(() => transactions.reduce((sum, item) => sum + Number(item.amount || 0), 0), [transactions]);
 
   const remainingAmount = budget ? budget.amountLimit - spentAmount : 0;
   const percent = budget && budget.amountLimit > 0 ? Math.min((spentAmount / budget.amountLimit) * 100, 100) : 0;
@@ -93,7 +105,7 @@ export const BudgetDetailScreen = () => {
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
           </Pressable>
-          <Text style={styles.title}>{category?.name || 'Ngân sách'}</Text>
+          <Text style={styles.title}>{budget?.title?.trim() || category?.name || 'Ngân sách'}</Text>
           {budget ? (
             <Pressable
               style={styles.editButton}

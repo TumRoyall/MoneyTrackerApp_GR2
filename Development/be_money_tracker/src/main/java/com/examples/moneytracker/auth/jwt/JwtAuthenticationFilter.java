@@ -30,15 +30,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = header.substring(7);
 
             if (jwtProvider.validateToken(token)) { // validate token
-                String email = jwtProvider.getEmailFromToken(token);
+                try {
+                    String email = jwtProvider.getEmailFromToken(token);
 
-                //load user
-                var userDetails = userDetailsService.loadUserByUsername(email);
-                var auth = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
+                    //load user
+                    var userDetails = userDetailsService.loadUserByUsername(email);
+                    var auth = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
 
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                } catch (org.springframework.security.core.userdetails.UsernameNotFoundException e) {
+                    // Token có thể có email của user đã bị xóa, skip authentication
+                }
             }
         }
 

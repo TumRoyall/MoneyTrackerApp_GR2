@@ -149,6 +149,7 @@ export const BudgetEditScreen = () => {
   const [calendarMonth, setCalendarMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [calendarSelectedDate, setCalendarSelectedDate] = useState(new Date());
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [hasUserChangedBudgetType, setHasUserChangedBudgetType] = useState(false);
 
   const budgetQuery = useQuery({
     queryKey: ['budget', budgetId],
@@ -171,30 +172,41 @@ export const BudgetEditScreen = () => {
   const wallets = walletsQuery.data ?? [];
 
   useEffect(() => {
-    if (!hasInitialized && budget) {
-      setTitleInput(budget.title ?? '');
-      setAmountLimitInput(formatMoneyInput(String(budget.amountLimit)));
-      setPeriodType(normalizePeriodType(budget.periodType));
-      setPeriodStart(budget.periodStart || toIsoDate(new Date()));
-      setSelectedCategoryIds(budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []));
-      setSelectedWalletId(budget.walletId ?? null);
-
-      const budgetCategory = categories.find(
-        (item) => budget.categoryIds?.includes(item.categoryId) || item.categoryId === budget.categoryId,
-      );
-      if (budgetCategory) {
-        setBudgetType(normalizeCategoryType(budgetCategory.type));
-      }
-
-      setHasInitialized(true);
+    if (hasInitialized || !budget) {
+      return;
     }
-  }, [budget, categories, hasInitialized]);
+
+    const initialCategoryIds = budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []);
+    setTitleInput(budget.title ?? '');
+    setAmountLimitInput(formatMoneyInput(String(budget.amountLimit)));
+    setPeriodType(normalizePeriodType(budget.periodType));
+    setPeriodStart(budget.periodStart || toIsoDate(new Date()));
+    setSelectedCategoryIds(initialCategoryIds);
+    setSelectedWalletId(budget.walletId ?? null);
+    setHasInitialized(true);
+  }, [budget, hasInitialized]);
 
   useEffect(() => {
-    if (!selectedWalletId && wallets.length > 0) {
-      setSelectedWalletId(wallets[0].walletId);
+    if (!hasInitialized || categories.length === 0 || !budget) {
+      return;
     }
-  }, [selectedWalletId, wallets]);
+    const initialCategoryIds = budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []);
+    const budgetCategory = categories.find((item) => initialCategoryIds.includes(item.categoryId));
+    if (budgetCategory) {
+      setBudgetType(normalizeCategoryType(budgetCategory.type));
+    }
+  }, [hasInitialized, categories, budget]);
+
+  useEffect(() => {
+    if (selectedWalletId || wallets.length === 0) {
+      return;
+    }
+    if (budget?.walletId) {
+      setSelectedWalletId(budget.walletId);
+      return;
+    }
+    setSelectedWalletId(wallets[0].walletId);
+  }, [selectedWalletId, wallets, budget?.walletId]);
 
   const budgetTypeCategories = useMemo(
     () => categories.filter((item) => normalizeCategoryType(item.type) === budgetType),
@@ -202,13 +214,13 @@ export const BudgetEditScreen = () => {
   );
 
   useEffect(() => {
-    if (categories.length === 0) {
+    if (!hasInitialized || !hasUserChangedBudgetType || categories.length === 0) {
       return;
     }
     setSelectedCategoryIds((current) =>
       current.filter((id) => budgetTypeCategories.some((item) => item.categoryId === id)),
     );
-  }, [budgetTypeCategories, categories.length]);
+  }, [budgetTypeCategories, categories.length, hasInitialized, hasUserChangedBudgetType]);
 
   const selectedCategories = useMemo(
     () => categories.filter((item) => selectedCategoryIds.includes(item.categoryId)),
@@ -313,6 +325,7 @@ export const BudgetEditScreen = () => {
                     key={type}
                     style={[styles.typeToggleButton, selected ? styles.typeToggleButtonActive : null]}
                     onPress={() => {
+                      setHasUserChangedBudgetType(true);
                       setBudgetType(type);
                       setShowPeriodDropdown(false);
                     }}
@@ -805,6 +818,82 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#7b868d',
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  categoryPickerSheet: {
+    maxHeight: '76%',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 18,
+    gap: 12,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  categoryPickerContent: {
+    gap: 10,
+    paddingBottom: 10,
+  },
+  categoryPickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#e3eaee',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  categoryPickerItemSelected: {
+    borderColor: '#29bcc8',
+    backgroundColor: '#e9fbfd',
+  },
+  categoryPickerIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f2f7fa',
+  },
+  categoryPickerIcon: {
+    fontSize: 18,
+  },
+  categoryPickerName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2a333a',
+  },
+  categoryPickerNameSelected: {
+    color: '#0f8c95',
+  },
+  categoryPickerSelectedMark: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f8c95',
+  },
+  categoryPickerDoneButton: {
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: '#29bcc8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryPickerDoneButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
   modalOverlayCenter: {
     flex: 1,

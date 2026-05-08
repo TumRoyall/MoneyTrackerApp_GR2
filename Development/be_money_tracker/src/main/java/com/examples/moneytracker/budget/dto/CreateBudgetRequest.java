@@ -21,6 +21,8 @@ public class CreateBudgetRequest {
     // Support multiple categories for a budget. If provided, at least one category must be present.
     private List<UUID> categoryIds;
 
+    private String title;
+
     @NotNull
     private BigDecimal amountLimit;
 

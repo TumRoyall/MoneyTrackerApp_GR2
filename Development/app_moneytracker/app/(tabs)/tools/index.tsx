@@ -10,7 +10,7 @@ type ToolItem = {
   onPress: () => void;
 };
 
-export default function ReportsScreen() {
+export default function ToolsScreen() {
   const router = useRouter();
 
   const tools: ToolItem[] = [
@@ -19,7 +19,7 @@ export default function ReportsScreen() {
       title: 'Ngân sách',
       description: 'Đặt ngân sách hằng ngày, hằng tuần hoặc hằng tháng để theo dõi chi tiêu của bạn',
       icon: 'chart-pie',
-      onPress: () => router.push('/(tabs)/budgets'),
+      onPress: () => router.push('/tools/budgets'),
     },
     {
       id: 'saving',
