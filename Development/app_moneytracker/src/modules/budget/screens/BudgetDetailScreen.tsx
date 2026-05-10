@@ -52,6 +52,15 @@ export const BudgetDetailScreen = () => {
     [budget?.categoryId, budget?.categoryIds],
   );
 
+  const categoriesForBudget = useMemo(
+    () =>
+      budgetCategoryIds
+        .map((id) => categories.find((item) => item.categoryId === id))
+        .filter((item): item is NonNullable<typeof item> => Boolean(item)),
+    [budgetCategoryIds, categories],
+  );
+  const isIncome = categoriesForBudget[0]?.type === 'INCOME';
+
   const category = useMemo(
     () => categories.find((item) => item.categoryId === budget?.categoryId),
     [categories, budget?.categoryId],
@@ -102,7 +111,7 @@ export const BudgetDetailScreen = () => {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools/budgets')}>
             <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
           </Pressable>
           <Text style={styles.title}>{budget?.title?.trim() || category?.name || 'Ngân sách'}</Text>
@@ -111,7 +120,7 @@ export const BudgetDetailScreen = () => {
               style={styles.editButton}
               onPress={() =>
                 router.push({
-                  pathname: '/(tabs)/budgets/[budgetId]/edit',
+                  pathname: '/(tabs)/tools/budgets/[budgetId]/edit',
                   params: { budgetId },
                 })
               }
@@ -133,27 +142,63 @@ export const BudgetDetailScreen = () => {
           </View>
         ) : (
           <View style={styles.summaryCard}>
-            <View style={styles.categoryChip}>
-              <Text style={styles.categoryChipIcon}>{category?.icon || '💸'}</Text>
-              <Text style={styles.categoryChipText}>{category?.name || 'Danh mục'}</Text>
+            <View style={styles.summaryHeader}>
+              <View style={styles.summaryHeaderLeft}>
+                <Text style={styles.summaryTitle}>Tổng quan</Text>
+                {wallet ? <Text style={styles.walletName}>{wallet.name}</Text> : null}
+              </View>
+              <View style={styles.summaryBadge}>
+                <Text style={styles.summaryBadgeText}>{Math.round(percent)}%</Text>
+              </View>
             </View>
-            {wallet ? <Text style={styles.walletName}>{wallet.name}</Text> : null}
 
-            <Text style={styles.summaryText}>
-              {formatVndAmount(spentAmount)} / {formatVndAmount(budget.amountLimit)}
-            </Text>
-            <Text style={styles.percentText}>{Math.round(percent)}%</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
+              {categoriesForBudget.length === 0 ? (
+                <View style={styles.categoryPill}>
+                  <Text style={styles.categoryPillIcon}>💸</Text>
+                  <Text style={styles.categoryPillText}>Danh mục</Text>
+                </View>
+              ) : (
+                categoriesForBudget.map((item) => (
+                  <View key={item.categoryId} style={styles.categoryPill}>
+                    <Text style={styles.categoryPillIcon}>{item.icon || '💸'}</Text>
+                    <Text style={styles.categoryPillText}>{item.name}</Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+
+            <View style={styles.amountRow}>
+              <Text style={styles.amountSpent}>{formatVndAmount(spentAmount)}</Text>
+              <Text style={styles.amountDivider}>/</Text>
+              <Text style={styles.amountLimit}>{formatVndAmount(budget.amountLimit)}</Text>
+            </View>
 
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: `${percent}%` }]} />
             </View>
 
-            <View style={styles.footerRow}>
-              <Text style={styles.footerText}>{formatDateVi(budget.periodStart)}</Text>
-              <Text style={styles.footerText}>{formatDateVi(budget.periodEnd)}</Text>
+            <View style={styles.metaRow}>
+              <View style={styles.metaItem}>
+                <Text style={styles.metaLabel}>Bắt đầu</Text>
+                <Text style={styles.metaValue}>{formatDateVi(budget.periodStart)}</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Text style={styles.metaLabel}>Kết thúc</Text>
+                <Text style={styles.metaValue}>{formatDateVi(budget.periodEnd)}</Text>
+              </View>
             </View>
 
-            <Text style={styles.remainingText}>Còn lại {formatVndAmount(remainingAmount)}</Text>
+            <View style={styles.insightRow}>
+              <View style={styles.insightCard}>
+                <Text style={styles.insightLabel}>Còn lại</Text>
+                <Text style={styles.insightValue}>{formatVndAmount(remainingAmount)}</Text>
+              </View>
+              <View style={styles.insightCardMuted}>
+                <Text style={styles.insightLabel}>{isIncome ? 'Đã thu' : 'Đã chi'}</Text>
+                <Text style={styles.insightValue}>{formatVndAmount(spentAmount)}</Text>
+              </View>
+            </View>
           </View>
         )}
 
@@ -225,21 +270,53 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 10,
   },
-  categoryChip: {
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  summaryHeaderLeft: {
+    gap: 2,
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1f1f1f',
+  },
+  summaryBadge: {
+    minWidth: 56,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#e9fbfd',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summaryBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f8c95',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  categoryPill: {
     alignSelf: 'flex-start',
-    minHeight: 42,
+    minHeight: 34,
     borderRadius: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     backgroundColor: '#f1f5f8',
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
-  categoryChipIcon: {
-    fontSize: 20,
+  categoryPillIcon: {
+    fontSize: 16,
   },
-  categoryChipText: {
-    fontSize: 18,
+  categoryPillText: {
+    fontSize: 14,
     color: '#2a333a',
     fontWeight: '700',
   },
@@ -248,15 +325,25 @@ const styles = StyleSheet.create({
     color: '#5b6770',
     fontWeight: '600',
   },
-  summaryText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f1f1f',
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
   },
-  percentText: {
+  amountSpent: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#129f8a',
+    color: '#1f1f1f',
+  },
+  amountDivider: {
+    fontSize: 16,
+    color: '#8c97a1',
+    fontWeight: '700',
+  },
+  amountLimit: {
+    fontSize: 16,
+    color: '#6b7680',
+    fontWeight: '700',
   },
   progressTrack: {
     height: 10,
@@ -268,18 +355,51 @@ const styles = StyleSheet.create({
     height: 10,
     backgroundColor: '#29bcc8',
   },
-  footerRow: {
+  metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 12,
   },
-  footerText: {
-    fontSize: 13,
-    color: '#667179',
+  metaItem: {
+    flex: 1,
+    gap: 2,
   },
-  remainingText: {
+  metaLabel: {
+    fontSize: 12,
+    color: '#8c97a1',
+    fontWeight: '700',
+  },
+  metaValue: {
     fontSize: 14,
-    color: '#4b5963',
-    fontWeight: '600',
+    color: '#37424a',
+    fontWeight: '700',
+  },
+  insightRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  insightCard: {
+    flex: 1,
+    borderRadius: 14,
+    padding: 12,
+    backgroundColor: '#ecfdfb',
+  },
+  insightCardMuted: {
+    flex: 1,
+    borderRadius: 14,
+    padding: 12,
+    backgroundColor: '#f6f8fa',
+  },
+  insightLabel: {
+    fontSize: 12,
+    color: '#6b7680',
+    fontWeight: '700',
+  },
+  insightValue: {
+    marginTop: 4,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1f1f1f',
   },
   sectionTitle: {
     marginTop: 8,

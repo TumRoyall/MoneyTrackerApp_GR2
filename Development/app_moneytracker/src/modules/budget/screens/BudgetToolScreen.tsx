@@ -137,7 +137,7 @@ export const BudgetToolScreen = () => {
   const [periodStart, setPeriodStart] = useState(toIsoDate(new Date()));
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
-  const [showAllWallets, setShowAllWallets] = useState(true);
+  const [showAllWallets, setShowAllWallets] = useState(false);
   const [budgetType, setBudgetType] = useState<CategoryType>('EXPENSE');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
@@ -315,7 +315,7 @@ export const BudgetToolScreen = () => {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools')}>
             <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
           </Pressable>
           <Text style={styles.title}>Ngân sách</Text>
@@ -367,6 +367,8 @@ export const BudgetToolScreen = () => {
               .map((id) => categoryMap.get(id))
               .filter((item): item is NonNullable<typeof item> => Boolean(item));
             const wallet = budget.walletId ? walletMap.get(budget.walletId) : undefined;
+            const visibleCategories = categoriesForBudget.slice(0, 3);
+            const extraCategoryCount = Math.max(categoriesForBudget.length - visibleCategories.length, 0);
             const categoryIdSet = new Set(
               budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []),
             );
@@ -401,7 +403,7 @@ export const BudgetToolScreen = () => {
                 style={styles.budgetCard}
                 onPress={() =>
                   router.push({
-                    pathname: '/(tabs)/budgets/[budgetId]',
+                    pathname: '/(tabs)/tools/budgets/[budgetId]',
                     params: { budgetId: budget.budgetId },
                   })
                 }
@@ -413,7 +415,7 @@ export const BudgetToolScreen = () => {
                     onPress={(event) => {
                       event.stopPropagation();
                       router.push({
-                        pathname: '/(tabs)/budgets/[budgetId]/edit',
+                        pathname: '/(tabs)/tools/budgets/[budgetId]/edit',
                         params: { budgetId: budget.budgetId },
                       });
                     }}
@@ -422,47 +424,50 @@ export const BudgetToolScreen = () => {
                     <Ionicons name="pencil" size={16} color="#1f1f1f" />
                   </Pressable>
                 </View>
+                <View style={styles.amountRow}>
+                  <Text style={styles.amountPrimary}>{formatVndAmount(spent)}</Text>
+                  <Text style={styles.amountSecondary}>/ {formatVndAmount(targetAmount)}</Text>
+                </View>
 
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.categoriesRow}
-                >
-                  {categoriesForBudget.length === 0 ? (
-                    <View style={styles.categoryChip}>
-                      <Text style={styles.categoryChipIcon}>💸</Text>
-                      <Text style={styles.categoryChipText}>Danh mục</Text>
+                <View style={styles.metaRow}>
+                  {wallet ? (
+                    <View style={styles.walletInfoRow}>
+                      <Ionicons name="wallet" size={12} color="#5b6770" />
+                      <Text style={styles.walletName}>{wallet.name}</Text>
+                    </View>
+                  ) : null}
+                  <Text style={styles.metaText}>{formatDateVi(budget.periodStart)}</Text>
+                  <Text style={styles.metaText}>-</Text>
+                  <Text style={styles.metaText}>{formatDateVi(budget.periodEnd)}</Text>
+                </View>
+
+                <View style={styles.categoryRowCompact}>
+                  {visibleCategories.length === 0 ? (
+                    <View style={styles.categoryDot}>
+                      <Text style={styles.categoryDotIcon}>💸</Text>
                     </View>
                   ) : (
-                    categoriesForBudget.map((cat) => (
-                      <View key={cat.categoryId} style={styles.categoryChip}>
-                        <Text style={styles.categoryChipIcon}>{cat.icon || '💸'}</Text>
-                        <Text style={styles.categoryChipText}>{cat.name}</Text>
+                    visibleCategories.map((cat) => (
+                      <View key={cat.categoryId} style={styles.categoryDot}>
+                        <Text style={styles.categoryDotIcon}>{cat.icon || '💸'}</Text>
                       </View>
                     ))
                   )}
-                </ScrollView>
-
-                {wallet ? (
-                  <View style={styles.walletInfoRow}>
-                    <Ionicons name="wallet" size={12} color="#5b6770" />
-                    <Text style={styles.walletName}>{wallet.name}</Text>
-                  </View>
-                ) : null}
+                  {extraCategoryCount > 0 ? (
+                    <View style={styles.categoryMoreChip}>
+                      <Text style={styles.categoryMoreText}>+{extraCategoryCount}</Text>
+                    </View>
+                  ) : null}
+                </View>
 
                 <Text style={styles.budgetSummary}>
                   {isIncome
-                    ? `cần thêm ${formatVndAmount(neededAmount)} để đạt mục tiêu ${formatVndAmount(targetAmount)}`
-                    : `${formatVndAmount(remainingAmount)} còn lại từ ngân sách ${formatVndAmount(targetAmount)}`}
+                    ? `cần thêm ${formatVndAmount(neededAmount)} để đạt mục tiêu`
+                    : `${formatVndAmount(remainingAmount)} còn lại`}
                 </Text>
 
                 <View style={styles.progressTrack}>
                   <View style={[styles.progressFill, { width: `${percent}%` }]} />
-                </View>
-
-                <View style={styles.footerRow}>
-                  <Text style={styles.footerText}>{formatDateVi(budget.periodStart)}</Text>
-                  <Text style={styles.footerText}>{formatDateVi(budget.periodEnd)}</Text>
                 </View>
               </Pressable>
             );
@@ -827,27 +832,60 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1f1f1f',
   },
-  categoriesRow: {
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
     gap: 6,
-    paddingBottom: 4,
   },
-  categoryChip: {
-    alignSelf: 'flex-start',
-    minHeight: 32,
+  amountPrimary: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1f1f1f',
+  },
+  amountSecondary: {
+    fontSize: 14,
+    color: '#6b7680',
+    fontWeight: '600',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  metaText: {
+    fontSize: 12,
+    color: '#6b7680',
+    fontWeight: '600',
+  },
+  categoryRowCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  categoryDot: {
+    width: 28,
+    height: 28,
     borderRadius: 10,
-    paddingHorizontal: 8,
     backgroundColor: '#f1f5f8',
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
+    justifyContent: 'center',
   },
-  categoryChipIcon: {
-    fontSize: 16,
+  categoryDotIcon: {
+    fontSize: 14,
   },
-  categoryChipText: {
-    fontSize: 16,
-    color: '#2a333a',
-    fontWeight: '600',
+  categoryMoreChip: {
+    minHeight: 28,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    backgroundColor: '#e9fbfd',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryMoreText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0f8c95',
   },
   walletInfoRow: {
     flexDirection: 'row',
@@ -880,14 +918,6 @@ const styles = StyleSheet.create({
   progressFill: {
     height: 6,
     backgroundColor: '#29bcc8',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  footerText: {
-    fontSize: 11,
-    color: '#667179',
   },
   fab: {
     position: 'absolute',

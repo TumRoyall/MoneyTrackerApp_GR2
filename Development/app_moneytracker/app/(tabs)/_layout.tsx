@@ -34,7 +34,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="tools"
+        name="tools/index"
         options={{
           title: 'Công cụ tiền tệ',
           tabBarIcon: ({ color, size }) => (
@@ -47,6 +47,36 @@ export default function TabsLayout() {
         options={{
           title: 'Cài đặt',
           tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="budgets/[budgetId]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="budgets/[budgetId]/edit"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="tools/budgets/index"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="tools/budgets/[budgetId]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="tools/budgets/[budgetId]/edit"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
