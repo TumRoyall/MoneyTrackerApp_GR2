@@ -26,7 +26,7 @@ export default function ToolsScreen() {
       title: 'Tiết kiệm',
       description: 'Đặt mục tiêu tiết kiệm và theo dõi tiến trình tiết kiệm của bạn!',
       icon: 'piggy-bank',
-      onPress: () => {},
+      onPress: () => router.push('/tools/savings'),
     },
     {
       id: 'debt',

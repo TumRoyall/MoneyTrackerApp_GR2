@@ -68,6 +68,18 @@
 - created_at, updated_at, deleted_at
 - version
 
+### savings
+- saving_id (UUID, PK)
+- user_id (UUID, FK -> users)
+- wallet_id (UUID, FK -> wallets)
+- title
+- target_amount
+- type (one_time, periodic)
+- period_unit (monthly, yearly, nullable)
+- start_period (nullable)
+- created_at, updated_at, deleted_at
+- version
+
 ## Tables (planned)
 
 ### sync_change_log
@@ -96,3 +108,4 @@
 - transactions (wallet_id, tx_date)
 - transactions (created_by)
 - transactions (category_id)
+- savings (user_id, wallet_id)
