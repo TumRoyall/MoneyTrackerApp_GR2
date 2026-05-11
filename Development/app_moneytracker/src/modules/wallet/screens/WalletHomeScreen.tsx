@@ -26,14 +26,14 @@ type CategoryType = 'EXPENSE' | 'INCOME';
 type TimeMode = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
 type CalendarTarget = 'customStart' | 'customEnd';
 
-const walletTypeOptions: Array<{ label: string; value: WalletType }> = [
-  { label: 'Thường', value: 'REGULAR' },
-  { label: 'Tiền mặt', value: 'CASH' },
-  { label: 'Tiết kiệm', value: 'SAVING' },
-  { label: 'Nợ', value: 'DEBT' },
-  { label: 'Đầu tư', value: 'INVEST' },
-  { label: 'Sự kiện', value: 'EVENT' },
-];
+const walletTypeLabels: Record<string, string> = {
+  REGULAR: 'Ví thường',
+  CASH: 'Tiền mặt',
+  SAVING: 'Tiết kiệm',
+  DEBT: 'Nợ',
+  INVEST: 'Đầu tư',
+  EVENT: 'Sự kiện',
+};
 
 const currencyOptions = ['VND', 'USD', 'EUR'];
 
@@ -200,7 +200,6 @@ export const WalletHomeScreen = () => {
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [walletName, setWalletName] = useState('');
-  const [walletType, setWalletType] = useState<WalletType>('REGULAR');
   const [currency, setCurrency] = useState('VND');
   const [balance, setBalance] = useState('0');
 
@@ -237,18 +236,25 @@ export const WalletHomeScreen = () => {
   });
 
   const wallets = walletsQuery.data ?? [];
+  const regularWallets = useMemo(
+    () => wallets.filter((wallet) => String(wallet.type || '').toUpperCase() === 'REGULAR'),
+    [wallets],
+  );
   const categories = categoriesQuery.data ?? [];
 
   useEffect(() => {
-    if (!selectedWalletId && wallets.length > 0) {
-      setSelectedWalletId(wallets[0].walletId);
+    if (!selectedWalletId && regularWallets.length > 0) {
+      setSelectedWalletId(regularWallets[0].walletId);
     }
-  }, [wallets, selectedWalletId]);
+    if (selectedWalletId && !regularWallets.some((wallet) => wallet.walletId === selectedWalletId)) {
+      setSelectedWalletId(regularWallets[0]?.walletId ?? null);
+    }
+  }, [regularWallets, selectedWalletId]);
 
   const normalizeCategoryType = (value: unknown): CategoryType =>
     String(value || '').toUpperCase() === 'INCOME' ? 'INCOME' : 'EXPENSE';
 
-  const currentWallet = wallets.find((wallet) => wallet.walletId === selectedWalletId) ?? null;
+  const currentWallet = regularWallets.find((wallet) => wallet.walletId === selectedWalletId) ?? null;
 
   const transactionFilters: TransactionFilters | undefined = useMemo(() => {
     if (!selectedWalletId) {
@@ -454,18 +460,26 @@ export const WalletHomeScreen = () => {
 
   const walletDistribution = useMemo(() => {
     const colors = ['#8BC3ED', '#58C9D2', '#F6C04B', '#EF7D83', '#A98FF0'];
-    const total = wallets.reduce((sum, wallet) => sum + Math.max(wallet.currentBalance ?? 0, 0), 0);
+    const totalsByType = new Map<string, { count: number; total: number }>();
 
-    return wallets
-      .slice()
-      .sort((a, b) => (b.currentBalance ?? 0) - (a.currentBalance ?? 0))
-      .slice(0, 5)
-      .map((wallet, index) => {
-        const value = Math.max(wallet.currentBalance ?? 0, 0);
-        const percentage = total > 0 ? (value / total) * 100 : 0;
+    wallets.forEach((wallet) => {
+      const type = String(wallet.type || '').toUpperCase();
+      const current = totalsByType.get(type) ?? { count: 0, total: 0 };
+      current.count += 1;
+      current.total += Math.max(wallet.currentBalance ?? 0, 0);
+      totalsByType.set(type, current);
+    });
+
+    const totalAll = Array.from(totalsByType.values()).reduce((sum, item) => sum + item.total, 0);
+
+    return Array.from(totalsByType.entries())
+      .filter(([, item]) => item.count > 0)
+      .map(([type, item], index) => {
+        const percentage = totalAll > 0 ? (item.total / totalAll) * 100 : 0;
         return {
-          wallet,
-          value,
+          type,
+          total: item.total,
+          count: item.count,
           percentage,
           color: colors[index % colors.length],
         };
@@ -475,7 +489,7 @@ export const WalletHomeScreen = () => {
   const createWalletHandler = async () => {
     const payload: WalletCreateInput = {
       name: walletName.trim(),
-      type: walletType,
+      type: 'REGULAR',
       currency: currency.trim().toUpperCase() || 'VND',
       currentBalance: parseMoneyInput(balance),
       description: description.trim() || null,
@@ -490,7 +504,6 @@ export const WalletHomeScreen = () => {
       await createWallet(payload);
       await queryClient.invalidateQueries({ queryKey: ['wallets'] });
       setWalletName('');
-      setWalletType('REGULAR');
       setCurrency('VND');
       setBalance('0');
       setDescription('');
@@ -578,7 +591,7 @@ export const WalletHomeScreen = () => {
           </View>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletCarouselContent}>
-          {wallets.map((wallet) => {
+          {regularWallets.map((wallet) => {
             const selected = wallet.walletId === selectedWalletId;
             return (
               <Pressable
@@ -619,13 +632,13 @@ export const WalletHomeScreen = () => {
             <Text style={styles.chartEmpty}>Chưa có dữ liệu để hiển thị biểu đồ.</Text>
           ) : (
             walletDistribution.map((item) => (
-              <View key={item.wallet.walletId} style={styles.chartRow}>
+              <View key={item.type} style={styles.chartRow}>
                 <View style={[styles.chartDot, { backgroundColor: item.color }]} />
                 <Text style={styles.chartWalletName} numberOfLines={1}>
-                  {item.wallet.name}
+                  {walletTypeLabels[item.type] ?? item.type}
                 </Text>
                 <Text style={styles.chartPercent}>{item.percentage.toFixed(0)}%</Text>
-                <Text style={styles.chartAmount}>{formatCurrency(item.value, item.wallet.currency || 'VND')}</Text>
+                <Text style={styles.chartAmount}>{formatCurrency(item.total, currentWallet?.currency || 'VND')}</Text>
               </View>
             ))
           )}
@@ -812,20 +825,6 @@ export const WalletHomeScreen = () => {
               value={walletName}
               onChangeText={setWalletName}
             />
-
-            <View style={styles.pillWrap}>
-              {walletTypeOptions.map((option) => (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setWalletType(option.value)}
-                  style={[styles.pill, walletType === option.value ? styles.pillActive : null]}
-                >
-                  <Text style={[styles.pillText, walletType === option.value ? styles.pillTextActive : null]}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
 
             <View style={styles.row}>
               <TextInput
@@ -1035,23 +1034,6 @@ export const WalletHomeScreen = () => {
                 onChangeText={setEditWalletName}
                 placeholder="Nhập tên ví"
               />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Loại ví</Text>
-              <View style={styles.pillWrap}>
-                {(['REGULAR', 'CASH', 'SAVING', 'DEBT', 'INVEST', 'EVENT'] as WalletType[]).map((type) => (
-                  <Pressable
-                    key={type}
-                    onPress={() => setEditWalletType(type)}
-                    style={[styles.pillBtn, editWalletType === type ? styles.pillBtnActive : null]}
-                  >
-                    <Text style={[styles.pillBtnText, editWalletType === type ? styles.pillBtnTextActive : null]}>
-                      {type}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
             </View>
 
             <View style={styles.inputGroup}>

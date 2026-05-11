@@ -79,6 +79,24 @@ export default function TabsLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="tools/savings/index"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="tools/savings/[savingId]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="tools/savings/[savingId]/edit"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

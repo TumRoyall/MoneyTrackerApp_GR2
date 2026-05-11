@@ -235,10 +235,8 @@ export const SavingToolScreen = () => {
             const type = normalizeSavingType(saving.type);
             const unit = normalizePeriodUnit(saving.periodUnit);
             const totalSaved = Number(saving.currentBalance || 0);
-            const transactions = transactionsBySavingId.get(saving.savingId) ?? [];
-            const periodSaved = type === 'periodic' ? sumSignedAmount(transactions, categoryMap) : totalSaved;
             const progressTarget = saving.targetAmount;
-            const percent = progressTarget > 0 ? Math.min((periodSaved / progressTarget) * 100, 100) : 0;
+            const percent = progressTarget > 0 ? Math.min((totalSaved / progressTarget) * 100, 100) : 0;
 
             return (
               <Pressable
@@ -269,7 +267,7 @@ export const SavingToolScreen = () => {
                 </View>
 
                 <View style={styles.amountRow}>
-                  <Text style={styles.amountPrimary}>{formatVndAmount(periodSaved)}</Text>
+                  <Text style={styles.amountPrimary}>{formatVndAmount(totalSaved)}</Text>
                   <Text style={styles.amountSecondary}>/ {formatVndAmount(progressTarget)}</Text>
                 </View>
 
@@ -439,8 +437,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 30,
-    fontWeight: '800',
+    fontSize: 24,
+    fontWeight: '700',
     color: '#1f1f1f',
   },
   toggleRow: {
@@ -449,9 +447,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   toggleLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#4b5963',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   emptyCard: {
     borderRadius: 14,
@@ -462,7 +460,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1f1f1f',
   },
@@ -473,7 +471,7 @@ const styles = StyleSheet.create({
   savingCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#2bb6c2',
+    borderColor: '#dbe7eb',
     backgroundColor: '#fff',
     padding: 14,
     gap: 8,
@@ -486,8 +484,8 @@ const styles = StyleSheet.create({
   },
   savingTitle: {
     flex: 1,
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#1f1f1f',
   },
   editButton: {
@@ -500,14 +498,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   amountPrimary: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#1f1f1f',
   },
   amountSecondary: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6b7680',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   metaRow: {
     flexDirection: 'row',
@@ -516,9 +514,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6b7680',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   typeChip: {
     paddingHorizontal: 10,
@@ -527,15 +525,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#e8f9fb',
   },
   typeChipText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
     color: '#1099a4',
   },
   progressTrack: {
     height: 6,
     borderRadius: 999,
     backgroundColor: '#e8edf0',
-    overflow: 'hidden',
+    overflow: 'visible',
     justifyContent: 'center',
   },
   progressFill: {
@@ -551,10 +549,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#2bb6c2',
+    zIndex: 2,
+    elevation: 2,
   },
   progressBubbleText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '600',
     color: '#1099a4',
   },
   totalSummaryCard: {
@@ -569,12 +569,12 @@ const styles = StyleSheet.create({
   },
   totalSummaryText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
     color: '#4d5b64',
   },
   totalSummaryAmount: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#1f1f1f',
   },
   fab: {

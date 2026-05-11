@@ -5,23 +5,12 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 
-import { useSavingUsecases } from '@/modules/saving/usecases';
-import { SavingPeriodUnit, SavingType } from '@/modules/saving/models/saving.types';
+import { useDebtUsecases } from '@/modules/debt/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
 import { Transaction } from '@/modules/transaction/models/transaction.types';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { formatMoneyInput, formatVndAmount, parseMoneyInput } from '@/shared/utils/money';
-
-const normalizeSavingType = (value: unknown): SavingType => {
-  const stringValue = String(value || '').toLowerCase();
-  return stringValue === 'periodic' ? 'periodic' : 'one_time';
-};
-
-const normalizePeriodUnit = (value: unknown): SavingPeriodUnit => {
-  const stringValue = String(value || '').toLowerCase();
-  return stringValue === 'yearly' ? 'yearly' : 'monthly';
-};
 
 const normalizeCategoryType = (value: unknown) => String(value || '').toUpperCase();
 
@@ -32,36 +21,42 @@ const toIsoDate = (value: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const getPeriodRange = (unit: SavingPeriodUnit, anchor: Date) => {
-  if (unit === 'yearly') {
-    const start = new Date(anchor.getFullYear(), 0, 1);
-    const end = new Date(anchor.getFullYear(), 11, 31);
-    return { fromDate: start, toDate: end };
+const formatActivityDate = (value: string) => {
+  const [year, month, day] = value.split('-').map((item) => Number(item));
+  if (!year || !month || !day) {
+    return value;
   }
-  const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-  const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
-  return { fromDate: start, toDate: end };
+  const date = new Date(year, month - 1, day);
+  const weekdays = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'];
+  return `${weekdays[date.getDay()]}, ${day} thg ${month}, ${year}`;
 };
 
-const formatPeriodChip = (unit: SavingPeriodUnit, anchor: Date) => {
-  if (unit === 'yearly') {
-    return `Năm ${anchor.getFullYear()}`;
+const formatDisplayDate = (value?: string | null) => {
+  if (!value) {
+    return 'Chưa đặt';
   }
-  return `thg ${anchor.getMonth() + 1} ${anchor.getFullYear()}`;
+  const [year, month, day] = value.split('-').map((item) => Number(item));
+  if (!year || !month || !day) {
+    return value;
+  }
+  return `${day} thg ${month}, ${year}`;
 };
 
-const formatPeriodLabel = (unit: SavingPeriodUnit) => (unit === 'yearly' ? 'hàng năm' : 'hàng tháng');
+const calculateDaysRemaining = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
+  const [year, month, day] = value.split('-').map((item) => Number(item));
+  if (!year || !month || !day) {
+    return null;
+  }
+  const target = new Date(year, month - 1, day);
+  const diffMs = target.getTime() - new Date().setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  return Math.max(diffDays, 0);
+};
 
-const sumSignedAmount = (items: Array<{ categoryId: string; amount: number }>, categoryMap: Map<string, { type?: string }>) =>
-  items.reduce((sum, item) => {
-    const type = normalizeCategoryType(categoryMap.get(item.categoryId)?.type);
-    if (type === 'EXPENSE') {
-      return sum - Number(item.amount || 0);
-    }
-    return sum + Number(item.amount || 0);
-  }, 0);
-
-const transferMetaRegex = /\[saving-transfer:walletId=([^;\]]+);savingId=([^\]]+)\]/;
+const transferMetaRegex = /\[debt-payment:walletId=([^;\]]+);debtId=([^\]]+)\]/;
 
 const getTransferMeta = (note?: string | null) => {
   if (!note) {
@@ -71,7 +66,7 @@ const getTransferMeta = (note?: string | null) => {
   if (!match) {
     return null;
   }
-  return { walletId: match[1], savingId: match[2] };
+  return { walletId: match[1], debtId: match[2] };
 };
 
 const stripTransferMeta = (note?: string | null) => {
@@ -79,16 +74,6 @@ const stripTransferMeta = (note?: string | null) => {
     return '';
   }
   return note.replace(transferMetaRegex, '').trim();
-};
-
-const formatActivityDate = (value: string) => {
-  const [year, month, day] = value.split('-').map((item) => Number(item));
-  if (!year || !month || !day) {
-    return value;
-  }
-  const date = new Date(year, month - 1, day);
-  const weekdays = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'];
-  return `${weekdays[date.getDay()]}, ${day} thg ${month}, ${year}`;
 };
 
 const ProgressRing = ({ size, strokeWidth, percent }: { size: number; strokeWidth: number; percent: number }) => {
@@ -121,21 +106,21 @@ const ProgressRing = ({ size, strokeWidth, percent }: { size: number; strokeWidt
   );
 };
 
-export const SavingDetailScreen = () => {
+export const DebtDetailScreen = () => {
   const router = useRouter();
-  const params = useLocalSearchParams<{ savingId?: string }>();
-  const savingId = params.savingId || '';
+  const params = useLocalSearchParams<{ debtId?: string }>();
+  const debtId = params.debtId || '';
   const queryClient = useQueryClient();
 
-  const { getSaving } = useSavingUsecases();
+  const { getDebt } = useDebtUsecases();
   const { getCategories, createCategory } = useCategoryUsecases();
   const { getTransactions, createTransaction, updateTransaction, deleteTransaction } = useTransactionUsecases();
   const { getWallets } = useWalletUsecases();
 
-  const savingQuery = useQuery({
-    queryKey: ['saving', savingId],
-    queryFn: () => getSaving(savingId),
-    enabled: Boolean(savingId),
+  const debtQuery = useQuery({
+    queryKey: ['debt', debtId],
+    queryFn: () => getDebt(debtId),
+    enabled: Boolean(debtId),
   });
 
   const categoriesQuery = useQuery({
@@ -148,7 +133,7 @@ export const SavingDetailScreen = () => {
     queryFn: getWallets,
   });
 
-  const saving = savingQuery.data;
+  const debt = debtQuery.data;
   const categories = categoriesQuery.data ?? [];
   const wallets = walletsQuery.data ?? [];
   const categoryMap = useMemo(
@@ -156,7 +141,6 @@ export const SavingDetailScreen = () => {
     [categories],
   );
 
-  const [periodAnchor, setPeriodAnchor] = useState(() => new Date());
   const [showAddRecordModal, setShowAddRecordModal] = useState(false);
   const [transferFromWallet, setTransferFromWallet] = useState(true);
   const [selectedSourceWalletId, setSelectedSourceWalletId] = useState<string | null>(null);
@@ -167,64 +151,40 @@ export const SavingDetailScreen = () => {
   const [editingRecord, setEditingRecord] = useState<Transaction | null>(null);
   const [editingTransferWalletId, setEditingTransferWalletId] = useState<string | null>(null);
 
-  const savingType = normalizeSavingType(saving?.type);
-  const periodUnit = normalizePeriodUnit(saving?.periodUnit);
-  const periodRange = getPeriodRange(periodUnit, periodAnchor);
-
   const transactionsQuery = useQuery({
-    queryKey: ['saving-transactions', savingId, toIsoDate(periodRange.fromDate), toIsoDate(periodRange.toDate)],
+    queryKey: ['debt-activity', debtId],
     queryFn: () =>
       getTransactions({
-        walletId: saving?.walletId ?? undefined,
-        fromDate: toIsoDate(periodRange.fromDate),
-        toDate: toIsoDate(periodRange.toDate),
-        page: 0,
-        size: 1000,
-        sort: 'date,desc',
-      }),
-    enabled: Boolean(saving?.walletId && savingType === 'periodic'),
-  });
-
-  const transactions = transactionsQuery.data ?? [];
-  const activityQuery = useQuery({
-    queryKey: ['saving-activity', savingId],
-    queryFn: () =>
-      getTransactions({
-        walletId: saving?.walletId ?? undefined,
+        walletId: debt?.walletId ?? undefined,
         page: 0,
         size: 200,
         sort: 'date,desc',
       }),
-    enabled: Boolean(saving?.walletId),
+    enabled: Boolean(debt?.walletId),
   });
-  const activityItems = activityQuery.data ?? [];
-  const periodSaved = savingType === 'periodic' ? sumSignedAmount(transactions, categoryMap) : 0;
-  const totalSaved = Number(saving?.currentBalance || 0);
-  const targetAmount = saving?.targetAmount ?? 0;
-  const progressValue = savingType === 'periodic' ? periodSaved : totalSaved;
-  const percent = targetAmount > 0 ? Math.min((progressValue / targetAmount) * 100, 100) : 0;
-  const remainingAmount = Math.max(targetAmount - progressValue, 0);
+
+  const activityItems = transactionsQuery.data ?? [];
+
+  const totalPaid = Number(debt?.currentBalance || 0);
+  const targetAmount = debt?.targetAmount ?? 0;
+  const percent = targetAmount > 0 ? Math.min((totalPaid / targetAmount) * 100, 100) : 0;
+  const remainingAmount = Math.max(targetAmount - totalPaid, 0);
+
+  const startDateValue = debt?.startDate || debt?.createdAt?.slice(0, 10) || null;
+  const targetDateValue = debt?.targetDate || null;
+  const remainingDays = calculateDaysRemaining(targetDateValue);
 
   const regularWallets = useMemo(
     () =>
       wallets.filter((wallet) => {
         const type = String(wallet.type || '').toUpperCase();
-        if (wallet.walletId === saving?.walletId) {
+        if (wallet.walletId === debt?.walletId) {
           return false;
         }
         return type === 'REGULAR' || type === 'CASH';
       }),
-    [wallets, saving?.walletId],
+    [wallets, debt?.walletId],
   );
-
-  const movePeriod = (step: number) => {
-    setPeriodAnchor((current) => {
-      if (periodUnit === 'yearly') {
-        return new Date(current.getFullYear() + step, current.getMonth(), 1);
-      }
-      return new Date(current.getFullYear(), current.getMonth() + step, 1);
-    });
-  };
 
   const resetRecordForm = () => {
     setTransferFromWallet(true);
@@ -237,23 +197,23 @@ export const SavingDetailScreen = () => {
     setEditingTransferWalletId(null);
   };
 
-  const isSavingCategoryName = (value: string) => {
+  const isDebtCategoryName = (value: string) => {
     const normalized = value.trim().toLowerCase();
-    return normalized === 'tiết kiệm' || normalized === 'tiet kiem';
+    return normalized === 'nợ' || normalized === 'no';
   };
 
-  const ensureSavingCategoryId = async (type: 'INCOME' | 'EXPENSE') => {
+  const ensureDebtCategoryId = async (type: 'INCOME' | 'EXPENSE') => {
     const existing = categories.find(
-      (item) => normalizeCategoryType(item.type) === type && isSavingCategoryName(item.name),
+      (item) => normalizeCategoryType(item.type) === type && isDebtCategoryName(item.name),
     );
     if (existing) {
       return existing.categoryId;
     }
     const created = await createCategory({
-      name: 'Tiết kiệm',
+      name: 'Nợ',
       type,
-      icon: '🏦',
-      color: '#BFEFF3',
+      icon: '💳',
+      color: '#FBE8E6',
     });
     await queryClient.invalidateQueries({ queryKey: ['categories'] });
     return created.categoryId;
@@ -279,7 +239,7 @@ export const SavingDetailScreen = () => {
   };
 
   const buildTransferNote = (baseNote: string, sourceWalletId: string) => {
-    const metaToken = `[saving-transfer:walletId=${sourceWalletId};savingId=${savingId}]`;
+    const metaToken = `[debt-payment:walletId=${sourceWalletId};debtId=${debtId}]`;
     if (!baseNote.trim()) {
       return metaToken;
     }
@@ -287,8 +247,8 @@ export const SavingDetailScreen = () => {
   };
 
   const submitAddRecord = async () => {
-    if (!saving?.walletId) {
-      Alert.alert('Thiếu ví', 'Không tìm thấy ví tiết kiệm cho mục tiêu này.');
+    if (!debt?.walletId) {
+      Alert.alert('Thiếu ví', 'Không tìm thấy ví nợ cho khoản này.');
       return;
     }
 
@@ -299,7 +259,7 @@ export const SavingDetailScreen = () => {
     }
 
     if (transferFromWallet && !selectedSourceWalletId) {
-      Alert.alert('Thiếu ví nguồn', 'Vui lòng chọn ví để chuyển vào tiết kiệm.');
+      Alert.alert('Thiếu ví nguồn', 'Vui lòng chọn ví để thanh toán nợ.');
       return;
     }
 
@@ -322,7 +282,7 @@ export const SavingDetailScreen = () => {
     }
 
     try {
-      const incomeCategoryId = await ensureSavingCategoryId('INCOME');
+      const incomeCategoryId = await ensureDebtCategoryId('INCOME');
 
       if (recordModalMode === 'edit' && editingRecord) {
         const baseNote = formNote.trim();
@@ -342,7 +302,7 @@ export const SavingDetailScreen = () => {
             page: 0,
             size: 50,
           });
-          const metaToken = `[saving-transfer:walletId=${metaWalletId};savingId=${savingId}]`;
+          const metaToken = `[debt-payment:walletId=${metaWalletId};debtId=${debtId}]`;
           const paired = sourceTransactions.find(
             (item) => item.amount === editingRecord.amount && (item.note || '').includes(metaToken),
           );
@@ -354,12 +314,12 @@ export const SavingDetailScreen = () => {
           }
         }
       } else {
-        const baseNote = formNote.trim() || saving?.title || '';
+        const baseNote = formNote.trim() || debt?.title || '';
         const dateValue = formDate || toIsoDate(new Date());
-        let savingNote: string | null = baseNote || null;
+        let debtNote: string | null = baseNote || null;
 
         if (transferFromWallet && selectedSourceWalletId) {
-          const expenseCategoryId = await ensureSavingCategoryId('EXPENSE');
+          const expenseCategoryId = await ensureDebtCategoryId('EXPENSE');
           const transferNote = buildTransferNote(baseNote, selectedSourceWalletId);
           await createTransaction({
             walletId: selectedSourceWalletId,
@@ -368,31 +328,29 @@ export const SavingDetailScreen = () => {
             note: transferNote,
             date: dateValue,
           });
-          savingNote = transferNote;
+          debtNote = transferNote;
         }
 
         await createTransaction({
-          walletId: saving.walletId,
+          walletId: debt.walletId,
           categoryId: incomeCategoryId,
           amount: amountValue,
-          note: savingNote,
+          note: debtNote,
           date: dateValue,
         });
       }
 
-      await queryClient.invalidateQueries({ queryKey: ['saving', savingId] });
-      await queryClient.invalidateQueries({ queryKey: ['savings'] });
+      await queryClient.invalidateQueries({ queryKey: ['debt', debtId] });
+      await queryClient.invalidateQueries({ queryKey: ['debts'] });
       await queryClient.invalidateQueries({ queryKey: ['wallets'] });
       await queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      await queryClient.invalidateQueries({ queryKey: ['saving-transactions', savingId] });
-      await queryClient.invalidateQueries({ queryKey: ['saving-period-transactions'] });
-      await queryClient.invalidateQueries({ queryKey: ['saving-activity', savingId] });
+      await queryClient.invalidateQueries({ queryKey: ['debt-activity', debtId] });
 
       resetRecordForm();
       setShowAddRecordModal(false);
-      Alert.alert('Thành công', recordModalMode === 'edit' ? 'Đã cập nhật giao dịch.' : 'Đã thêm giao dịch tiết kiệm.');
+      Alert.alert('Thành công', recordModalMode === 'edit' ? 'Đã cập nhật bản ghi.' : 'Đã thêm thanh toán nợ.');
     } catch {
-      Alert.alert('Lỗi', recordModalMode === 'edit' ? 'Không thể cập nhật giao dịch.' : 'Không thể thêm giao dịch tiết kiệm. Vui lòng thử lại.');
+      Alert.alert('Lỗi', recordModalMode === 'edit' ? 'Không thể cập nhật bản ghi.' : 'Không thể thêm thanh toán nợ. Vui lòng thử lại.');
     }
   };
 
@@ -416,7 +374,7 @@ export const SavingDetailScreen = () => {
                 page: 0,
                 size: 50,
               });
-              const metaToken = `[saving-transfer:walletId=${metaWalletId};savingId=${savingId}]`;
+              const metaToken = `[debt-payment:walletId=${metaWalletId};debtId=${debtId}]`;
               const paired = sourceTransactions.find(
                 (item) => item.amount === editingRecord.amount && (item.note || '').includes(metaToken),
               );
@@ -427,13 +385,11 @@ export const SavingDetailScreen = () => {
 
             await deleteTransaction(editingRecord.transactionId);
 
-            await queryClient.invalidateQueries({ queryKey: ['saving', savingId] });
-            await queryClient.invalidateQueries({ queryKey: ['savings'] });
+            await queryClient.invalidateQueries({ queryKey: ['debt', debtId] });
+            await queryClient.invalidateQueries({ queryKey: ['debts'] });
             await queryClient.invalidateQueries({ queryKey: ['wallets'] });
             await queryClient.invalidateQueries({ queryKey: ['transactions'] });
-            await queryClient.invalidateQueries({ queryKey: ['saving-transactions', savingId] });
-            await queryClient.invalidateQueries({ queryKey: ['saving-period-transactions'] });
-            await queryClient.invalidateQueries({ queryKey: ['saving-activity', savingId] });
+            await queryClient.invalidateQueries({ queryKey: ['debt-activity', debtId] });
 
             resetRecordForm();
             setShowAddRecordModal(false);
@@ -453,51 +409,25 @@ export const SavingDetailScreen = () => {
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
           </Pressable>
-          <Text style={styles.title}>{saving?.title || 'Tiết kiệm'}</Text>
+          <Text style={styles.title}>{debt?.title || 'Món nợ'}</Text>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="close" size={22} color="#1f1f1f" />
           </Pressable>
         </View>
 
         <View style={styles.card}>
-          <View style={styles.cardTopRow}>
-            <View style={styles.tagChip}>
-              <Text style={styles.tagText}>
-                {savingType === 'periodic'
-                  ? `Định kỳ · ${formatPeriodLabel(periodUnit)}`
-                  : 'Một lần'}
-              </Text>
-            </View>
-          </View>
-
-          {savingType === 'periodic' ? (
-            <View style={styles.periodNavRow}>
-              <Pressable style={styles.navBtn} onPress={() => movePeriod(-1)}>
-                <Ionicons name="chevron-back" size={18} color="#5a6770" />
-              </Pressable>
-              <View style={styles.periodChip}>
-                <Text style={styles.periodChipText}>{formatPeriodChip(periodUnit, periodAnchor)}</Text>
-              </View>
-              <Pressable style={styles.navBtn} onPress={() => movePeriod(1)}>
-                <Ionicons name="chevron-forward" size={18} color="#5a6770" />
-              </Pressable>
-            </View>
-          ) : null}
-
           <View style={styles.progressWrap}>
             <ProgressRing size={180} strokeWidth={14} percent={percent} />
             <View style={styles.progressCenter}>
               <Text style={styles.percentText}>{`${Math.round(percent)}%`}</Text>
-              <Text style={styles.percentCaption}>
-                {savingType === 'periodic' ? 'kỳ này' : 'toàn thời gian'}
-              </Text>
+              <Text style={styles.percentCaption}>đã trả</Text>
             </View>
           </View>
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Đã tiết kiệm</Text>
-              <Text style={styles.statValue}>{formatVndAmount(progressValue)}</Text>
+              <Text style={styles.statLabel}>Đã trả</Text>
+              <Text style={styles.statValue}>{formatVndAmount(totalPaid)}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
@@ -506,20 +436,29 @@ export const SavingDetailScreen = () => {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>
-                {savingType === 'periodic'
-                  ? `Mục tiêu ${periodUnit === 'yearly' ? 'hàng năm' : 'hàng tháng'}`
-                  : 'Mục tiêu'}
-              </Text>
+              <Text style={styles.statLabel}>Tổng</Text>
               <Text style={styles.statValue}>{formatVndAmount(targetAmount)}</Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.totalCard}>
-          <Ionicons name="wallet" size={18} color="#2bb6c2" />
-          <Text style={styles.totalText}>Tổng đã tiết kiệm (toàn thời gian)</Text>
-          <Text style={styles.totalAmount}>{formatVndAmount(totalSaved)}</Text>
+        <View style={styles.dateRow}>
+          <View style={styles.dateChip}>
+            <Ionicons name="flag-outline" size={14} color="#6c7a84" />
+            <Text style={styles.dateLabel}>Đã bắt đầu</Text>
+            <Text style={styles.dateValue}>{formatDisplayDate(startDateValue)}</Text>
+          </View>
+          <View style={styles.dateChip}>
+            <Ionicons name="calendar-outline" size={14} color="#6c7a84" />
+            <Text style={styles.dateLabel}>Mục tiêu</Text>
+            <Text style={styles.dateValue}>{formatDisplayDate(targetDateValue)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.dateChipWide}>
+          <Ionicons name="time-outline" size={16} color="#6c7a84" />
+          <Text style={styles.dateLabel}>Số ngày còn lại</Text>
+          <Text style={styles.dateValue}>{remainingDays == null ? '--' : remainingDays}</Text>
         </View>
 
         <View style={styles.sectionHeader}>
@@ -528,55 +467,60 @@ export const SavingDetailScreen = () => {
         </View>
         {activityItems.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>Chưa có hồ sơ nào. Nhấn + để thêm giao dịch của bạn.</Text>
+            <Text style={styles.emptyStateText}>Chưa có bản ghi nào. Nhấn + để thêm thanh toán.</Text>
           </View>
         ) : (
-          activityItems.reduce((groups: Array<{ date: string; items: Transaction[] }>, item) => {
-            const last = groups[groups.length - 1];
-            if (!last || last.date !== item.date) {
-              groups.push({ date: item.date, items: [item] });
-            } else {
-              last.items.push(item);
-            }
-            return groups;
-          }, []).map((group) => (
-            <View key={group.date} style={styles.activityGroup}>
-              <Text style={styles.activityDate}>{formatActivityDate(group.date)}</Text>
-              {group.items.map((item) => {
-                const meta = getTransferMeta(item.note);
-                const sourceWallet = meta?.walletId
-                  ? wallets.find((wallet) => wallet.walletId === meta.walletId)
-                  : null;
-                const noteValue = stripTransferMeta(item.note) || 'Giao dịch tiết kiệm';
-                const categoryType = normalizeCategoryType(categoryMap.get(item.categoryId)?.type);
-                const isExpense = categoryType === 'EXPENSE';
+          activityItems
+            .reduce((groups: Array<{ date: string; items: Transaction[] }>, item) => {
+              const last = groups[groups.length - 1];
+              if (!last || last.date !== item.date) {
+                groups.push({ date: item.date, items: [item] });
+              } else {
+                last.items.push(item);
+              }
+              return groups;
+            }, [])
+            .map((group) => (
+              <View key={group.date} style={styles.activityGroup}>
+                <Text style={styles.activityDate}>{formatActivityDate(group.date)}</Text>
+                {group.items.map((item) => {
+                  const meta = getTransferMeta(item.note);
+                  const sourceWallet = meta?.walletId
+                    ? wallets.find((wallet) => wallet.walletId === meta.walletId)
+                    : null;
+                  const noteValue = stripTransferMeta(item.note) || 'Thanh toán nợ';
+                  const categoryType = normalizeCategoryType(categoryMap.get(item.categoryId)?.type);
+                  const isExpense = categoryType === 'EXPENSE';
 
-                return (
-                  <Pressable
-                    key={item.transactionId}
-                    style={styles.activityItem}
-                    onPress={() => openEditRecordModal(item)}
-                  >
-                    <View style={styles.activityInfo}>
-                      <Text style={styles.activityTitle}>{noteValue}</Text>
-                      {meta?.walletId ? (
-                        <View style={styles.activitySubRow}>
-                          <Ionicons name="wallet-outline" size={14} color="#7b8891" />
-                          <Text style={styles.activitySubtitle}>{sourceWallet?.name || 'Ví khác'}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                    <Text
-                      style={[styles.activityAmount, isExpense ? styles.activityAmountExpense : styles.activityAmountIncome]}
+                  return (
+                    <Pressable
+                      key={item.transactionId}
+                      style={styles.activityItem}
+                      onPress={() => openEditRecordModal(item)}
                     >
-                      {isExpense ? '▼ ' : '▲ '}
-                      {formatVndAmount(item.amount)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ))
+                      <View style={styles.activityInfo}>
+                        <Text style={styles.activityTitle}>{noteValue}</Text>
+                        {meta?.walletId ? (
+                          <View style={styles.activitySubRow}>
+                            <Ionicons name="wallet-outline" size={14} color="#7b8891" />
+                            <Text style={styles.activitySubtitle}>{sourceWallet?.name || 'Ví khác'}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text
+                        style={[
+                          styles.activityAmount,
+                          isExpense ? styles.activityAmountExpense : styles.activityAmountIncome,
+                        ]}
+                      >
+                        {isExpense ? '▼ ' : '▲ '}
+                        {formatVndAmount(item.amount)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))
         )}
       </ScrollView>
 
@@ -595,7 +539,7 @@ export const SavingDetailScreen = () => {
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {recordModalMode === 'edit' ? 'Chỉnh sửa hồ sơ tiết kiệm' : 'Thêm hồ sơ tiết kiệm'}
+                {recordModalMode === 'edit' ? 'Chỉnh sửa thanh toán nợ' : 'Thêm thanh toán nợ'}
               </Text>
               <Pressable onPress={() => setShowAddRecordModal(false)}>
                 <Ionicons name="close" size={24} color="#333" />
@@ -603,7 +547,7 @@ export const SavingDetailScreen = () => {
             </View>
 
             {recordModalMode === 'create' ? (
-              <Text style={styles.modalSubtitle}>Thêm hồ sơ để tăng số tiền tiết kiệm của bạn.</Text>
+              <Text style={styles.modalSubtitle}>Thêm thanh toán để giảm số nợ của bạn.</Text>
             ) : null}
 
             <TextInput
@@ -631,7 +575,7 @@ export const SavingDetailScreen = () => {
 
             {recordModalMode === 'create' ? (
               <>
-                <Text style={styles.modalLabel}>Bạn có muốn chuyển hồ sơ tiết kiệm này từ ví không?</Text>
+                <Text style={styles.modalLabel}>Thanh toán nợ từ ví khác?</Text>
                 <View style={styles.toggleRow}>
                   <Pressable
                     style={[styles.toggleButton, transferFromWallet ? styles.toggleButtonActive : null]}
@@ -645,7 +589,9 @@ export const SavingDetailScreen = () => {
                     style={[styles.toggleButton, !transferFromWallet ? styles.toggleButtonActive : null]}
                     onPress={() => setTransferFromWallet(false)}
                   >
-                    <Text style={[styles.toggleButtonText, !transferFromWallet ? styles.toggleButtonTextActive : null]}>
+                    <Text
+                      style={[styles.toggleButtonText, !transferFromWallet ? styles.toggleButtonTextActive : null]}
+                    >
                       Không
                     </Text>
                   </Pressable>
@@ -695,7 +641,7 @@ export const SavingDetailScreen = () => {
             ) : null}
 
             <Pressable style={styles.saveButton} onPress={submitAddRecord}>
-              <Text style={styles.saveButtonText}>{recordModalMode === 'edit' ? 'Lưu' : 'Lưu'}</Text>
+              <Text style={styles.saveButtonText}>Lưu</Text>
             </Pressable>
 
             {recordModalMode === 'edit' ? (
@@ -744,43 +690,6 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 14,
   },
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  tagChip: {
-    backgroundColor: '#e9f6f8',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  tagText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#2bb6c2',
-  },
-  periodNavRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 14,
-  },
-  navBtn: {
-    padding: 6,
-  },
-  periodChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#e0e7ea',
-    backgroundColor: '#f8fbfc',
-  },
-  periodChipText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#5b6770',
-  },
   progressWrap: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -823,23 +732,37 @@ const styles = StyleSheet.create({
     height: 34,
     backgroundColor: '#edf1f4',
   },
-  totalCard: {
+  dateRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  dateChip: {
+    flex: 1,
     borderRadius: 16,
-    backgroundColor: '#fff',
-    padding: 14,
     borderWidth: 1,
     borderColor: '#e4edf0',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  dateChipWide: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e4edf0',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  totalText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#4d5b64',
+  dateLabel: {
+    fontSize: 12,
+    color: '#6c7a84',
   },
-  totalAmount: {
-    fontSize: 15,
+  dateValue: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#1f1f1f',
   },

@@ -135,6 +135,28 @@ CREATE TABLE savings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ===========================
+-- DEBTS
+-- ===========================
+CREATE TABLE debts (
+    debt_id         CHAR(36) PRIMARY KEY,
+    user_id         CHAR(36) NOT NULL,
+    wallet_id       CHAR(36) NOT NULL,
+    title           VARCHAR(255) NOT NULL,
+    target_amount   DECIMAL(18,2) NOT NULL,
+    start_date      DATE NULL,
+    target_date     DATE NULL,
+    created_at      DATETIME NOT NULL,
+    updated_at      DATETIME NOT NULL,
+    deleted_at      DATETIME NULL,
+    version         BIGINT NOT NULL DEFAULT 1,
+
+    CONSTRAINT fk_debts_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id),
+    CONSTRAINT fk_debts_wallet
+        FOREIGN KEY (wallet_id) REFERENCES wallets(wallet_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===========================
 -- BUDGET_CATEGORIES (join table for multi-category budgets)
 -- ===========================
 CREATE TABLE budget_categories (
@@ -198,3 +220,6 @@ CREATE INDEX idx_budget_user_wallet_cat_period
 
 CREATE INDEX idx_savings_user_wallet
     ON savings(user_id, wallet_id);
+
+CREATE INDEX idx_debts_user_wallet
+    ON debts(user_id, wallet_id);

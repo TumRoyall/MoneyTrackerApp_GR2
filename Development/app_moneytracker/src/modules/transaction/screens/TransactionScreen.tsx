@@ -228,6 +228,26 @@ const formatDayLabel = (value: Date) => `${weekdayDisplay(value)}, ${formatDateS
 
 const formatMonthShort = (value: Date) => `thg ${value.getMonth() + 1}`;
 
+const transferMetaRegex = /\[saving-transfer:walletId=([^;\]]+);savingId=([^\]]+)\]/;
+
+const getTransferMetaToken = (note?: string | null) => {
+  if (!note) {
+    return null;
+  }
+  const match = note.match(transferMetaRegex);
+  if (!match) {
+    return null;
+  }
+  return match[0];
+};
+
+const stripTransferMeta = (note?: string | null) => {
+  if (!note) {
+    return '';
+  }
+  return note.replace(transferMetaRegex, '').trim();
+};
+
 const createWeekOptions = (anchor: Date) => {
   const base = startOfWeek(anchor);
   return Array.from({ length: 6 }, (_, index) => {
@@ -307,6 +327,7 @@ export const TransactionScreen = () => {
   const [formAmount, setFormAmount] = useState('');
   const [formNote, setFormNote] = useState('');
   const [formDate, setFormDate] = useState(formatIsoDate(new Date()));
+  const [formNoteMetaToken, setFormNoteMetaToken] = useState<string | null>(null);
 
   const walletsQuery = useQuery({
     queryKey: ['wallets'],
@@ -319,6 +340,10 @@ export const TransactionScreen = () => {
   });
 
   const wallets = walletsQuery.data ?? [];
+  const regularWallets = useMemo(
+    () => wallets.filter((wallet) => String(wallet.type || '').toUpperCase() === 'REGULAR'),
+    [wallets],
+  );
   const categories = categoriesQuery.data ?? [];
 
   const createModalCategories = useMemo(
@@ -332,21 +357,21 @@ export const TransactionScreen = () => {
     if (
       params.walletId &&
       params.walletId !== lastParamWalletIdRef.current &&
-      wallets.some((wallet) => wallet.walletId === params.walletId)
+      regularWallets.some((wallet) => wallet.walletId === params.walletId)
     ) {
       setSelectedWalletId(params.walletId as string);
       lastParamWalletIdRef.current = params.walletId;
       return;
     }
-    if (!selectedWalletId && wallets.length > 0) {
-      if (params.walletId && wallets.some((wallet) => wallet.walletId === params.walletId)) {
+    if (!selectedWalletId && regularWallets.length > 0) {
+      if (params.walletId && regularWallets.some((wallet) => wallet.walletId === params.walletId)) {
         setSelectedWalletId(params.walletId as string);
         lastParamWalletIdRef.current = params.walletId;
       } else {
-        setSelectedWalletId(wallets[0].walletId);
+        setSelectedWalletId(regularWallets[0].walletId);
       }
     }
-  }, [wallets, selectedWalletId, params.walletId]);
+  }, [regularWallets, selectedWalletId, params.walletId]);
 
   useEffect(() => {
     if (!categoriesQuery.isSuccess || seededDefaultCategoriesRef.current || seedingInProgressRef.current) {
@@ -390,7 +415,7 @@ export const TransactionScreen = () => {
     })();
   }, [categories, categoriesQuery.isSuccess, createCategory, queryClient]);
 
-  const currentWallet = wallets.find((wallet) => wallet.walletId === selectedWalletId) ?? null;
+  const currentWallet = regularWallets.find((wallet) => wallet.walletId === selectedWalletId) ?? null;
 
   const transactionFilters: TransactionFilters | undefined = useMemo(() => {
     if (!selectedWalletId) {
@@ -627,6 +652,7 @@ export const TransactionScreen = () => {
     setFormAmount('');
     setFormNote('');
     setFormDate(formatIsoDate(new Date()));
+    setFormNoteMetaToken(null);
     setShowTransactionModal(true);
   };
 
@@ -634,15 +660,15 @@ export const TransactionScreen = () => {
     if (params.openCreate !== '1' || openCreateRef.current) {
       return;
     }
-    if (wallets.length === 0) {
+    if (regularWallets.length === 0) {
       return;
     }
-    if (params.walletId && wallets.some((wallet) => wallet.walletId === params.walletId)) {
+    if (params.walletId && regularWallets.some((wallet) => wallet.walletId === params.walletId)) {
       setSelectedWalletId(params.walletId);
     }
     openCreateTransactionModal();
     openCreateRef.current = true;
-  }, [params.openCreate, params.walletId, wallets, openCreateTransactionModal]);
+  }, [params.openCreate, params.walletId, regularWallets, openCreateTransactionModal]);
 
   const openEditTransactionModal = (item: Transaction) => {
     const category = categories.find((entry) => entry.categoryId === item.categoryId);
@@ -651,7 +677,8 @@ export const TransactionScreen = () => {
     setFormCategoryType(normalizeCategoryType(category?.type));
     setFormCategoryId(item.categoryId);
     setFormAmount(formatMoneyInput(item.amount));
-    setFormNote(item.note || '');
+    setFormNote(stripTransferMeta(item.note));
+    setFormNoteMetaToken(getTransferMetaToken(item.note));
     setFormDate(item.date);
     setShowTransactionModal(true);
   };
@@ -703,6 +730,11 @@ export const TransactionScreen = () => {
     }
 
     try {
+      const baseNote = formNote.trim();
+      const noteValue = formNoteMetaToken
+        ? `${baseNote} ${formNoteMetaToken}`.trim()
+        : baseNote || null;
+
       if (transactionModalMode === 'edit') {
         if (!editingTransactionId) {
           Alert.alert('Lỗi', 'Không xác định được giao dịch cần chỉnh sửa.');
@@ -711,7 +743,7 @@ export const TransactionScreen = () => {
         await updateTransaction(editingTransactionId, {
           categoryId: formCategoryId,
           amount: amountNumber,
-          note: formNote.trim() || null,
+          note: noteValue,
           date: formDate,
         });
       } else {
@@ -719,7 +751,7 @@ export const TransactionScreen = () => {
           walletId: selectedWalletId,
           categoryId: formCategoryId,
           amount: amountNumber,
-          note: formNote.trim() || null,
+          note: noteValue,
           date: formDate,
         };
         await createTransaction(payload);
@@ -759,7 +791,7 @@ export const TransactionScreen = () => {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletChipRow}>
-          {wallets.map((wallet) => (
+          {regularWallets.map((wallet) => (
             <Pressable
               key={wallet.walletId}
               onPress={() => setSelectedWalletId(wallet.walletId)}
@@ -827,7 +859,7 @@ export const TransactionScreen = () => {
 
                     <View style={styles.transactionInfo}>
                       <Text style={styles.transactionName}>{category?.name ?? 'Danh mục'}</Text>
-                      <Text style={styles.transactionNote}>{item.note || 'Không có ghi chú'}</Text>
+                      <Text style={styles.transactionNote}>{stripTransferMeta(item.note) || 'Không có ghi chú'}</Text>
                     </View>
 
                     <Text style={[styles.transactionAmount, isIncome ? styles.transactionIncome : styles.transactionExpense]}>
