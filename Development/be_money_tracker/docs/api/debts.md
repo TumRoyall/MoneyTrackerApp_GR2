@@ -3,10 +3,14 @@
 ## Base URL
 /api
 
+## Authentication
+- All endpoints require an authenticated user.
+- The controller uses `@AuthenticationPrincipal CustomUserDetails` to resolve the current user.
+
 ## Endpoints
 
 ### POST /api/debts
-- purpose: tao mon no (tu dong tao vi DEBT)
+- purpose: tạo món nợ (tự động tạo wallet type `DEBT`)
 - request body:
   - title (string, required)
   - targetAmount (decimal, required)
@@ -23,29 +27,32 @@
   - targetAmount (decimal)
   - startDate (YYYY-MM-DD, optional)
   - targetDate (YYYY-MM-DD, optional)
-  - createdAt, updatedAt (timestamp)
+  - createdAt (timestamp)
+  - updatedAt (timestamp)
 
 ### GET /api/debts
-- purpose: lay danh sach mon no
-- response: list of DebtResponse
+- purpose: lấy danh sách món nợ của người dùng hiện tại
+- response: list of `DebtResponse`
 
 ### GET /api/debts/{debtId}
-- purpose: xem chi tiet mon no
-- response: DebtResponse
+- purpose: xem chi tiết món nợ
+- response: `DebtResponse`
 
 ### PUT /api/debts/{debtId}
-- purpose: cap nhat mon no
+- purpose: cập nhật món nợ
 - request body:
   - title (string, optional)
   - targetAmount (decimal, optional)
   - startDate (YYYY-MM-DD, optional)
   - targetDate (YYYY-MM-DD, optional)
-- response: DebtResponse
+- response: `DebtResponse`
 
 ### DELETE /api/debts/{debtId}
-- purpose: xoa mon no (soft delete) va dong bo xoa vi DEBT
-- response: 204 No Content
+- purpose: xóa món nợ
+- response: `204 No Content`
 
 ## Notes
-- Mon no la 1 wallet type DEBT
-- Thanh toan no lay tu giao dich INCOME/EXPENSE trong wallet DEBT
+- Món nợ được lưu dưới dạng wallet có type `DEBT`.
+- `currentBalance` là số dư của wallet DEBT và phản ánh giao dịch thanh toán nợ.
+- Thanh toán nợ không có endpoint riêng; nó được thực hiện bằng giao dịch `INCOME`/`EXPENSE` trên wallet DEBT.
+- Xóa món nợ là xóa mềm (soft delete) - bản ghi vẫn giữ `deletedAt` thay vì xóa hoàn toàn.
