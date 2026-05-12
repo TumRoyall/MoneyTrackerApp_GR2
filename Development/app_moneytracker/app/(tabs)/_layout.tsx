@@ -97,6 +97,24 @@ export default function TabsLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="tools/debts/index"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="tools/debts/[debtId]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="tools/debts/[debtId]/edit"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

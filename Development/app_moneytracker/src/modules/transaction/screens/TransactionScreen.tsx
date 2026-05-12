@@ -228,7 +228,7 @@ const formatDayLabel = (value: Date) => `${weekdayDisplay(value)}, ${formatDateS
 
 const formatMonthShort = (value: Date) => `thg ${value.getMonth() + 1}`;
 
-const transferMetaRegex = /\[saving-transfer:walletId=([^;\]]+);savingId=([^\]]+)\]/;
+const transferMetaRegex = /\[(saving-transfer|debt-payment):walletId=([^;\]]+);(?:savingId|debtId)=([^\]]+)\]/;
 
 const getTransferMetaToken = (note?: string | null) => {
   if (!note) {

@@ -76,6 +76,8 @@ const stripTransferMeta = (note?: string | null) => {
   return note.replace(transferMetaRegex, '').trim();
 };
 
+// buildTransferNote moved into component scope where `debtId` is available
+
 const ProgressRing = ({ size, strokeWidth, percent }: { size: number; strokeWidth: number; percent: number }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -136,6 +138,7 @@ export const DebtDetailScreen = () => {
   const debt = debtQuery.data;
   const categories = categoriesQuery.data ?? [];
   const wallets = walletsQuery.data ?? [];
+  // Do not embed metadata tokens into saved notes. Keep notes clean (title-only).
   const categoryMap = useMemo(
     () => new Map(categories.map((item) => [item.categoryId, item])),
     [categories],
@@ -226,24 +229,43 @@ export const DebtDetailScreen = () => {
   };
 
   const openEditRecordModal = (record: Transaction) => {
-    const meta = getTransferMeta(record.note);
     setRecordModalMode('edit');
     setEditingRecord(record);
-    setEditingTransferWalletId(meta?.walletId ?? null);
+    setEditingTransferWalletId(null);
     setFormNote(stripTransferMeta(record.note));
     setFormAmount(formatMoneyInput(record.amount));
     setFormDate(record.date);
-    setTransferFromWallet(Boolean(meta?.walletId));
-    setSelectedSourceWalletId(meta?.walletId ?? null);
     setShowAddRecordModal(true);
   };
 
-  const buildTransferNote = (baseNote: string, sourceWalletId: string) => {
-    const metaToken = `[debt-payment:walletId=${sourceWalletId};debtId=${debtId}]`;
-    if (!baseNote.trim()) {
-      return metaToken;
+  const resolvePairedSourceWalletId = async (record: Transaction, noteValue: string) => {
+    const expenseCategoryId = await ensureDebtCategoryId('EXPENSE');
+    const normalizedNote = noteValue.trim().toLowerCase();
+
+    for (const wallet of regularWallets) {
+      const sourceTransactions = await getTransactions({
+        walletId: wallet.walletId,
+        fromDate: record.date,
+        toDate: record.date,
+        page: 0,
+        size: 50,
+      });
+
+      const paired = sourceTransactions.find((item) => {
+        const itemNote = stripTransferMeta(item.note).trim().toLowerCase();
+        return (
+          item.amount === record.amount &&
+          item.categoryId === expenseCategoryId &&
+          itemNote === normalizedNote
+        );
+      });
+
+      if (paired) {
+        return wallet.walletId;
+      }
     }
-    return `${baseNote.trim()} ${metaToken}`;
+
+    return null;
   };
 
   const submitAddRecord = async () => {
@@ -283,28 +305,28 @@ export const DebtDetailScreen = () => {
 
     try {
       const incomeCategoryId = await ensureDebtCategoryId('INCOME');
+      const baseNote = formNote.trim() || debt?.title || '';
 
       if (recordModalMode === 'edit' && editingRecord) {
-        const baseNote = formNote.trim();
         const metaWalletId = editingTransferWalletId;
-        const noteValue = metaWalletId ? buildTransferNote(baseNote, metaWalletId) : baseNote || null;
-
+        const noteValue = baseNote || null;
         await updateTransaction(editingRecord.transactionId, {
           amount: amountValue,
           note: noteValue,
         });
 
-        if (metaWalletId) {
+        const sourceWalletId = metaWalletId || (await resolvePairedSourceWalletId(editingRecord, noteValue || ''));
+        if (sourceWalletId) {
           const sourceTransactions = await getTransactions({
-            walletId: metaWalletId,
+            walletId: sourceWalletId,
             fromDate: editingRecord.date,
             toDate: editingRecord.date,
             page: 0,
             size: 50,
           });
-          const metaToken = `[debt-payment:walletId=${metaWalletId};debtId=${debtId}]`;
+          const expenseCategoryId = await ensureDebtCategoryId('EXPENSE');
           const paired = sourceTransactions.find(
-            (item) => item.amount === editingRecord.amount && (item.note || '').includes(metaToken),
+            (item) => item.amount === editingRecord.amount && item.categoryId === expenseCategoryId,
           );
           if (paired) {
             await updateTransaction(paired.transactionId, {
@@ -314,28 +336,25 @@ export const DebtDetailScreen = () => {
           }
         }
       } else {
-        const baseNote = formNote.trim() || debt?.title || '';
         const dateValue = formDate || toIsoDate(new Date());
-        let debtNote: string | null = baseNote || null;
+        const cleanNote = baseNote.trim() || debt?.title?.trim() || 'Thanh toán nợ';
 
         if (transferFromWallet && selectedSourceWalletId) {
           const expenseCategoryId = await ensureDebtCategoryId('EXPENSE');
-          const transferNote = buildTransferNote(baseNote, selectedSourceWalletId);
           await createTransaction({
             walletId: selectedSourceWalletId,
             categoryId: expenseCategoryId,
             amount: amountValue,
-            note: transferNote,
+            note: cleanNote,
             date: dateValue,
           });
-          debtNote = transferNote;
         }
 
         await createTransaction({
           walletId: debt.walletId,
           categoryId: incomeCategoryId,
           amount: amountValue,
-          note: debtNote,
+          note: cleanNote,
           date: dateValue,
         });
       }
@@ -366,17 +385,19 @@ export const DebtDetailScreen = () => {
         onPress: async () => {
           try {
             const metaWalletId = editingTransferWalletId;
-            if (metaWalletId) {
+            const noteValue = stripTransferMeta(editingRecord.note).trim() || editingRecord.note?.trim() || 'Thanh toán nợ';
+            const resolvedWalletId = metaWalletId || (await resolvePairedSourceWalletId(editingRecord, noteValue));
+            if (resolvedWalletId) {
               const sourceTransactions = await getTransactions({
-                walletId: metaWalletId,
+                walletId: resolvedWalletId,
                 fromDate: editingRecord.date,
                 toDate: editingRecord.date,
                 page: 0,
                 size: 50,
               });
-              const metaToken = `[debt-payment:walletId=${metaWalletId};debtId=${debtId}]`;
+              const expenseCategoryId = await ensureDebtCategoryId('EXPENSE');
               const paired = sourceTransactions.find(
-                (item) => item.amount === editingRecord.amount && (item.note || '').includes(metaToken),
+                (item) => item.amount === editingRecord.amount && item.categoryId === expenseCategoryId,
               );
               if (paired) {
                 await deleteTransaction(paired.transactionId);
