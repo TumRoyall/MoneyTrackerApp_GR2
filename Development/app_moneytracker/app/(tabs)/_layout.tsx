@@ -27,6 +27,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="garden/index"
+        options={{
+          title: 'Vườn tài chính',
+          tabBarIcon: ({ color, size }) => <Ionicons name="flower-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="transactions"
         options={{
           title: 'Giao dịch',
@@ -111,6 +118,36 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="tools/debts/[debtId]/edit"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="garden/selection"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="garden/tasks"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="garden/archive"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="garden/report"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="garden/rewards"
         options={{
           href: null,
         }}

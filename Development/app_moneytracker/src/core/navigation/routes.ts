@@ -8,6 +8,7 @@ export const AppRoutes = {
     transactions: 'transactions',
     budgets: 'budgets',
     reports: 'reports',
+    garden: 'garden',
   },
 } as const;
 
