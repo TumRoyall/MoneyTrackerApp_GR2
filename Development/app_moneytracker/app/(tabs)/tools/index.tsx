@@ -33,7 +33,7 @@ export default function ToolsScreen() {
       title: 'Món nợ',
       description: 'Theo dõi các khoản nợ của bạn và nỗ lực trả hết chúng!',
       icon: 'card-bulleted-off',
-      onPress: () => router.push('/tools/debts'),
+      onPress: () => {},
     },
     {
       id: 'challenge',

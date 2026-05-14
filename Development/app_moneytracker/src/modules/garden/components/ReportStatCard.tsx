@@ -1,47 +1,43 @@
 import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { GlassCard } from '@/modules/garden/components/ui/GlassCard';
+
 type ReportStatCardProps = {
   label: string;
   value: string;
   hint?: string;
+  accentColor?: string;
 };
 
-export const ReportStatCard = memo(({ label, value, hint }: ReportStatCardProps) => {
+export const ReportStatCard = memo(({ label, value, hint, accentColor }: ReportStatCardProps) => {
   return (
-    <View style={styles.card}>
+    <GlassCard style={styles.card} opacity={0.6} accentColor={accentColor}>
       <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
+      <Text style={[styles.value, accentColor ? { color: accentColor } : undefined]}>{value}</Text>
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
-    </View>
+    </GlassCard>
   );
 });
 
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 14,
     gap: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 10,
-    elevation: 2,
   },
   label: {
     fontSize: 12,
-    color: '#6a7279',
+    color: '#6A7279',
     fontWeight: '600',
   },
   value: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: '#2A2E35',
   },
   hint: {
     fontSize: 12,
-    color: '#92a1a8',
+    color: '#92A1A8',
+    lineHeight: 16,
   },
 });

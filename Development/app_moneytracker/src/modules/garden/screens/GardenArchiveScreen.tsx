@@ -3,8 +3,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { GardenBackground } from '@/modules/garden/components/GardenBackground';
+import { ParallaxBackground } from '@/modules/garden/components/background/ParallaxBackground';
 import { ArchiveCard } from '@/modules/garden/components/ArchiveCard';
+import { GlassCard } from '@/modules/garden/components/ui/GlassCard';
 import { useGardenQueries } from '@/modules/garden/state';
 
 const PAGE_SIZE = 6;
@@ -13,16 +14,15 @@ export const GardenArchiveScreen = () => {
   const router = useRouter();
   const { historyQuery, currentQuery } = useGardenQueries();
   const history = historyQuery.data ?? [];
-
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const visibleItems = useMemo(() => history.slice(0, visibleCount), [history, visibleCount]);
 
   return (
     <View style={styles.screen}>
-      <GardenBackground weather={currentQuery.data?.weather ?? 'sunny'} />
+      <ParallaxBackground weather={currentQuery.data?.weather ?? 'sunny'} />
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color="#1f1f1f" />
+          <Ionicons name="chevron-back" size={22} color="#2A2E35" />
         </Pressable>
         <Text style={styles.title}>Vườn của tôi</Text>
         <Text style={styles.subtitle}>Mỗi tháng là một khuôn mặt hoa khác nhau.</Text>
@@ -38,12 +38,10 @@ export const GardenArchiveScreen = () => {
         onEndReachedThreshold={0.3}
         renderItem={({ item }) => <ArchiveCard item={item} />}
         ListEmptyComponent={
-          <View style={styles.emptyCard}>
+          <GlassCard opacity={0.6}>
             <Text style={styles.emptyTitle}>Chưa có hoa được lưu</Text>
-            <Text style={styles.emptyText}>
-              Hãy chăm sóc đều đặn để khu vườn của bạn thêm rực rỡ.
-            </Text>
-          </View>
+            <Text style={styles.emptyText}>Hãy chăm sóc đều đặn để khu vườn thêm rực rỡ.</Text>
+          </GlassCard>
         }
       />
     </View>
@@ -51,59 +49,18 @@ export const GardenArchiveScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#f7f5f2',
-  },
-  header: {
-    padding: 20,
-    gap: 6,
-  },
+  screen: { flex: 1, backgroundColor: '#E8F0E8' },
+  header: { padding: 20, gap: 4 },
   backButton: {
-    alignSelf: 'flex-start',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    marginBottom: 6,
+    alignSelf: 'flex-start', width: 38, height: 38, borderRadius: 19,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
+    marginBottom: 8,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1f1f1f',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#6a7279',
-  },
-  list: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-    gap: 16,
-  },
-  column: {
-    gap: 16,
-  },
-  emptyCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 16,
-    gap: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  emptyTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1f1f1f',
-  },
-  emptyText: {
-    fontSize: 13,
-    color: '#6a7279',
-  },
+  title: { fontSize: 24, fontWeight: '700', color: '#2A2E35' },
+  subtitle: { fontSize: 13, color: '#5A6068' },
+  list: { paddingHorizontal: 16, paddingBottom: 36, gap: 14 },
+  column: { gap: 14 },
+  emptyTitle: { fontSize: 15, fontWeight: '700', color: '#2A2E35' },
+  emptyText: { fontSize: 13, color: '#5A6068', marginTop: 4 },
 });

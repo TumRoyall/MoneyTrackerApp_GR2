@@ -26,6 +26,7 @@
 - user/auth
 - budget
 - report
+- garden (financial gamification — flower growing)
 - data-management (sync, backup, restore, export)
 - ai-assistant (planned)
 

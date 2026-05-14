@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GardenTask } from '@/modules/garden/models/garden.types';
+import { GlassCard } from '@/modules/garden/components/ui/GlassCard';
 
 type GardenTaskCardProps = {
   task: GardenTask;
@@ -11,77 +12,97 @@ type GardenTaskCardProps = {
 
 export const GardenTaskCard = memo(({ task, onComplete, showAction = true }: GardenTaskCardProps) => {
   return (
-    <View style={[styles.card, task.completed && styles.cardCompleted]}>
+    <GlassCard
+      opacity={task.completed ? 0.5 : 0.6}
+      style={styles.cardOverride}
+    >
       <View style={styles.content}>
-        <Text style={styles.title}>{task.title}</Text>
-        <Text style={styles.description}>{task.description}</Text>
-        <Text style={styles.xp}>+{task.xp} XP</Text>
+        <View style={styles.textWrap}>
+          <View style={styles.titleRow}>
+            {task.completed && <View style={styles.checkmark} />}
+            <Text style={[styles.title, task.completed && styles.titleCompleted]}>
+              {task.title}
+            </Text>
+          </View>
+          <Text style={styles.description}>{task.description}</Text>
+          <Text style={styles.xp}>+{task.xp} XP</Text>
+        </View>
+        {showAction ? (
+          <Pressable
+            style={[styles.button, task.completed && styles.buttonCompleted]}
+            disabled={task.completed}
+            onPress={() => onComplete?.(task.taskId)}
+          >
+            <Text style={[styles.buttonLabel, task.completed && styles.buttonLabelCompleted]}>
+              {task.completed ? '✓ Xong' : 'Hoàn thành'}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
-      {showAction ? (
-        <Pressable
-          style={[styles.button, task.completed && styles.buttonCompleted]}
-          disabled={task.completed}
-          onPress={() => onComplete?.(task.taskId)}
-        >
-          <Text style={[styles.buttonLabel, task.completed && styles.buttonLabelCompleted]}>
-            {task.completed ? 'Đã xong' : 'Hoàn thành'}
-          </Text>
-        </Pressable>
-      ) : null}
-    </View>
+    </GlassCard>
   );
 });
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 16,
+  cardOverride: {
+    padding: 14,
+  },
+  content: {
     flexDirection: 'row',
     gap: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 10,
-    elevation: 2,
   },
-  cardCompleted: {
-    opacity: 0.7,
-  },
-  content: {
+  textWrap: {
     flex: 1,
     gap: 4,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  checkmark: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#6DD4A0',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
   title: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: '#2A2E35',
+  },
+  titleCompleted: {
+    color: '#8A939B',
+    textDecorationLine: 'line-through',
   },
   description: {
     fontSize: 13,
-    color: '#6a7279',
+    color: '#6A7279',
+    lineHeight: 18,
   },
   xp: {
     fontSize: 12,
-    color: '#58c9d2',
+    color: '#5ABCB4',
     fontWeight: '700',
   },
   button: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 16,
-    backgroundColor: '#58c9d2',
+    backgroundColor: 'rgba(90, 188, 180, 0.85)',
   },
   buttonCompleted: {
-    backgroundColor: '#d7e7ea',
+    backgroundColor: 'rgba(200, 215, 220, 0.5)',
   },
   buttonLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#FFFFFF',
   },
   buttonLabelCompleted: {
-    color: '#567177',
+    color: '#7A8A90',
   },
 });

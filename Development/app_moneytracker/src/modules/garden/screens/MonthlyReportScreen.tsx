@@ -2,10 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { GardenBackground } from '@/modules/garden/components/GardenBackground';
-import { FlowerRenderer } from '@/modules/garden/components/FlowerRenderer';
+import { ParallaxBackground } from '@/modules/garden/components/background/ParallaxBackground';
+import { FlowerRendererV2 } from '@/modules/garden/components/FlowerRendererV2';
+import { AmbientGlow } from '@/modules/garden/components/effects/AmbientGlow';
 import { GrowthTimeline } from '@/modules/garden/components/GrowthTimeline';
 import { ReportStatCard } from '@/modules/garden/components/ReportStatCard';
+import { GlassCard } from '@/modules/garden/components/ui/GlassCard';
 import { useGardenQueries } from '@/modules/garden/state';
 
 export const MonthlyReportScreen = () => {
@@ -21,12 +23,21 @@ export const MonthlyReportScreen = () => {
     );
   }
 
+  const finalFlower = report.replay.length > 0
+    ? {
+        stage: report.replay[report.replay.length - 1].stage,
+        quality: report.replay[report.replay.length - 1].quality,
+        progress: 1,
+      }
+    : null;
+
   return (
     <View style={styles.screen}>
-      <GardenBackground weather={currentQuery.data?.weather ?? 'sunny'} />
+      <ParallaxBackground weather={currentQuery.data?.weather ?? 'sunny'} />
+
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color="#1f1f1f" />
+          <Ionicons name="chevron-back" size={22} color="#2A2E35" />
         </Pressable>
 
         <Text style={styles.title}>Báo cáo {report.month}</Text>
@@ -34,61 +45,71 @@ export const MonthlyReportScreen = () => {
           Một tháng chăm sóc vườn hoa, bạn đã làm được rất nhiều.
         </Text>
 
-        <View style={styles.flowerWrap}>
-          {report.replay.length > 0 ? (
-            <FlowerRenderer
-              flower={{
-                stage: report.replay[report.replay.length - 1].stage,
-                quality: report.replay[report.replay.length - 1].quality,
-                progress: 1,
-              }}
-              size={240}
+        {/* Flower Showcase with Glow */}
+        {finalFlower && (
+          <View style={styles.flowerShowcase}>
+            <AmbientGlow color="rgba(240,160,184,0.3)" intensity={0.7} size={280} />
+            <FlowerRendererV2
+              flower={{ stage: finalFlower.stage, quality: finalFlower.quality, progress: 1 }}
+              size={260}
             />
-          ) : null}
-        </View>
+          </View>
+        )}
 
+        {/* Stats Row 1 */}
         <View style={styles.statsRow}>
           <ReportStatCard
             label="Điểm chăm sóc"
             value={`${report.finalScore.value}/100`}
             hint="Tâm ổn định và mềm mại"
+            accentColor="#5ABCB4"
           />
           <ReportStatCard
             label="Tỉ lệ tiết kiệm"
             value={`${Math.round(report.savingsRate * 100)}%`}
             hint="Bạn đã giữ được cảm giác yên tâm"
+            accentColor="#F0A0B8"
           />
         </View>
 
+        {/* Stats Row 2 */}
         <View style={styles.statsRow}>
           <ReportStatCard
             label="Biến động chi tiêu"
             value={`${Math.round(report.spendingChange * 100)}%`}
             hint="Nhẹ nhàng hơn tháng trước"
+            accentColor="#98C4A0"
           />
           <ReportStatCard
             label="Hạt giống"
             value={report.seed.name}
             hint="Hoa của riêng bạn"
+            accentColor="#E8B44C"
           />
         </View>
 
-        <View style={styles.achievementCard}>
-          <Text style={styles.sectionTitle}>Thành tựu đáng nhớ</Text>
-          {report.achievements.map((item, index) => (
-            <Text key={`${item}-${index}`} style={styles.achievementItem}>
-              • {item}
-            </Text>
-          ))}
-        </View>
+        {/* Achievements */}
+        <GlassCard opacity={0.55} accentColor="#F0A0B8">
+          <Text style={styles.sectionTitle}>✨ Thành tựu đáng nhớ</Text>
+          <View style={styles.achievementList}>
+            {report.achievements.map((item, index) => (
+              <View key={`${item}-${index}`} style={styles.achievementRow}>
+                <View style={styles.achievementDot} />
+                <Text style={styles.achievementItem}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        </GlassCard>
 
+        {/* Growth Timeline */}
         <View style={styles.timelineSection}>
-          <Text style={styles.sectionTitle}>Hành trình nở hoa</Text>
+          <Text style={styles.sectionTitle}>🌱 Hành trình nở hoa</Text>
           <GrowthTimeline replay={report.replay} />
         </View>
 
+        {/* CTA */}
         <Pressable style={styles.primaryButton} onPress={() => router.push('/garden/rewards')}>
-          <Text style={styles.primaryButtonText}>Xem thưởng</Text>
+          <Text style={styles.primaryButtonText}>🎁 Xem thưởng</Text>
         </Pressable>
       </ScrollView>
     </View>
@@ -98,80 +119,99 @@ export const MonthlyReportScreen = () => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f7f5f2',
+    backgroundColor: '#E8F0E8',
   },
   loadingScreen: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f7f5f2',
+    backgroundColor: '#E8F0E8',
   },
   loadingText: {
     fontSize: 14,
-    color: '#6a7279',
+    color: '#5A6068',
   },
   content: {
     padding: 20,
-    gap: 16,
-    paddingBottom: 32,
+    gap: 18,
+    paddingBottom: 36,
   },
   backButton: {
     alignSelf: 'flex-start',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: '#2A2E35',
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6a7279',
+    color: '#5A6068',
+    lineHeight: 20,
   },
-  flowerWrap: {
+  flowerShowcase: {
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    minHeight: 280,
   },
   statsRow: {
     flexDirection: 'row',
     gap: 12,
   },
-  achievementCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 14,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2A2E35',
+    marginBottom: 8,
+  },
+  achievementList: {
     gap: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 10,
-    elevation: 2,
+  },
+  achievementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  achievementDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F0A0B8',
   },
   achievementItem: {
-    fontSize: 13,
-    color: '#4c565d',
+    fontSize: 14,
+    color: '#4A5058',
+    flex: 1,
+    lineHeight: 20,
   },
   timelineSection: {
     gap: 8,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1f1f1f',
-  },
   primaryButton: {
-    backgroundColor: '#58c9d2',
-    paddingVertical: 14,
-    borderRadius: 18,
+    backgroundColor: 'rgba(90, 188, 180, 0.85)',
+    paddingVertical: 16,
+    borderRadius: 20,
     alignItems: 'center',
+    shadowColor: '#5ABCB4',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 3,
   },
   primaryButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
 });

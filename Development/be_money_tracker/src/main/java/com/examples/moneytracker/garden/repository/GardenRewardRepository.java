@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface GardenRewardRepository extends JpaRepository<GardenReward, UUID> {
     List<GardenReward> findByUserId(UUID userId);
+
+    List<GardenReward> findByPlantSessionPlantSessionId(UUID plantSessionId);
 }

@@ -12,6 +12,21 @@ export type GardenWeather = 'sunny' | 'cloudy' | 'rainy' | 'stormy' | 'glowy';
 
 export type GardenRarity = 'common' | 'rare' | 'epic' | 'legendary';
 
+/** Expanded weather states for the V2 visual system */
+export type GardenWeatherV2 =
+  | 'sunny'
+  | 'cloudy'
+  | 'rain'
+  | 'mist'
+  | 'windy'
+  | 'night'
+  | 'snowfall'
+  | 'sunset'
+  | 'morning';
+
+/** Season type for the visual atmosphere system */
+export type GardenSeasonType = 'spring' | 'summer' | 'autumn' | 'winter';
+
 export interface GardenSeed {
   seedId: string;
   name: string;

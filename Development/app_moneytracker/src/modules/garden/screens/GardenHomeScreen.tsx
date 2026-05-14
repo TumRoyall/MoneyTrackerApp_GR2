@@ -3,10 +3,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { GardenBackground } from '@/modules/garden/components/GardenBackground';
-import { FlowerRenderer } from '@/modules/garden/components/FlowerRenderer';
+import { ParallaxBackground } from '@/modules/garden/components/background/ParallaxBackground';
+import { FlowerRendererV2 } from '@/modules/garden/components/FlowerRendererV2';
+import { AmbientGlow } from '@/modules/garden/components/effects/AmbientGlow';
 import { GardenTaskCard } from '@/modules/garden/components/GardenTaskCard';
 import { ScoreMeter } from '@/modules/garden/components/ScoreMeter';
+import { GlassCard } from '@/modules/garden/components/ui/GlassCard';
+import { qualityTokensV2 } from '@/modules/garden/assets/flowerTokens';
 import { useGardenQueries } from '@/modules/garden/state';
 
 export const GardenHomeScreen = () => {
@@ -19,42 +22,73 @@ export const GardenHomeScreen = () => {
 
   const previewTasks = useMemo(() => tasks.slice(0, 2), [tasks]);
 
+  const glowColor = flowerState
+    ? qualityTokensV2[flowerState.quality].glow
+    : 'rgba(255,220,160,0.2)';
+  const glowIntensity = flowerState
+    ? qualityTokensV2[flowerState.quality].vibrancy
+    : 0.3;
+
   return (
     <View style={styles.screen}>
-      <GardenBackground weather={current?.weather ?? 'sunny'} />
+      <ParallaxBackground weather={current?.weather ?? 'sunny'} />
+
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Header — lighter, more ethereal */}
         <View style={styles.header}>
           <Text style={styles.title}>Vườn tài chính</Text>
           <Text style={styles.subtitle}>Chăm sóc mỗi thói quen nhỏ mỗi ngày.</Text>
         </View>
 
-        <View style={styles.flowerWrap}>
-          {flowerState ? <FlowerRenderer flower={flowerState} size={250} /> : null}
+        {/* === FLOWER CENTERPIECE === */}
+        <View style={styles.flowerSection}>
+          {/* Ambient glow behind flower */}
+          <View style={styles.glowContainer}>
+            <AmbientGlow color={glowColor} intensity={glowIntensity} size={320} />
+          </View>
+
+          {/* Flower */}
+          {flowerState ? (
+            <FlowerRendererV2 flower={flowerState} size={290} />
+          ) : null}
+
+          {/* Encouragement bubble */}
           {current?.encouragement ? (
-            <View style={styles.encouragement}>
-              <Ionicons name="sparkles" size={16} color="#f0c773" />
-              <Text style={styles.encouragementText}>{current.encouragement}</Text>
-            </View>
+            <GlassCard style={styles.encouragement} opacity={0.7}>
+              <View style={styles.encouragementInner}>
+                <Ionicons name="sparkles" size={14} color="#E8B44C" />
+                <Text style={styles.encouragementText}>{current.encouragement}</Text>
+              </View>
+            </GlassCard>
           ) : null}
         </View>
 
+        {/* Score Meter */}
         {current?.score ? <ScoreMeter score={current.score} /> : null}
 
+        {/* Quick Action Cards */}
         <View style={styles.quickRow}>
-          <Pressable style={styles.quickCard} onPress={() => router.push('/garden/selection')}>
-            <Text style={styles.quickLabel}>Chọn hạt mới</Text>
-            <Text style={styles.quickValue}>{current?.seed?.name ?? 'Chưa chọn'}</Text>
+          <Pressable style={styles.quickCardWrap} onPress={() => router.push('/garden/selection')}>
+            <GlassCard style={styles.quickCard} opacity={0.55}>
+              <Text style={styles.quickIcon}>🌱</Text>
+              <Text style={styles.quickLabel}>Chọn hạt mới</Text>
+              <Text style={styles.quickValue}>{current?.seed?.name ?? 'Chưa chọn'}</Text>
+            </GlassCard>
           </Pressable>
-          <Pressable style={styles.quickCard} onPress={() => router.push('/garden/archive')}>
-            <Text style={styles.quickLabel}>Lịch sử</Text>
-            <Text style={styles.quickValue}>Xem khu vườn</Text>
+          <Pressable style={styles.quickCardWrap} onPress={() => router.push('/garden/archive')}>
+            <GlassCard style={styles.quickCard} opacity={0.55}>
+              <Text style={styles.quickIcon}>🏡</Text>
+              <Text style={styles.quickLabel}>Lịch sử</Text>
+              <Text style={styles.quickValue}>Xem khu vườn</Text>
+            </GlassCard>
           </Pressable>
         </View>
 
+        {/* Daily Tasks Preview */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Nhiệm vụ hôm nay</Text>
           <Pressable onPress={() => router.push('/garden/tasks')}>
-            <Text style={styles.sectionAction}>Xem tất cả</Text>
+            <Text style={styles.sectionAction}>Xem tất cả →</Text>
           </Pressable>
         </View>
         <View style={styles.taskList}>
@@ -63,15 +97,18 @@ export const GardenHomeScreen = () => {
           ))}
         </View>
 
-        <Pressable style={styles.reportCard} onPress={() => router.push('/garden/report')}>
-          <Text style={styles.reportTitle}>Báo cáo tháng này</Text>
-          <Text style={styles.reportSubtitle}>
-            Xem toàn bộ quá trình nở hoa và những khoảnh khắc đáng nhớ.
-          </Text>
-          <View style={styles.reportAction}>
-            <Text style={styles.reportActionText}>Mở báo cáo</Text>
-            <Ionicons name="chevron-forward" size={18} color="#1f1f1f" />
-          </View>
+        {/* Monthly Report Card */}
+        <Pressable onPress={() => router.push('/garden/report')}>
+          <GlassCard style={styles.reportCard} opacity={0.55} accentColor="#F0A0B8">
+            <Text style={styles.reportTitle}>Báo cáo tháng này</Text>
+            <Text style={styles.reportSubtitle}>
+              Xem toàn bộ quá trình nở hoa và những khoảnh khắc đáng nhớ.
+            </Text>
+            <View style={styles.reportAction}>
+              <Text style={styles.reportActionText}>Mở báo cáo</Text>
+              <Ionicons name="chevron-forward" size={16} color="#2A2E35" />
+            </View>
+          </GlassCard>
         </Pressable>
       </ScrollView>
     </View>
@@ -81,70 +118,86 @@ export const GardenHomeScreen = () => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f7f5f2',
+    backgroundColor: '#E8F0E8',
   },
   content: {
-    padding: 20,
-    gap: 18,
-    paddingBottom: 32,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    gap: 20,
+    paddingBottom: 36,
   },
   header: {
-    gap: 6,
+    gap: 4,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: '#2A2E35',
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6a7279',
+    color: '#5A6068',
+    letterSpacing: 0.1,
   },
-  flowerWrap: {
+
+  /* Flower Section */
+  flowerSection: {
     alignItems: 'center',
-    gap: 12,
+    paddingVertical: 16,
+    minHeight: 320,
+    justifyContent: 'center',
+  },
+  glowContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   encouragement: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  encouragementInner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
   },
   encouragementText: {
     fontSize: 13,
-    color: '#4c565d',
+    color: '#4A5058',
     fontWeight: '600',
   },
+
+  /* Quick Cards */
   quickRow: {
     flexDirection: 'row',
     gap: 14,
   },
-  quickCard: {
+  quickCardWrap: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 14,
+  },
+  quickCard: {
     gap: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 10,
-    elevation: 2,
+    padding: 14,
+  },
+  quickIcon: {
+    fontSize: 20,
   },
   quickLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#8a939b',
+    color: '#6A7279',
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   quickValue: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: '#2A2E35',
   },
+
+  /* Section */
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -153,44 +206,40 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: '#2A2E35',
   },
   sectionAction: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#58c9d2',
+    color: '#5ABCB4',
   },
   taskList: {
-    gap: 12,
+    gap: 10,
   },
+
+  /* Report */
   reportCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 22,
-    padding: 16,
     gap: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 10,
-    elevation: 2,
   },
   reportTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: '#2A2E35',
   },
   reportSubtitle: {
     fontSize: 13,
-    color: '#6a7279',
+    color: '#5A6068',
+    lineHeight: 19,
   },
   reportAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+    marginTop: 4,
   },
   reportActionText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: '#2A2E35',
   },
 });

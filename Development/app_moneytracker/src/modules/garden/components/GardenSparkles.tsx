@@ -1,45 +1,97 @@
-import { memo, useMemo } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+/**
+ * GardenSparkles — Enhanced sparkle system with staggered timing,
+ * randomized sizes, and twinkle effects (scale + opacity combined).
+ */
 
-import { usePulseAnimation } from '@/modules/garden/components/hooks/usePulseAnimation';
+import { memo, useEffect, useMemo, useRef } from 'react';
+import { Animated, type DimensionValue, Easing, StyleSheet, View } from 'react-native';
 
 type GardenSparklesProps = {
   color: string;
   intensity?: number;
+  count?: number;
 };
 
-const sparklePositions = [
-  { left: '12%', top: '20%', size: 6 },
-  { left: '78%', top: '16%', size: 5 },
-  { left: '60%', top: '32%', size: 4 },
-  { left: '20%', top: '38%', size: 5 },
-  { left: '10%', top: '60%', size: 4 },
-  { left: '82%', top: '58%', size: 6 },
-];
+interface SparkleData {
+  left: DimensionValue;
+  top: DimensionValue;
+  size: number;
+  animValue: Animated.Value;
+  delay: number;
+  duration: number;
+}
 
-export const GardenSparkles = memo(({ color, intensity = 1 }: GardenSparklesProps) => {
-  const pulse = usePulseAnimation(0.3, 1, 3200);
-  const opacity = useMemo(() => pulse.interpolate({ inputRange: [0.3, 1], outputRange: [0.2, 0.8] }), [pulse]);
+const rand = (min: number, max: number) => min + Math.random() * (max - min);
+
+export const GardenSparkles = memo(({ color, intensity = 1, count = 14 }: GardenSparklesProps) => {
+  const sparkles = useMemo<SparkleData[]>(() => {
+    return Array.from({ length: count }, () => ({
+      left: `${rand(5, 95)}%` as DimensionValue,
+      top: `${rand(8, 75)}%` as DimensionValue,
+      size: rand(3, 7) * intensity,
+      animValue: new Animated.Value(0),
+      delay: rand(0, 3000),
+      duration: rand(2000, 4500),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [count, intensity]);
+
+  useEffect(() => {
+    const animations = sparkles.map((s) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(s.delay),
+          Animated.timing(s.animValue, {
+            toValue: 1,
+            duration: s.duration / 2,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(s.animValue, {
+            toValue: 0,
+            duration: s.duration / 2,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
+    );
+
+    animations.forEach((a) => a.start());
+    return () => animations.forEach((a) => a.stop());
+  }, [sparkles]);
 
   return (
     <View pointerEvents="none" style={styles.container}>
-      {sparklePositions.map((sparkle, index) => (
-        <Animated.View
-          key={`sparkle-${index}`}
-          style={[
-            styles.sparkle,
-            {
-              left: sparkle.left,
-              top: sparkle.top,
-              width: sparkle.size * intensity,
-              height: sparkle.size * intensity,
-              borderRadius: (sparkle.size * intensity) / 2,
-              backgroundColor: color,
-              opacity,
-            },
-          ]}
-        />
-      ))}
+      {sparkles.map((sparkle, index) => {
+        const opacity = sparkle.animValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.1, 0.8],
+        });
+        const scale = sparkle.animValue.interpolate({
+          inputRange: [0, 0.5, 1],
+          outputRange: [0.6, 1.2, 0.6],
+        });
+
+        return (
+          <Animated.View
+            key={`sparkle-${index}`}
+            style={[
+              styles.sparkle,
+              {
+                left: sparkle.left,
+                top: sparkle.top,
+                width: sparkle.size,
+                height: sparkle.size,
+                borderRadius: sparkle.size / 2,
+                backgroundColor: color,
+                opacity,
+                transform: [{ scale }],
+              },
+            ]}
+          />
+        );
+      })}
     </View>
   );
 });

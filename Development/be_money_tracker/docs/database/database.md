@@ -80,17 +80,6 @@
 - created_at, updated_at, deleted_at
 - version
 
-### debts
-- debt_id (UUID, PK)
-- user_id (UUID, FK -> users)
-- wallet_id (UUID, FK -> wallets)
-- title
-- target_amount
-- start_date (nullable)
-- target_date (nullable)
-- created_at, updated_at, deleted_at
-- version
-
 ## Tables (planned)
 
 ### sync_change_log
@@ -120,4 +109,3 @@
 - transactions (created_by)
 - transactions (category_id)
 - savings (user_id, wallet_id)
-- debts (user_id, wallet_id)
