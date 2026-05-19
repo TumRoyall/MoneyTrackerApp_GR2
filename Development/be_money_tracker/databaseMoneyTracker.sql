@@ -204,6 +204,71 @@ CREATE TABLE data_backups (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ===========================
+-- AI / ANALYTICS (MVP)
+-- ===========================
+CREATE TABLE behavior_signals (
+    signal_id     CHAR(36) PRIMARY KEY,
+    user_id       CHAR(36) NOT NULL,
+    type          VARCHAR(50) NOT NULL,
+    severity      VARCHAR(20) NOT NULL,
+    window_start  DATE NOT NULL,
+    window_end    DATE NOT NULL,
+    evidence_json TEXT,
+    created_at    DATETIME NOT NULL,
+
+    CONSTRAINT fk_behavior_signals_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE insights (
+    insight_id   CHAR(36) PRIMARY KEY,
+    user_id      CHAR(36) NOT NULL,
+    type         VARCHAR(50) NOT NULL,
+    payload_json TEXT,
+    created_at   DATETIME NOT NULL,
+    shown_at     DATETIME NULL,
+    feedback     VARCHAR(50) NULL,
+
+    CONSTRAINT fk_insights_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE missions (
+    mission_id   CHAR(36) PRIMARY KEY,
+    user_id      CHAR(36) NOT NULL,
+    type         VARCHAR(50) NOT NULL,
+    context_json TEXT,
+    start_date   DATE NULL,
+    end_date     DATE NULL,
+    status       VARCHAR(20) NOT NULL,
+    created_at   DATETIME NOT NULL,
+
+    CONSTRAINT fk_missions_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE user_preferences (
+    user_id               CHAR(36) PRIMARY KEY,
+    coaching_style        VARCHAR(50),
+    tone                  VARCHAR(50),
+    framework_preference  VARCHAR(50),
+    updated_at            DATETIME NOT NULL,
+
+    CONSTRAINT fk_user_preferences_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE framework_settings (
+    user_id        CHAR(36) PRIMARY KEY,
+    framework_type VARCHAR(50) NOT NULL,
+    params_json    TEXT,
+    updated_at     DATETIME NOT NULL,
+
+    CONSTRAINT fk_framework_settings_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===========================
 -- INDEXES
 -- ===========================
 CREATE INDEX idx_tx_wallet_date
@@ -223,3 +288,12 @@ CREATE INDEX idx_savings_user_wallet
 
 CREATE INDEX idx_debts_user_wallet
     ON debts(user_id, wallet_id);
+
+CREATE INDEX idx_behavior_signals_user_window
+    ON behavior_signals(user_id, window_start, window_end);
+
+CREATE INDEX idx_insights_user_created
+    ON insights(user_id, created_at);
+
+CREATE INDEX idx_missions_user_status
+    ON missions(user_id, status);

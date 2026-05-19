@@ -1,0 +1,111 @@
+{
+  "info": {
+    "name": "MoneyTracker MVP AI",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_JWT"
+    }
+  ],
+  "item": [
+    {
+      "name": "POST /api/ai/action",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"an pho 45k\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/ai/action",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "ai", "action"]
+        }
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"text\": \"an pho 45k\"\n}"},
+            "url": "{{baseUrl}}/api/ai/action"
+          },
+          "status": "OK",
+          "code": 200,
+          "body": "{\n  \"data\": {\n    \"intent\": \"LOG_TRANSACTION\",\n    \"structuredResult\": {\n      \"transactionId\": \"2d2f9228-1f03-4e88-9d0a-c1e6c3d1b8e0\",\n      \"amount\": 45000,\n      \"categoryId\": \"cba2a5a0-2f1c-4ff2-84f5-27d4f0f2b2bd\"\n    },\n    \"message\": \"Da ghi nhan 45k cho bua an nhe.\",\n    \"meta\": {\n      \"intentConfidence\": 0.7,\n      \"aiProvider\": \"gemini\",\n      \"aiFallbackUsed\": false,\n      \"suggestions\": []\n    }\n  },\n  \"meta\": null\n}"
+        }
+      ]
+    },
+    {
+      "name": "GET /api/analytics/summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/analytics/summary",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "analytics", "summary"]
+        }
+      }
+    },
+    {
+      "name": "GET /api/behavior/signals",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/behavior/signals",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "behavior", "signals"]
+        }
+      }
+    },
+    {
+      "name": "GET /api/insights",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/insights",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "insights"]
+        }
+      }
+    }
+  ]
+}
