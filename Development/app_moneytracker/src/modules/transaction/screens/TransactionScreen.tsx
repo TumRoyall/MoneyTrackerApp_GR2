@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Alert,
   Modal,
@@ -280,6 +280,7 @@ const buildCalendarMatrix = (monthDate: Date) => {
 };
 
 export const TransactionScreen = () => {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { getWallets } = useWalletUsecases();
   const { getCategories, createCategory } = useCategoryUsecases();
@@ -287,7 +288,15 @@ export const TransactionScreen = () => {
   const seededDefaultCategoriesRef = useRef(false);
   const seedingInProgressRef = useRef(false);
   const openCreateRef = useRef(false);
-  const params = useLocalSearchParams<{ walletId?: string; openCreate?: string }>();
+  const params = useLocalSearchParams<{
+    walletId?: string;
+    openCreate?: string;
+    draftWalletId?: string;
+    draftCategoryId?: string;
+    draftAmount?: string;
+    draftNote?: string;
+    draftDate?: string;
+  }>();
 
   const normalizeCategoryType = (value: unknown): CategoryType =>
     String(value || '').toUpperCase() === 'INCOME' ? 'INCOME' : 'EXPENSE';
@@ -316,9 +325,6 @@ export const TransactionScreen = () => {
   const [showIconOptions, setShowIconOptions] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showAIChatModal, setShowAIChatModal] = useState(false);
-  const [aiChatMessages, setAiChatMessages] = useState<Array<{ role: 'user' | 'assistant'; text: string }>>([]);
-  const [aiInputText, setAiInputText] = useState('');
 
   const [formCategoryId, setFormCategoryId] = useState('');
   const [formCategoryType, setFormCategoryType] = useState<CategoryType>('EXPENSE');
@@ -644,14 +650,26 @@ export const TransactionScreen = () => {
 
   const calendarCells = useMemo(() => buildCalendarMatrix(calendarMonth), [calendarMonth]);
 
-  const openCreateTransactionModal = () => {
+  const openCreateTransactionModal = (draft?: {
+    walletId?: string;
+    categoryId?: string;
+    amount?: string;
+    note?: string;
+    date?: string;
+  }) => {
     setTransactionModalMode('create');
     setEditingTransactionId(null);
-    setFormCategoryType('EXPENSE');
-    setFormCategoryId('');
-    setFormAmount('');
-    setFormNote('');
-    setFormDate(formatIsoDate(new Date()));
+    if (draft?.categoryId) {
+      const draftCategory = categories.find((item) => item.categoryId === draft.categoryId);
+      setFormCategoryType(normalizeCategoryType(draftCategory?.type));
+      setFormCategoryId(draft.categoryId);
+    } else {
+      setFormCategoryType('EXPENSE');
+      setFormCategoryId('');
+    }
+    setFormAmount(draft?.amount ? formatMoneyInput(draft.amount) : '');
+    setFormNote(draft?.note ?? '');
+    setFormDate(draft?.date ?? formatIsoDate(new Date()));
     setFormNoteMetaToken(null);
     setShowTransactionModal(true);
   };
@@ -663,12 +681,37 @@ export const TransactionScreen = () => {
     if (regularWallets.length === 0) {
       return;
     }
-    if (params.walletId && regularWallets.some((wallet) => wallet.walletId === params.walletId)) {
+    const draftPayload =
+      params.draftCategoryId || params.draftAmount || params.draftNote || params.draftDate
+        ? {
+            walletId: params.draftWalletId,
+            categoryId: params.draftCategoryId,
+            amount: params.draftAmount,
+            note: params.draftNote,
+            date: params.draftDate,
+          }
+        : undefined;
+
+    if (params.draftWalletId && regularWallets.some((wallet) => wallet.walletId === params.draftWalletId)) {
+      setSelectedWalletId(params.draftWalletId);
+    } else if (params.walletId && regularWallets.some((wallet) => wallet.walletId === params.walletId)) {
       setSelectedWalletId(params.walletId);
     }
-    openCreateTransactionModal();
+
+    openCreateTransactionModal(draftPayload);
     openCreateRef.current = true;
-  }, [params.openCreate, params.walletId, regularWallets, openCreateTransactionModal]);
+  }, [
+    params.openCreate,
+    params.walletId,
+    params.draftWalletId,
+    params.draftCategoryId,
+    params.draftAmount,
+    params.draftNote,
+    params.draftDate,
+    regularWallets,
+    openCreateTransactionModal,
+    categories,
+  ]);
 
   const openEditTransactionModal = (item: Transaction) => {
     const category = categories.find((entry) => entry.categoryId === item.categoryId);
@@ -784,7 +827,7 @@ export const TransactionScreen = () => {
               <Ionicons name="search" size={24} color="#1f1f1f" />
             </Pressable>
             <Ionicons name="calendar" size={22} color="#1f1f1f" />
-            <Pressable onPress={() => setShowAIChatModal(true)}>
+            <Pressable onPress={() => router.push('/ai-companion')}>
               <Ionicons name="sparkles" size={22} color="#1f1f1f" />
             </Pressable>
           </View>
@@ -1528,86 +1571,6 @@ export const TransactionScreen = () => {
         </View>
       </Modal>
 
-      <Modal
-        visible={showAIChatModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowAIChatModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.aiChatSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Trợ lý AI</Text>
-              <Pressable onPress={() => setShowAIChatModal(false)}>
-                <Ionicons name="close" size={24} color="#333" />
-              </Pressable>
-            </View>
-
-            <ScrollView
-              style={styles.aiChatScroll}
-              contentContainerStyle={styles.aiChatMessagesList}
-              showsVerticalScrollIndicator={false}
-            >
-              {aiChatMessages.length === 0 ? (
-                <View style={styles.aiChatEmptyBox}>
-                  <Ionicons name="sparkles" size={48} color="#29bcc8" />
-                  <Text style={styles.aiChatEmptyTitle}>Xin chào! 👋</Text>
-                  <Text style={styles.aiChatEmptyText}>Hỏi tôi bất cứ điều gì về chi tiêu, ngân sách của bạn</Text>
-                </View>
-              ) : (
-                aiChatMessages.map((msg, index) => (
-                  <View
-                    key={index}
-                    style={[styles.aiChatMessage, msg.role === 'user' ? styles.aiChatMessageUser : null]}
-                  >
-                    <View
-                      style={[
-                        styles.aiChatBubble,
-                        msg.role === 'user' ? styles.aiChatBubbleUser : styles.aiChatBubbleAssistant,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.aiChatBubbleText,
-                          msg.role === 'user' ? styles.aiChatBubbleTextUser : null,
-                        ]}
-                      >
-                        {msg.text}
-                      </Text>
-                    </View>
-                  </View>
-                ))
-              )}
-            </ScrollView>
-
-            <View style={styles.aiChatInputRow}>
-              <TextInput
-                style={styles.aiChatInput}
-                placeholder="Nhập câu hỏi của bạn..."
-                placeholderTextColor="#999"
-                value={aiInputText}
-                onChangeText={setAiInputText}
-                multiline
-              />
-              <Pressable
-                style={styles.aiChatSendBtn}
-                onPress={() => {
-                  if (aiInputText.trim()) {
-                    setAiChatMessages((prev) => [
-                      ...prev,
-                      { role: 'user', text: aiInputText.trim() },
-                      { role: 'assistant', text: 'Tôi đang xử lý câu hỏi của bạn...' },
-                    ]);
-                    setAiInputText('');
-                  }
-                }}
-              >
-                <Ionicons name="send" size={20} color="#fff" />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -2584,93 +2547,5 @@ const styles = StyleSheet.create({
   },
   searchResultAmountExpense: {
     color: '#ef4444',
-  },
-  aiChatSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
-    height: '88%',
-    gap: 10,
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  aiChatMessagesList: {
-    paddingTop: 12,
-    paddingBottom: 12,
-    flexGrow: 1,
-  },
-  aiChatScroll: {
-    flex: 1,
-  },
-  aiChatEmptyBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  aiChatEmptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#25323b',
-    marginTop: 12,
-  },
-  aiChatEmptyText: {
-    fontSize: 13,
-    color: '#999',
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  aiChatMessage: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    marginBottom: 8,
-  },
-  aiChatMessageUser: {
-    justifyContent: 'flex-end',
-  },
-  aiChatBubble: {
-    backgroundColor: '#e8f4f5',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    maxWidth: '85%',
-  },
-  aiChatBubbleUser: {
-    backgroundColor: '#29bcc8',
-  },
-  aiChatBubbleText: {
-    fontSize: 14,
-    color: '#25323b',
-    lineHeight: 20,
-  },
-  aiChatBubbleTextUser: {
-    color: '#fff',
-  },
-  aiChatInputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-    paddingTop: 8,
-    minHeight: 56,
-  },
-  aiChatInput: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#d5dde3',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
-  },
-  aiChatSendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#29bcc8',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

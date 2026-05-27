@@ -21,6 +21,8 @@ import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
 import { TransactionFilters } from '@/modules/transaction/models/transaction.types';
 import { formatMoneyInput, parseMoneyInput, formatVndAmount, formatCurrency } from '@/shared/utils/money';
+import { StreakScreen } from '@/modules/streak/screens/StreakScreen';
+import { useStreakUsecases } from '@/modules/streak/usecases';
 
 type CategoryType = 'EXPENSE' | 'INCOME';
 type TimeMode = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
@@ -202,6 +204,19 @@ export const WalletHomeScreen = () => {
   const [walletName, setWalletName] = useState('');
   const [currency, setCurrency] = useState('VND');
   const [balance, setBalance] = useState('0');
+
+  const [showStreakModal, setShowStreakModal] = useState(false);
+  const { recordActivity } = useStreakUsecases();
+
+  useEffect(() => {
+    recordActivity()
+      .then((res) => {
+        if (res && res.currentStreak !== undefined) {
+          Alert.alert('🔥 Chuỗi hiện tại', `Chào mừng trở lại! Bạn đang duy trì chuỗi ${res.currentStreak} ngày sử dụng liên tiếp.`);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editWalletId, setEditWalletId] = useState<string | null>(null);
@@ -574,10 +589,19 @@ export const WalletHomeScreen = () => {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topRow}>
-          <View style={[styles.quickCard, styles.milestoneCard]}>
+          <Pressable 
+            style={[styles.quickCard, styles.milestoneCard]}
+            onPress={() => setShowStreakModal(true)}
+          >
+            <View style={[styles.quickCardIcon, styles.milestoneIcon]}>
+              <Ionicons name="trophy" size={22} color="#e99028" />
+            </View>
             <Text style={styles.quickCardText}>Những cột mốc</Text>
-          </View>
+          </Pressable>
           <View style={[styles.quickCard, styles.analysisCard]}>
+            <View style={[styles.quickCardIcon, styles.analysisIcon]}>
+              <Ionicons name="bar-chart" size={22} color="#4da6c4" />
+            </View>
             <Text style={styles.quickCardText}>Phân tích thêm</Text>
           </View>
         </View>
@@ -1073,6 +1097,11 @@ export const WalletHomeScreen = () => {
           </ScrollView>
         </View>
       </Modal>
+
+      <StreakScreen 
+        visible={showStreakModal}
+        onClose={() => setShowStreakModal(false)}
+      />
     </View>
   );
 };
@@ -1094,25 +1123,46 @@ const styles = StyleSheet.create({
   },
   quickCard: {
     flex: 1,
-    borderRadius: 24,
+    minHeight: 56,
+    borderRadius: 999,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    elevation: 2,
+    paddingVertical: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
   milestoneCard: {
-    backgroundColor: '#f6c04b',
+    backgroundColor: '#f7c65a',
+    borderColor: '#f0b443',
   },
   analysisCard: {
-    backgroundColor: '#d8f2f5',
+    backgroundColor: '#e7f7fa',
+    borderColor: '#d2edf2',
+  },
+  quickCardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+  },
+  milestoneIcon: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+  },
+  analysisIcon: {
+    backgroundColor: '#e7f8ff',
   },
   quickCardText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '600',
+    fontSize: 15,
+    color: '#1f2a2e',
+    fontWeight: '700',
   },
   botWrap: {
     alignItems: 'center',

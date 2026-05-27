@@ -297,3 +297,35 @@ CREATE INDEX idx_insights_user_created
 
 CREATE INDEX idx_missions_user_status
     ON missions(user_id, status);
+
+-- ===========================
+-- STREAKS & ACHIEVEMENTS
+-- ===========================
+CREATE TABLE user_streaks (
+    user_id           CHAR(36) PRIMARY KEY,
+    current_streak    INT NOT NULL DEFAULT 0,
+    longest_streak    INT NOT NULL DEFAULT 0,
+    last_active_date  DATE,
+    streak_start_date DATE,
+    reset_hours       INT NOT NULL DEFAULT 40,
+    total_active_days INT NOT NULL DEFAULT 0,
+    updated_at        DATETIME NOT NULL,
+    
+    CONSTRAINT fk_user_streaks_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE user_achievements (
+    achievement_id    CHAR(36) PRIMARY KEY,
+    user_id           CHAR(36) NOT NULL,
+    type              VARCHAR(50) NOT NULL,
+    level             INT NOT NULL DEFAULT 1,
+    achieved_at       DATETIME NOT NULL,
+    context_json      TEXT,
+
+    CONSTRAINT fk_user_achievements_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_user_achievements_user_type
+    ON user_achievements(user_id, type);

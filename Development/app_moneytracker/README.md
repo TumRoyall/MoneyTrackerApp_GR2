@@ -32,6 +32,8 @@ Neu dung emulator Android, co the can doi `localhost` thanh `10.0.2.2`.
 ## Chay ung dung
 ```bash
 npm run start
+
+npx expo start --dev-client
 ```
 
 Tuy chon:

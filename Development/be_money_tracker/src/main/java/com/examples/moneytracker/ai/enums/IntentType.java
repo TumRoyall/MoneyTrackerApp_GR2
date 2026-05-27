@@ -5,5 +5,6 @@ public enum IntentType {
     SPENDING_QUERY,
     BUDGET_QUERY,
     INSIGHT_REQUEST,
+    COACHING,
     UNKNOWN
 }

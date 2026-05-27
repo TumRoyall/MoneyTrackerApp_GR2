@@ -16,4 +16,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
     Optional<Transaction> findByTransactionIdAndCreatedBy(UUID id, UUID createdBy);
 
     List<Transaction> findByCreatedByAndTransactionIdInAndDeletedAtIsNull(UUID createdBy, Collection<UUID> transactionIds);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT t.date FROM Transaction t WHERE t.createdBy = :userId AND t.date BETWEEN :from AND :to AND t.deletedAt IS NULL")
+    List<LocalDate> findDistinctDatesByUserIdAndDateBetween(@org.springframework.data.repository.query.Param("userId") UUID userId, @org.springframework.data.repository.query.Param("from") LocalDate from, @org.springframework.data.repository.query.Param("to") LocalDate to);
 }
+

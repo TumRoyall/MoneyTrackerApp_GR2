@@ -11,6 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor
@@ -23,8 +27,20 @@ public class AiActionController {
             @RequestBody @Valid AiActionRequest request,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
+        List<Map<String, Object>> history = request.getHistory() != null
+                ? request.getHistory().stream()
+                    .map(msg -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("role", msg.getRole());
+                        map.put("message", msg.getMessage());
+                        map.put("createdAt", msg.getCreatedAt());
+                        return map;
+                    })
+                    .toList()
+                : List.of();
+
         return ResponseEntity.ok(ApiResponse.of(
-                aiActionService.handleAction(request.getText(), user.getId())
+                aiActionService.handleAction(request.getText(), user.getId(), history)
         ));
     }
 }

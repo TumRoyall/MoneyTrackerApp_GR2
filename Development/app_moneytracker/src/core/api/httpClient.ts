@@ -22,3 +22,24 @@ httpClient.interceptors.request.use(async (config) => {
   }
   return config;
 });
+
+httpClient.interceptors.response.use(async (response) => {
+  const method = response.config.method?.toUpperCase();
+  if (method && ['POST', 'PUT', 'DELETE'].includes(method)) {
+    // Exclude the activity endpoint itself to avoid infinite loops
+    if (response.config.url && !response.config.url.includes('/api/streaks/activity')) {
+      try {
+        const token = await tokenStorage.getAccessToken();
+        if (token) {
+          // Send background request directly using fetch/axios without triggering another interceptor response hook
+          axios.post(`${ENV.apiBaseUrl}/api/streaks/activity`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => {});
+        }
+      } catch (e) {
+        // silent fail
+      }
+    }
+  }
+  return response;
+});
