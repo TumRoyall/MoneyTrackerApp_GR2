@@ -3,7 +3,7 @@ import { Transaction, TransactionFilters } from '@/modules/transaction/models/tr
 
 export class TransactionLocalDataSource {
   async getTransactions(filters?: TransactionFilters): Promise<Transaction[]> {
-    const conditions: string[] = ['deletedAt IS NULL'];
+    const conditions: string[] = ["(deletedAt IS NULL OR deletedAt = '')"];
     const params: Array<string | number | null> = [];
 
     if (filters?.walletId) {

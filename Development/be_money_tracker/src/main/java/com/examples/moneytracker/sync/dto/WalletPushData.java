@@ -1,10 +1,12 @@
 package com.examples.moneytracker.sync.dto;
 
 import com.examples.moneytracker.wallet.model.WalletType;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class WalletPushData {
     private String name;

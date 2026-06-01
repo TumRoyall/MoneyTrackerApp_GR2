@@ -3,7 +3,7 @@ import { Category } from '@/modules/category/models/category.types';
 
 export class CategoryLocalDataSource {
   async getCategories(): Promise<Category[]> {
-    return queryAll<Category>('SELECT * FROM categories WHERE deletedAt IS NULL ORDER BY createdAt DESC');
+    return queryAll<Category>("SELECT * FROM categories WHERE (deletedAt IS NULL OR deletedAt = '') ORDER BY createdAt DESC");
   }
 
   async getCategoryById(categoryId: string): Promise<Category | null> {

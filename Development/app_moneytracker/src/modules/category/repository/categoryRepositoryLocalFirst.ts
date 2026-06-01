@@ -78,8 +78,8 @@ export class CategoryRepositoryLocalFirst implements CategoryRepository {
         color: category.color,
         isDefault: category.isDefault,
         isHidden: category.isHidden,
-        createdAt: category.createdAt,
-        updatedAt: category.updatedAt,
+        createdAt: category.createdAt ? new Date(category.createdAt).getTime() : undefined,
+        updatedAt: category.updatedAt ? new Date(category.updatedAt).getTime() : undefined,
       },
     });
 
@@ -118,7 +118,7 @@ export class CategoryRepositoryLocalFirst implements CategoryRepository {
         color: updated.color,
         isDefault: updated.isDefault,
         isHidden: updated.isHidden,
-        updatedAt: updated.updatedAt,
+        updatedAt: updated.updatedAt ? new Date(updated.updatedAt).getTime() : undefined,
       },
     });
 
@@ -155,7 +155,7 @@ export class CategoryRepositoryLocalFirst implements CategoryRepository {
         color: updated.color,
         isDefault: updated.isDefault,
         isHidden: updated.isHidden,
-        updatedAt: updated.updatedAt,
+        updatedAt: updated.updatedAt ? new Date(updated.updatedAt).getTime() : undefined,
       },
     });
 

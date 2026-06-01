@@ -13,7 +13,7 @@ import java.util.UUID;
 public class Wallet {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(nullable = false, updatable = false)
     private UUID walletId;
 
     @Column(nullable = false)
@@ -42,7 +42,7 @@ public class Wallet {
 
     @Version
     @Column(nullable = false)
-    private Long version = 1L;
+    private Long version = null;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -52,6 +52,9 @@ public class Wallet {
 
     @PrePersist
     public void prePersist() {
+        if (this.walletId == null) {
+            this.walletId = UUID.randomUUID();
+        }
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;

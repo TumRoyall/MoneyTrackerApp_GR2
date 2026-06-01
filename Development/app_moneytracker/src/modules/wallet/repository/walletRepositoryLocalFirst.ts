@@ -59,8 +59,8 @@ export class WalletRepositoryLocalFirst implements WalletRepository {
         currency: wallet.currency,
         openingBalance: wallet.openingBalance,
         description: wallet.description,
-        createdAt: wallet.createdAt,
-        updatedAt: wallet.updatedAt,
+        createdAt: wallet.createdAt ? new Date(wallet.createdAt).getTime() : undefined,
+        updatedAt: wallet.updatedAt ? new Date(wallet.updatedAt).getTime() : undefined,
       },
     });
 
@@ -103,7 +103,7 @@ export class WalletRepositoryLocalFirst implements WalletRepository {
         currency: updated.currency,
         openingBalance: updated.openingBalance,
         description: updated.description,
-        updatedAt: updated.updatedAt,
+        updatedAt: updated.updatedAt ? new Date(updated.updatedAt).getTime() : undefined,
       },
     });
 

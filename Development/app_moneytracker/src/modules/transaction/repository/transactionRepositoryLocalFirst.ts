@@ -90,9 +90,9 @@ export class TransactionRepositoryLocalFirst implements TransactionRepository {
         amount: tx.amount,
         type: tx.type,
         note: tx.note,
-        txDate: tx.date,
-        createdAt: tx.createdAt,
-        updatedAt: tx.updatedAt,
+        txDate: tx.date.split('T')[0],
+        createdAt: tx.createdAt ? new Date(tx.createdAt).getTime() : undefined,
+        updatedAt: tx.updatedAt ? new Date(tx.updatedAt).getTime() : undefined,
       },
     });
 
@@ -139,8 +139,8 @@ export class TransactionRepositoryLocalFirst implements TransactionRepository {
         amount: updated.amount,
         type: updated.type,
         note: updated.note,
-        txDate: updated.date,
-        updatedAt: updated.updatedAt,
+        txDate: updated.date.split('T')[0],
+        updatedAt: updated.updatedAt ? new Date(updated.updatedAt).getTime() : undefined,
       },
     });
 

@@ -2,6 +2,7 @@
   "expo": {
     "name": "MoneyTracker",
     "slug": "moneytracker-mobile",
+    "icon": "./assets/icon.png",
     "scheme": "moneytracker",
     "version": "1.0.0",
     "orientation": "portrait",

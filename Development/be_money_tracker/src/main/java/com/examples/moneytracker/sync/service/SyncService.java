@@ -281,11 +281,13 @@ public class SyncService {
             if (!existing.getUserId().equals(userId)) {
                 return buildErrorResult(op, "Access denied: not your wallet");
             }
-            if (op.getBaseVersion() == null) {
-                return buildErrorResult(op, "baseVersion is required for update/delete");
-            }
-            if (!op.getBaseVersion().equals(existing.getVersion())) {
-                return buildConflictResult(op, existing.getVersion(), walletToMap(existing));
+            if (existingOpt.isPresent()) {
+                if (op.getBaseVersion() == null) {
+                    return buildErrorResult(op, "baseVersion is required for update/delete");
+                }
+                if (!op.getBaseVersion().equals(existing.getVersion())) {
+                    return buildConflictResult(op, existing.getVersion(), walletToMap(existing));
+                }
             }
         }
 
@@ -336,11 +338,13 @@ public class SyncService {
             if (Boolean.TRUE.equals(existing.getIsDefault())) {
                 return buildErrorResult(op, "Default category cannot be modified");
             }
-            if (op.getBaseVersion() == null) {
-                return buildErrorResult(op, "baseVersion is required for update/delete");
-            }
-            if (!op.getBaseVersion().equals(existing.getVersion())) {
-                return buildConflictResult(op, existing.getVersion(), categoryToMap(existing));
+            if (existingOpt.isPresent()) {
+                if (op.getBaseVersion() == null) {
+                    return buildErrorResult(op, "baseVersion is required for update/delete");
+                }
+                if (!op.getBaseVersion().equals(existing.getVersion())) {
+                    return buildConflictResult(op, existing.getVersion(), categoryToMap(existing));
+                }
             }
         }
 
@@ -387,16 +391,18 @@ public class SyncService {
             if (!existing.getCreatedBy().equals(userId)) {
                 return buildErrorResult(op, "Access denied: not your transaction");
             }
-            if (op.getBaseVersion() == null) {
-                return buildErrorResult(op, "baseVersion is required for update/delete");
-            }
-            if (!op.getBaseVersion().equals(existing.getVersion())) {
-                return buildConflictResult(op, existing.getVersion(), transactionToMap(existing));
-            }
+            if (existingOpt.isPresent()) {
+                if (op.getBaseVersion() == null) {
+                    return buildErrorResult(op, "baseVersion is required for update/delete");
+                }
+                if (!op.getBaseVersion().equals(existing.getVersion())) {
+                    return buildConflictResult(op, existing.getVersion(), transactionToMap(existing));
+                }
                 oldAmount = existing.getAmount();
                 oldType = existing.getType() != null
                     ? existing.getType()
                     : resolveType(null, existing.getCategory().getType(), TransactionType.EXPENSE);
+            }
         }
 
         if ("DELETE".equalsIgnoreCase(op.getOp())) {

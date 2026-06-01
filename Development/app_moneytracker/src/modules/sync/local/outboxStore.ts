@@ -19,8 +19,8 @@ export type OutboxRow = {
 export class OutboxStore {
   async getPending(limit = 50) {
     return queryAll<OutboxRow>(
-      'SELECT * FROM outbox WHERE status = ? ORDER BY outboxId ASC LIMIT ?',
-      ['pending', limit],
+      'SELECT * FROM outbox WHERE status IN (?, ?) ORDER BY outboxId ASC LIMIT ?',
+      ['pending', 'error', limit],
     );
   }
 

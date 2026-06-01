@@ -72,6 +72,8 @@ export class SyncService {
     if (!pending.length) {
       return;
     }
+    
+    console.log('PUSHING OUTBOX ITEMS:', pending.map(p => ({ id: p.outboxId, entity: p.entity, op: p.op, status: p.status })));
 
     const deviceId = await deviceStorage.ensureDeviceId();
     const operations: SyncOperation[] = pending.map((item) => ({
@@ -101,6 +103,7 @@ export class SyncService {
         continue;
       }
       if (result.status === 'conflict') {
+        console.error('SYNC CONFLICT:', result);
         await this.outboxStore.markConflict(
           result.outboxId,
           result.serverVersion ?? null,
@@ -108,6 +111,7 @@ export class SyncService {
         );
         continue;
       }
+      console.error('SYNC ERROR:', result);
       await this.outboxStore.markError(result.outboxId, result.error ?? null);
     }
   }
@@ -166,7 +170,7 @@ export class SyncService {
         createdAt: String(wallet.createdAt ?? new Date().toISOString()),
         updatedAt: wallet.updatedAt ? String(wallet.updatedAt) : null,
         deletedAt: wallet.deletedAt ? String(wallet.deletedAt) : null,
-        version: wallet.version ? Number(wallet.version) : 1,
+        version: wallet.version != null ? Number(wallet.version) : 1,
       });
     }
 
@@ -182,7 +186,7 @@ export class SyncService {
         createdAt: String(category.createdAt ?? new Date().toISOString()),
         updatedAt: category.updatedAt ? String(category.updatedAt) : null,
         deletedAt: category.deletedAt ? String(category.deletedAt) : null,
-        version: category.version ? Number(category.version) : 1,
+        version: category.version != null ? Number(category.version) : 1,
       });
     }
 
@@ -194,11 +198,11 @@ export class SyncService {
         amount: Number(tx.amount ?? 0),
         type: String(tx.type ?? 'EXPENSE'),
         note: tx.note ? String(tx.note) : null,
-        date: String(tx.date ?? ''),
+        date: String(tx.txDate ?? tx.date ?? ''),
         createdAt: String(tx.createdAt ?? new Date().toISOString()),
         updatedAt: tx.updatedAt ? String(tx.updatedAt) : null,
         deletedAt: tx.deletedAt ? String(tx.deletedAt) : null,
-        version: tx.version ? Number(tx.version) : 1,
+        version: tx.version != null ? Number(tx.version) : 1,
       });
     }
   }

@@ -3,7 +3,7 @@ import { Wallet } from '@/modules/wallet/models/wallet.types';
 
 export class WalletLocalDataSource {
   async getWallets(): Promise<Wallet[]> {
-    return queryAll<Wallet>('SELECT * FROM wallets WHERE deletedAt IS NULL ORDER BY createdAt DESC');
+    return queryAll<Wallet>("SELECT * FROM wallets WHERE (deletedAt IS NULL OR deletedAt = '') ORDER BY createdAt DESC");
   }
 
   async getWalletById(walletId: string): Promise<Wallet | null> {

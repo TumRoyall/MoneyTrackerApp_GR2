@@ -524,7 +524,8 @@ export const WalletHomeScreen = () => {
       setDescription('');
       setShowCreateModal(false);
       Alert.alert('Thành công', 'Đã tạo ví mới.');
-    } catch {
+    } catch (e) {
+      console.error('Create wallet error:', e);
       Alert.alert('Lỗi', 'Không thể tạo ví. Vui lòng thử lại.');
     }
   };

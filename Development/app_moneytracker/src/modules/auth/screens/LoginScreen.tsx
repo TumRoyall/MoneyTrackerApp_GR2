@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AntDesign, FontAwesome, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AuthMessage } from '@/modules/auth/components';
@@ -15,6 +15,15 @@ export const LoginScreen = () => {
   const { login } = useAuthUsecases();
   const { run, loading, error, success } = useAuthAction(login);
   const [showPassword, setShowPassword] = useState(false);
+
+  // DEV ONLY: AUTO LOGIN
+  useEffect(() => {
+    const autoLogin = async () => {
+      await run({ email: 'nguyenkimngochtm@gmail.com', password: 'admin' });
+      router.replace('/(tabs)/wallets');
+    };
+    autoLogin();
+  }, []);
 
   const { control, handleSubmit } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),

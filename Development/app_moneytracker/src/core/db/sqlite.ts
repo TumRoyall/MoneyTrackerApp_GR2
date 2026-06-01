@@ -1,48 +1,98 @@
 import * as SQLite from 'expo-sqlite';
 
-export type SqlResult = SQLite.SQLResultSet;
+export type SqlResult = {
+  insertId?: number;
+  rowsAffected: number;
+};
 
-type SqlStatement = {
+export type SqlStatement = {
   sql: string;
   params?: Array<string | number | null>;
 };
 
-const db = SQLite.openDatabase('moneytracker.db');
+const db = SQLite.openDatabaseSync('moneytracker.db');
 
-export const executeSql = (sql: string, params: Array<string | number | null> = []) =>
-  new Promise<SqlResult>((resolve, reject) => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        sql,
-        params,
-        (_, result) => resolve(result),
-        (_, error) => {
-          reject(error);
-          return false;
-        },
-      );
-    }, reject);
+export const executeSql = async (sql: string, params: Array<string | number | null> = []): Promise<SqlResult> => {
+  const safeParams = params.map(p => {
+    if (p === null || typeof p === 'undefined') return '';
+    if (typeof p === 'object') {
+      try { return JSON.stringify(p); } catch { return String(p); }
+    }
+    return p;
   });
+  
+  let statement;
+  try {
+    statement = await db.prepareAsync(sql);
+    const result = await statement.executeAsync(...safeParams);
+    return {
+      insertId: result.lastInsertRowId,
+      rowsAffected: result.changes,
+    };
+  } catch (error) {
+    console.error(`[SQLite Error] Query: ${sql} | Params: ${JSON.stringify(safeParams)} | Error:`, error);
+    throw error;
+  } finally {
+    if (statement) {
+      await statement.finalizeAsync();
+    }
+  }
+};
 
-export const executeBatch = (statements: SqlStatement[]) =>
-  new Promise<void>((resolve, reject) => {
-    db.transaction(
-      (tx) => {
-        statements.forEach((statement) => {
-          tx.executeSql(statement.sql, statement.params ?? []);
-        });
-      },
-      reject,
-      () => resolve(),
-    );
+export const executeBatch = async (statements: SqlStatement[]) => {
+  await db.withTransactionAsync(async () => {
+    for (const statement of statements) {
+      const safeParams = (statement.params ?? []).map(p => {
+        if (p === null || typeof p === 'undefined') return '';
+        if (typeof p === 'object') {
+          try { return JSON.stringify(p); } catch { return String(p); }
+        }
+        return p;
+      });
+      let stmt;
+      try {
+        stmt = await db.prepareAsync(statement.sql);
+        await stmt.executeAsync(...safeParams);
+      } catch (error) {
+        console.error(`[SQLite Error executeBatch] Query: ${statement.sql} | Params: ${JSON.stringify(safeParams)} | Error:`, error);
+        throw error;
+      } finally {
+        if (stmt) {
+          await stmt.finalizeAsync();
+        }
+      }
+    }
   });
+};
 
 export const queryAll = async <T>(sql: string, params: Array<string | number | null> = []) => {
-  const result = await executeSql(sql, params);
-  return (result.rows?._array ?? []) as T[];
+  const safeParams = params.map(p => {
+    if (p === null || typeof p === 'undefined') return '';
+    if (typeof p === 'object') {
+      try { return JSON.stringify(p); } catch { return String(p); }
+    }
+    return p;
+  });
+  try {
+    return await db.getAllAsync<T>(sql, ...safeParams);
+  } catch (error) {
+    console.error(`[SQLite Error queryAll] Query: ${sql} | Params: ${JSON.stringify(safeParams)} | Error:`, error);
+    throw error;
+  }
 };
 
 export const queryOne = async <T>(sql: string, params: Array<string | number | null> = []) => {
-  const result = await executeSql(sql, params);
-  return (result.rows?._array?.[0] ?? null) as T | null;
+  const safeParams = params.map(p => {
+    if (p === null || typeof p === 'undefined') return '';
+    if (typeof p === 'object') {
+      try { return JSON.stringify(p); } catch { return String(p); }
+    }
+    return p;
+  });
+  try {
+    return (await db.getFirstAsync<T>(sql, ...safeParams)) ?? null;
+  } catch (error) {
+    console.error(`[SQLite Error queryOne] Query: ${sql} | Params: ${JSON.stringify(safeParams)} | Error:`, error);
+    throw error;
+  }
 };

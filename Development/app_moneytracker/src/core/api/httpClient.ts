@@ -42,4 +42,15 @@ httpClient.interceptors.response.use(async (response) => {
     }
   }
   return response;
+}, (error) => {
+  if (axios.isAxiosError(error)) {
+    const isWalletNotFound = error.config?.url?.includes('/api/transactions') && 
+                             error.response?.status === 400 && 
+                             error.response?.data?.error?.message === 'Wallet not found';
+    
+    if (!isWalletNotFound) {
+      console.error('Axios Error:', error.config?.method?.toUpperCase(), error.config?.url, error.response?.status, error.response?.data);
+    }
+  }
+  return Promise.reject(error);
 });
