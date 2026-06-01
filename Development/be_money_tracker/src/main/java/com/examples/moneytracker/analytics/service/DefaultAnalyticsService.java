@@ -37,7 +37,7 @@ public class DefaultAnalyticsService implements AnalyticsService {
         Map<String, BigDecimal> expenseByCategory = new HashMap<>();
 
         for (Transaction tx : txs) {
-            String type = tx.getCategory().getType();
+            String type = tx.getType() != null ? tx.getType().name() : null;
             if ("INCOME".equalsIgnoreCase(type)) {
                 totalIncome = totalIncome.add(tx.getAmount());
             } else if ("EXPENSE".equalsIgnoreCase(type)) {

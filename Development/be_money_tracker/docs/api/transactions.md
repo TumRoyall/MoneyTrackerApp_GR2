@@ -22,6 +22,7 @@
   - walletId (UUID)
   - categoryId (UUID)
   - amount (decimal)
+  - type (INCOME, EXPENSE)
   - note (string)
   - date (YYYY-MM-DD)
   - createdAt (timestamp)
@@ -37,6 +38,7 @@
   - walletId (UUID)
   - categoryId (UUID)
   - amount (decimal)
+  - type (INCOME, EXPENSE, optional)
   - note (string, optional)
   - date (YYYY-MM-DD)
 - response body: TransactionResponse
@@ -46,6 +48,7 @@
 - request body (UpdateTransactionRequest):
   - categoryId (UUID)
   - amount (decimal)
+  - type (INCOME, EXPENSE, optional)
   - note (string, optional)
   - date (YYYY-MM-DD)
 - response body: TransactionResponse

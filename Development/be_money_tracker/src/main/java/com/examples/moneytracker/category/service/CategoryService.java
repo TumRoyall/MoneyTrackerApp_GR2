@@ -17,6 +17,7 @@ import java.util.UUID;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final com.examples.moneytracker.sync.service.SyncChangeLogService syncChangeLogService;
 
     private CategoryResponse toResponse(Category c) {
         return CategoryResponse.builder()
@@ -25,6 +26,12 @@ public class CategoryService {
                 .icon(c.getIcon())
                 .color(c.getColor())
                 .type(c.getType())
+                .isDefault(c.getIsDefault())
+                .isHidden(c.getIsHidden())
+                .createdAt(c.getCreatedAt())
+                .updatedAt(c.getUpdatedAt())
+                .deletedAt(c.getDeletedAt())
+                .version(c.getVersion())
                 .build();
     }
 
@@ -62,12 +69,13 @@ public class CategoryService {
         category.setIsHidden(false);
 
         categoryRepository.save(category);
+        syncChangeLogService.recordChange(userId, "categories", category.getCategoryId(), "UPSERT");
         return toResponse(category);
     }
 
     @Transactional
     public CategoryResponse updateCategory(UUID userId, UUID categoryId, UpdateCategoryRequest request) {
-        Category category = categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
+        Category category = categoryRepository.findByCategoryIdAndUserIdAndDeletedAtIsNull(categoryId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
 
         if (request.getName() != null && !request.getName().isBlank()) {
@@ -81,12 +89,13 @@ public class CategoryService {
         }
 
         categoryRepository.save(category);
+        syncChangeLogService.recordChange(userId, "categories", category.getCategoryId(), "UPSERT");
         return toResponse(category);
     }
 
     @Transactional
     public void hideCategory(UUID userId, UUID categoryId) {
-        Category category = categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
+        Category category = categoryRepository.findByCategoryIdAndUserIdAndDeletedAtIsNull(categoryId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
 
         if (Boolean.TRUE.equals(category.getIsDefault())) {
@@ -95,5 +104,6 @@ public class CategoryService {
 
         category.setIsHidden(true);
         categoryRepository.save(category);
+        syncChangeLogService.recordChange(userId, "categories", category.getCategoryId(), "UPSERT");
     }
 }

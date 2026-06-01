@@ -32,4 +32,11 @@ public class SyncChangeLog {
 
     @Column(nullable = false)
     private Instant changedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (changedAt == null) {
+            changedAt = Instant.now();
+        }
+    }
 }

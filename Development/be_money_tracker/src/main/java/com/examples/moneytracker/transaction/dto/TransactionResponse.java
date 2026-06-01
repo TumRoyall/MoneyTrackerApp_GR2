@@ -15,8 +15,11 @@ public class TransactionResponse {
     private UUID walletId;
     private UUID categoryId;
     private BigDecimal amount;
+    private String type;
     private String note;
     private LocalDate date;
     private Instant createdAt;
     private Instant updatedAt;
+    private Instant deletedAt;
+    private Long version;
 }

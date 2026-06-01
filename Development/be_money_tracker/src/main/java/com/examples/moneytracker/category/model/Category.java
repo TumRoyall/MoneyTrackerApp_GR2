@@ -54,6 +54,7 @@ public class Category {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    @Version
     @Column(nullable = false)
     private Long version = 1L;
 

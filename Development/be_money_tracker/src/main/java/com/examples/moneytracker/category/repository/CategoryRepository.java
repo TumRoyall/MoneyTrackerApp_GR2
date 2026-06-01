@@ -28,6 +28,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
             OR c.userId = :userId
           )
       AND c.isHidden = false
+      AND c.deletedAt IS NULL
     """)
         Optional<Category> findAccessibleCategory(
                 @Param("categoryId") UUID categoryId,
@@ -39,12 +40,25 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     FROM Category c
     WHERE (c.isDefault = true OR c.userId = :userId)
       AND c.isHidden = false
+      AND c.deletedAt IS NULL
     """)
     List<Category> findAccessibleCategories(@Param("userId") UUID userId);
 
-    Optional<Category> findByCategoryIdAndUserId(UUID categoryId, UUID userId);
+    Optional<Category> findByCategoryIdAndUserIdAndDeletedAtIsNull(UUID categoryId, UUID userId);
 
     List<Category> findByUserIdAndCategoryIdInAndDeletedAtIsNull(UUID userId, Collection<UUID> categoryIds);
+
+    List<Category> findByCategoryIdInAndDeletedAtIsNull(Collection<UUID> categoryIds);
+
+    List<Category> findByUserIdAndDeletedAtIsNotNull(UUID userId);
+
+    @Query("""
+    SELECT c
+    FROM Category c
+    WHERE (c.isDefault = true OR c.userId = :userId)
+      AND c.deletedAt IS NULL
+    """)
+    List<Category> findSyncCategories(@Param("userId") UUID userId);
 
 
 }

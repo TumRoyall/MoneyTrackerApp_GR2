@@ -9,6 +9,7 @@ public class TransactionPushData {
     private String walletId;
     private String categoryId;
     private BigDecimal amount;
+    private String type;
     private String note;
     private String txDate; // LocalDate as string YYYY-MM-DD
     private Long version;

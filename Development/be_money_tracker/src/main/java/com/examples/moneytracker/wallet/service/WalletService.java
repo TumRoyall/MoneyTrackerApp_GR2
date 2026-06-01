@@ -18,6 +18,8 @@ import java.util.UUID;
 public class WalletService {
 
     private final WalletRepository walletRepository;
+    private final WalletBalanceService walletBalanceService;
+    private final com.examples.moneytracker.sync.service.SyncChangeLogService syncChangeLogService;
 
     @Transactional
     public WalletResponse createWallet(CreateWalletRequest request, UUID userId) {
@@ -30,10 +32,16 @@ public class WalletService {
         wallet.setName(request.getName());
         wallet.setType(request.getType());
         wallet.setCurrency(request.getCurrency());
-        wallet.setCurrentBalance(request.getCurrentBalance());
+        if (request.getOpeningBalance() != null) {
+            wallet.setOpeningBalance(request.getOpeningBalance());
+        } else {
+            wallet.setOpeningBalance(java.math.BigDecimal.ZERO);
+        }
+        wallet.setCurrentBalance(wallet.getOpeningBalance());
         wallet.setDescription(request.getDescription());
 
         walletRepository.save(wallet);
+        syncChangeLogService.recordChange(userId, "wallets", wallet.getWalletId(), "UPSERT");
         return WalletResponse.from(wallet);
     }
 
@@ -71,11 +79,16 @@ public class WalletService {
             wallet.setCurrency(request.getCurrency());
         }
 
+        if (request.getOpeningBalance() != null) {
+            wallet.setOpeningBalance(request.getOpeningBalance());
+        }
+
         if (request.getDescription() != null) {
             wallet.setDescription(request.getDescription());
         }
 
         walletRepository.save(wallet);
+        walletBalanceService.rebuildWalletBalance(wallet);
         return WalletResponse.from(wallet);
     }
 
@@ -86,5 +99,6 @@ public class WalletService {
 
         wallet.setDeletedAt(Instant.now());
         walletRepository.save(wallet);
+        syncChangeLogService.recordChange(userId, "wallets", wallet.getWalletId(), "DELETE");
     }
 }

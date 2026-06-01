@@ -16,9 +16,13 @@ public class WalletResponse {
     private String name;
     private WalletType type;
     private String currency;
+    private BigDecimal openingBalance;
     private BigDecimal currentBalance;
     private String description;
     private Instant createdAt;
+    private Instant updatedAt;
+    private Instant deletedAt;
+    private Long version;
 
     public static WalletResponse from(Wallet wallet) {
         return new WalletResponse(
@@ -26,9 +30,13 @@ public class WalletResponse {
                 wallet.getName(),
                 wallet.getType(),
                 wallet.getCurrency(),
+            wallet.getOpeningBalance(),
                 wallet.getCurrentBalance(),
                 wallet.getDescription(),
-                wallet.getCreatedAt()
+            wallet.getCreatedAt(),
+            wallet.getUpdatedAt(),
+            wallet.getDeletedAt(),
+            wallet.getVersion()
         );
     }
 }

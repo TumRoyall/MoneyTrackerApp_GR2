@@ -40,7 +40,7 @@ public class ReportService {
         Map<UUID, String> categoryName = new HashMap<>();
 
         for (Transaction tx : txs) {
-            String type = tx.getCategory().getType();
+            String type = tx.getType() != null ? tx.getType().name() : null;
             if ("INCOME".equalsIgnoreCase(type)) {
                 totalIncome = totalIncome.add(tx.getAmount());
             } else if ("EXPENSE".equalsIgnoreCase(type)) {
@@ -93,7 +93,7 @@ public class ReportService {
         Map<UUID, BigDecimal> expenseByWallet = new HashMap<>();
 
         for (Transaction tx : txs) {
-            String type = tx.getCategory().getType();
+            String type = tx.getType() != null ? tx.getType().name() : null;
             if ("INCOME".equalsIgnoreCase(type)) {
                 incomeByWallet.merge(tx.getWalletId(), tx.getAmount(), BigDecimal::add);
             } else if ("EXPENSE".equalsIgnoreCase(type)) {
@@ -139,7 +139,7 @@ public class ReportService {
 
         for (Transaction tx : txs) {
             String period = formatPeriod(tx.getDate(), groupBy);
-            String type = tx.getCategory().getType();
+            String type = tx.getType() != null ? tx.getType().name() : null;
             if ("INCOME".equalsIgnoreCase(type)) {
                 incomeByPeriod.merge(period, tx.getAmount(), BigDecimal::add);
             } else if ("EXPENSE".equalsIgnoreCase(type)) {

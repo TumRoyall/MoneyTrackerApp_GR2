@@ -29,6 +29,9 @@ public class Wallet {
     @Column(name = "current_balance", precision = 18, scale = 2, nullable = false)
     private BigDecimal currentBalance;
 
+    @Column(name = "opening_balance", precision = 18, scale = 2, nullable = false)
+    private BigDecimal openingBalance;
+
     @Column(nullable = false)
     private String currency;
 
@@ -37,6 +40,7 @@ public class Wallet {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    @Version
     @Column(nullable = false)
     private Long version = 1L;
 
@@ -51,8 +55,11 @@ public class Wallet {
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (this.openingBalance == null) {
+            this.openingBalance = BigDecimal.ZERO;
+        }
         if (this.currentBalance == null) {
-            this.currentBalance = BigDecimal.ZERO;
+            this.currentBalance = this.openingBalance;
         }
     }
 

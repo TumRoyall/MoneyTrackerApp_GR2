@@ -9,7 +9,7 @@
 - purpose: tao wallet
 - request body (CreateWalletRequest):
   - name (string, required)
-  - currentBalance (decimal, optional)
+  - openingBalance (decimal, optional)
   - currency (string, required)
   - description (string, optional)
   - type (REGULAR, CASH, SAVING, DEBT, INVEST, EVENT) (required)
@@ -18,6 +18,7 @@
   - name (string)
   - type (string)
   - currency (string)
+  - openingBalance (decimal)
   - currentBalance (decimal)
   - description (string)
   - createdAt (timestamp)
@@ -37,6 +38,7 @@
   - currency (string, optional)
   - description (string, optional)
   - type (string, optional)
+  - openingBalance (decimal, optional)
 - response body: WalletResponse
 
 ### DELETE /api/wallets/{walletId}
@@ -45,3 +47,4 @@
 
 ## Notes
 - JWT required cho tat ca endpoint
+- currentBalance la projection do server tinh tu openingBalance va transactions

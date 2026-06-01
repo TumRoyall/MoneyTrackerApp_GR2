@@ -301,6 +301,13 @@ export const TransactionScreen = () => {
   const normalizeCategoryType = (value: unknown): CategoryType =>
     String(value || '').toUpperCase() === 'INCOME' ? 'INCOME' : 'EXPENSE';
 
+  const resolveTransactionType = (tx: Transaction, category?: Category): CategoryType => {
+    if (tx.type) {
+      return normalizeCategoryType(tx.type);
+    }
+    return normalizeCategoryType(category?.type);
+  };
+
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [timeMode, setTimeMode] = useState<TimeMode>('MONTH');
@@ -459,7 +466,7 @@ export const TransactionScreen = () => {
 
     transactions.forEach((item) => {
       const category = categoryMap.get(item.categoryId);
-      if (normalizeCategoryType(category?.type) === 'INCOME') {
+      if (resolveTransactionType(item, category) === 'INCOME') {
         income += item.amount;
       } else {
         expense += item.amount;
@@ -717,7 +724,7 @@ export const TransactionScreen = () => {
     const category = categories.find((entry) => entry.categoryId === item.categoryId);
     setTransactionModalMode('edit');
     setEditingTransactionId(item.transactionId);
-    setFormCategoryType(normalizeCategoryType(category?.type));
+    setFormCategoryType(item.type ? normalizeCategoryType(item.type) : normalizeCategoryType(category?.type));
     setFormCategoryId(item.categoryId);
     setFormAmount(formatMoneyInput(item.amount));
     setFormNote(stripTransferMeta(item.note));
@@ -745,9 +752,7 @@ export const TransactionScreen = () => {
       return;
     }
 
-    const selectedCategoryType = normalizeCategoryType(
-      categories.find((item) => item.categoryId === formCategoryId)?.type,
-    );
+    const selectedCategoryType = formCategoryType;
     const signedAmount = selectedCategoryType === 'INCOME' ? amountNumber : -amountNumber;
 
     const isDebtWallet = String(currentWallet.type || '').toUpperCase() === 'DEBT';
@@ -757,7 +762,9 @@ export const TransactionScreen = () => {
       if (transactionModalMode === 'edit' && editingTransactionId) {
         const original = transactions.find((item) => item.transactionId === editingTransactionId);
         if (original) {
-          const originalCategoryType = normalizeCategoryType(categoryMap.get(original.categoryId)?.type);
+          const originalCategoryType = original.type
+            ? normalizeCategoryType(original.type)
+            : normalizeCategoryType(categoryMap.get(original.categoryId)?.type);
           const originalSignedAmount = originalCategoryType === 'INCOME' ? original.amount : -original.amount;
           projectedBalance = (currentWallet.currentBalance ?? 0) - originalSignedAmount + signedAmount;
         }
@@ -786,6 +793,7 @@ export const TransactionScreen = () => {
         await updateTransaction(editingTransactionId, {
           categoryId: formCategoryId,
           amount: amountNumber,
+          type: formCategoryType,
           note: noteValue,
           date: formDate,
         });
@@ -794,6 +802,7 @@ export const TransactionScreen = () => {
           walletId: selectedWalletId,
           categoryId: formCategoryId,
           amount: amountNumber,
+          type: formCategoryType,
           note: noteValue,
           date: formDate,
         };
@@ -884,7 +893,7 @@ export const TransactionScreen = () => {
                   {formatVndAmount(
                     items.reduce((sum, item) => {
                       const category = categoryMap.get(item.categoryId);
-                      return sum + (normalizeCategoryType(category?.type) === 'INCOME' ? item.amount : -item.amount);
+                      return sum + (resolveTransactionType(item, category) === 'INCOME' ? item.amount : -item.amount);
                     }, 0),
                   )}
                 </Text>
@@ -892,7 +901,7 @@ export const TransactionScreen = () => {
 
               {items.map((item) => {
                 const category: Category | undefined = categoryMap.get(item.categoryId);
-                const isIncome = normalizeCategoryType(category?.type) === 'INCOME';
+                const isIncome = resolveTransactionType(item, category) === 'INCOME';
 
                 return (
                   <Pressable key={item.transactionId} style={styles.transactionCard} onPress={() => openEditTransactionModal(item)}>
@@ -1531,7 +1540,7 @@ export const TransactionScreen = () => {
                   ) : (
                     transactions.map((item) => {
                       const category = categoryMap.get(item.categoryId);
-                      const isIncome = normalizeCategoryType(category?.type) === 'INCOME';
+                      const isIncome = resolveTransactionType(item, category) === 'INCOME';
                       return (
                         <Pressable
                           key={item.transactionId}

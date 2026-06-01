@@ -5,16 +5,20 @@ export interface Wallet {
   name: string;
   type: WalletType | string;
   currency: string;
+  openingBalance: number;
   currentBalance: number;
   description?: string | null;
   createdAt: string;
+  updatedAt?: string | null;
+  deletedAt?: string | null;
+  version?: number | null;
 }
 
 export interface WalletCreateInput {
   name: string;
   type: WalletType;
   currency: string;
-  currentBalance?: number;
+  openingBalance?: number;
   description?: string | null;
 }
 
@@ -22,6 +26,6 @@ export interface WalletUpdateInput {
   name?: string;
   type?: WalletType;
   currency?: string;
-  currentBalance?: number;
+  openingBalance?: number;
   description?: string | null;
 }

@@ -506,7 +506,7 @@ export const WalletHomeScreen = () => {
       name: walletName.trim(),
       type: 'REGULAR',
       currency: currency.trim().toUpperCase() || 'VND',
-      currentBalance: parseMoneyInput(balance),
+      openingBalance: parseMoneyInput(balance),
       description: description.trim() || null,
     };
 
@@ -534,7 +534,7 @@ export const WalletHomeScreen = () => {
     setEditWalletName(wallet.name);
     setEditWalletType(wallet.type as WalletType);
     setEditWalletCurrency(wallet.currency || 'VND');
-    setEditWalletBalance(wallet.currentBalance?.toString() || '0');
+    setEditWalletBalance(wallet.openingBalance?.toString() || '0');
     setShowEditModal(true);
   };
 

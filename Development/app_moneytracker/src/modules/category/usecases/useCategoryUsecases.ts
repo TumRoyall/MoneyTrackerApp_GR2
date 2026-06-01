@@ -1,12 +1,18 @@
 import { useMemo } from 'react';
 
 import { CategoryRemoteDataSourceImpl } from '@/modules/category/api/categoryRemoteDataSourceImpl';
-import { CategoryRepositoryImpl } from '@/modules/category/repository/categoryRepositoryImpl';
+import { CategoryRepositoryLocalFirst } from '@/modules/category/repository/categoryRepositoryLocalFirst';
+import { CategoryLocalDataSource } from '@/modules/category/local/categoryLocalDataSource';
 import { createCategoryUsecases } from '@/modules/category/usecases/categoryUsecases';
+import { syncService } from '@/modules/sync/service/syncServiceSingleton';
 
 export const useCategoryUsecases = () => {
   const repository = useMemo(
-    () => new CategoryRepositoryImpl(new CategoryRemoteDataSourceImpl()),
+    () => new CategoryRepositoryLocalFirst(
+      new CategoryLocalDataSource(),
+      new CategoryRemoteDataSourceImpl(),
+      syncService,
+    ),
     [],
   );
   return useMemo(() => createCategoryUsecases(repository), [repository]);

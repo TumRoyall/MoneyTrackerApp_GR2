@@ -1,9 +1,6 @@
 package com.examples.moneytracker.transaction.spec;
 
-import com.examples.moneytracker.category.model.Category;
 import com.examples.moneytracker.transaction.model.Transaction;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -28,15 +25,10 @@ public class TransactionSpecification {
 
     // ===== CATEGORY =====
     public static Specification<Transaction> hasCategory(UUID categoryId) {
-        return (root, query, cb) -> {
-            if (categoryId == null)
-                return cb.conjunction();
-
-            Join<Transaction, Category> category =
-                    root.join("category", JoinType.INNER);
-
-            return cb.equal(category.get("categoryId"), categoryId);
-        };
+        return (root, query, cb) ->
+                categoryId == null
+                        ? cb.conjunction()
+                        : cb.equal(root.get("category").get("categoryId"), categoryId);
     }
 
     // ===== CATEGORIES (IN LIST) =====
@@ -45,10 +37,7 @@ public class TransactionSpecification {
             if (categoryIds == null || categoryIds.isEmpty())
                 return cb.conjunction();
 
-            Join<Transaction, Category> category =
-                    root.join("category", JoinType.INNER);
-
-            return category.get("categoryId").in(categoryIds);
+            return root.get("category").get("categoryId").in(categoryIds);
         };
     }
 
@@ -58,14 +47,15 @@ public class TransactionSpecification {
             if (type == null || type.isBlank())
                 return cb.conjunction();
 
-            Join<Transaction, Category> category =
-                    root.join("category", JoinType.INNER);
-
             return cb.equal(
-                    cb.lower(category.get("type")),
+                    cb.lower(root.get("type")),
                     type.trim().toLowerCase()
             );
         };
+    }
+
+    public static Specification<Transaction> notDeleted() {
+        return (root, query, cb) -> cb.isNull(root.get("deletedAt"));
     }
 
     // ===== FROM DATE =====
@@ -127,6 +117,7 @@ public class TransactionSpecification {
     ) {
         return Specification
                 .where(hasUser(userId))
+            .and(notDeleted())
                 .and(hasWallet(walletId))
                 .and(hasCategory(categoryId))
                 .and(hasType(type))
@@ -144,6 +135,7 @@ public class TransactionSpecification {
     ) {
         return Specification
                 .where(hasUser(userId))
+            .and(notDeleted())
                 .and(fromDate(fromDate))
                 .and(toDate(toDate));
     }

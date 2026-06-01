@@ -15,4 +15,6 @@ public interface WalletRepository extends JpaRepository<Wallet, UUID> {
     List<Wallet> findByUserIdAndWalletIdInAndDeletedAtIsNull(UUID userId, Iterable<UUID> walletIds);
 
     Optional<Wallet> findByWalletIdAndUserIdAndDeletedAtIsNull(UUID walletId, UUID userId);
+
+    List<Wallet> findByUserIdAndDeletedAtIsNotNull(UUID userId);
 }

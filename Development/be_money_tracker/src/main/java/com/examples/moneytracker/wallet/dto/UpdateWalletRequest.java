@@ -8,5 +8,6 @@ public class UpdateWalletRequest {
     private String name;
     private WalletType type;
     private String currency;
+    private java.math.BigDecimal openingBalance;
     private String description;
 }

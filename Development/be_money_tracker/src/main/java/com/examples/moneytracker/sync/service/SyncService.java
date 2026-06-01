@@ -10,10 +10,12 @@ import com.examples.moneytracker.category.repository.CategoryRepository;
 import com.examples.moneytracker.sync.repository.SyncPushDedupRepository;
 import com.examples.moneytracker.transaction.dto.TransactionResponse;
 import com.examples.moneytracker.transaction.model.Transaction;
+import com.examples.moneytracker.transaction.model.TransactionType;
 import com.examples.moneytracker.transaction.repository.TransactionRepository;
 import com.examples.moneytracker.wallet.dto.WalletResponse;
 import com.examples.moneytracker.wallet.model.Wallet;
 import com.examples.moneytracker.wallet.repository.WalletRepository;
+import com.examples.moneytracker.wallet.service.WalletBalanceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -35,11 +38,62 @@ public class SyncService {
     private final WalletRepository walletRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
+    private final WalletBalanceService walletBalanceService;
+    private final SyncChangeLogService syncChangeLogService;
     private final ObjectMapper objectMapper;
 
     public SyncPullResponse pull(UUID userId, Long cursor, Integer limit) {
         long safeCursor = (cursor == null || cursor < 0) ? 0L : cursor;
         int safeLimit = limit == null ? 500 : Math.max(1, Math.min(limit, 1000));
+
+        if (safeCursor == 0L) {
+            List<WalletResponse> walletChanges = walletRepository.findByUserIdAndDeletedAtIsNull(userId)
+                .stream()
+                .map(WalletResponse::from)
+                .toList();
+
+                List<CategoryResponse> categoryChanges = categoryRepository.findSyncCategories(userId)
+                .stream()
+                .map(this::toCategoryResponse)
+                .toList();
+
+            List<TransactionResponse> transactionChanges = transactionRepository.findByCreatedByAndDeletedAtIsNull(userId)
+                .stream()
+                .map(this::toTransactionResponse)
+                .toList();
+
+            Map<String, List<?>> changes = new LinkedHashMap<>();
+            changes.put("wallets", walletChanges);
+            changes.put("categories", categoryChanges);
+            changes.put("budgets", List.of());
+            changes.put("transactions", transactionChanges);
+
+            Map<String, List<UUID>> deletes = new LinkedHashMap<>();
+            deletes.put("wallets", walletRepository.findByUserIdAndDeletedAtIsNotNull(userId)
+                .stream()
+                .map(Wallet::getWalletId)
+                .toList());
+            deletes.put("categories", categoryRepository.findByUserIdAndDeletedAtIsNotNull(userId)
+                .stream()
+                .map(Category::getCategoryId)
+                .toList());
+            deletes.put("budgets", List.of());
+            deletes.put("transactions", transactionRepository.findByCreatedByAndDeletedAtIsNotNull(userId)
+                .stream()
+                .map(Transaction::getTransactionId)
+                .toList());
+
+            long nextCursor = syncChangeLogRepository.findTopByUserIdOrderByCursorIdDesc(userId)
+                .map(SyncChangeLog::getCursorId)
+                .orElse(0L);
+
+            return SyncPullResponse.builder()
+                .nextCursor(nextCursor)
+                .hasMore(false)
+                .changes(changes)
+                .deletes(deletes)
+                .build();
+        }
 
         List<SyncChangeLog> logs = syncChangeLogRepository.findByUserIdAndCursorIdGreaterThanOrderByCursorIdAsc(
                 userId,
@@ -101,11 +155,12 @@ public class SyncService {
             .toList();
 
         List<CategoryResponse> categoryChanges = categoryUpserts.isEmpty()
-                ? List.of()
-                : categoryRepository.findByUserIdAndCategoryIdInAndDeletedAtIsNull(userId, categoryUpserts)
-                .stream()
-                .map(this::toCategoryResponse)
-                .toList();
+            ? List.of()
+            : categoryRepository.findByCategoryIdInAndDeletedAtIsNull(categoryUpserts)
+            .stream()
+            .filter(c -> Boolean.TRUE.equals(c.getIsDefault()) || userId.equals(c.getUserId()))
+            .map(this::toCategoryResponse)
+            .toList();
 
         List<TransactionResponse> transactionChanges = transactionUpserts.isEmpty()
                 ? List.of()
@@ -141,6 +196,12 @@ public class SyncService {
                 .icon(c.getIcon())
                 .color(c.getColor())
                 .type(c.getType())
+                .isDefault(c.getIsDefault())
+                .isHidden(c.getIsHidden())
+                .createdAt(c.getCreatedAt())
+                .updatedAt(c.getUpdatedAt())
+                .deletedAt(c.getDeletedAt())
+                .version(c.getVersion())
                 .build();
     }
 
@@ -150,10 +211,13 @@ public class SyncService {
             tx.getWalletId(),
             tx.getCategory().getCategoryId(),
             tx.getAmount(),
+            tx.getType() != null ? tx.getType().name() : null,
             tx.getNote(),
             tx.getDate(),
             tx.getCreatedAt(),
-            tx.getUpdatedAt()
+            tx.getUpdatedAt(),
+            tx.getDeletedAt(),
+            tx.getVersion()
         );
     }
 
@@ -217,7 +281,10 @@ public class SyncService {
             if (!existing.getUserId().equals(userId)) {
                 return buildErrorResult(op, "Access denied: not your wallet");
             }
-            if (op.getBaseVersion() != null && !op.getBaseVersion().equals(existing.getVersion())) {
+            if (op.getBaseVersion() == null) {
+                return buildErrorResult(op, "baseVersion is required for update/delete");
+            }
+            if (!op.getBaseVersion().equals(existing.getVersion())) {
                 return buildConflictResult(op, existing.getVersion(), walletToMap(existing));
             }
         }
@@ -229,6 +296,7 @@ public class SyncService {
             Wallet wallet = existingOpt.get();
             wallet.setDeletedAt(Instant.now());
             walletRepository.save(wallet);
+            syncChangeLogService.recordChange(userId, "wallets", wallet.getWalletId(), "DELETE");
             return buildOkResult(op, wallet.getVersion());
         } else {
             // UPSERT
@@ -239,12 +307,17 @@ public class SyncService {
             wallet.setName(data.getName());
             wallet.setType(data.getWalletType());
             wallet.setCurrency(data.getCurrency() != null ? data.getCurrency() : "VND");
-            wallet.setCurrentBalance(data.getCurrentBalance() != null ? data.getCurrentBalance() : java.math.BigDecimal.ZERO);
+            if (data.getOpeningBalance() != null) {
+                wallet.setOpeningBalance(data.getOpeningBalance());
+            } else if (wallet.getOpeningBalance() == null) {
+                wallet.setOpeningBalance(java.math.BigDecimal.ZERO);
+            }
             wallet.setDescription(data.getDescription());
             if (data.getDeletedAt() != null) {
                 wallet.setDeletedAt(Instant.ofEpochMilli(data.getDeletedAt()));
             }
             walletRepository.save(wallet);
+            walletBalanceService.rebuildWalletBalance(wallet);
             return buildOkResult(op, wallet.getVersion());
         }
     }
@@ -260,7 +333,13 @@ public class SyncService {
             if (existing.getUserId() != null && !existing.getUserId().equals(userId)) {
                 return buildErrorResult(op, "Access denied: not your category");
             }
-            if (op.getBaseVersion() != null && !op.getBaseVersion().equals(existing.getVersion())) {
+            if (Boolean.TRUE.equals(existing.getIsDefault())) {
+                return buildErrorResult(op, "Default category cannot be modified");
+            }
+            if (op.getBaseVersion() == null) {
+                return buildErrorResult(op, "baseVersion is required for update/delete");
+            }
+            if (!op.getBaseVersion().equals(existing.getVersion())) {
                 return buildConflictResult(op, existing.getVersion(), categoryToMap(existing));
             }
         }
@@ -272,6 +351,7 @@ public class SyncService {
             Category category = existingOpt.get();
             category.setDeletedAt(Instant.now());
             categoryRepository.save(category);
+            syncChangeLogService.recordChange(userId, "categories", category.getCategoryId(), "DELETE");
             return buildOkResult(op, category.getVersion());
         } else {
             // UPSERT
@@ -289,6 +369,7 @@ public class SyncService {
                 category.setDeletedAt(Instant.ofEpochMilli(data.getDeletedAt()));
             }
             categoryRepository.save(category);
+            syncChangeLogService.recordChange(userId, "categories", category.getCategoryId(), "UPSERT");
             return buildOkResult(op, category.getVersion());
         }
     }
@@ -297,6 +378,8 @@ public class SyncService {
     protected SyncOperationResult processTransactionOperation(UUID userId, SyncOperation op) {
         UUID entityId = UUID.fromString(op.getEntityId());
         Optional<Transaction> existingOpt = transactionRepository.findById(entityId);
+        BigDecimal oldAmount = null;
+        TransactionType oldType = null;
 
         // Check conflict
         if (existingOpt.isPresent()) {
@@ -304,9 +387,16 @@ public class SyncService {
             if (!existing.getCreatedBy().equals(userId)) {
                 return buildErrorResult(op, "Access denied: not your transaction");
             }
-            if (op.getBaseVersion() != null && !op.getBaseVersion().equals(existing.getVersion())) {
+            if (op.getBaseVersion() == null) {
+                return buildErrorResult(op, "baseVersion is required for update/delete");
+            }
+            if (!op.getBaseVersion().equals(existing.getVersion())) {
                 return buildConflictResult(op, existing.getVersion(), transactionToMap(existing));
             }
+                oldAmount = existing.getAmount();
+                oldType = existing.getType() != null
+                    ? existing.getType()
+                    : resolveType(null, existing.getCategory().getType(), TransactionType.EXPENSE);
         }
 
         if ("DELETE".equalsIgnoreCase(op.getOp())) {
@@ -314,8 +404,15 @@ public class SyncService {
                 return buildOkResult(op, null);
             }
             Transaction tx = existingOpt.get();
+            if (tx.getDeletedAt() != null) {
+                return buildOkResult(op, tx.getVersion());
+            }
+            Wallet wallet = walletRepository.findByWalletIdAndUserIdAndDeletedAtIsNull(tx.getWalletId(), userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+            walletBalanceService.applyTransactionDelete(wallet, tx);
             tx.setDeletedAt(Instant.now());
             transactionRepository.save(tx);
+            syncChangeLogService.recordChange(userId, "transactions", tx.getTransactionId(), "DELETE");
             return buildOkResult(op, tx.getVersion());
         } else {
             // UPSERT
@@ -326,18 +423,46 @@ public class SyncService {
             UUID categoryId = UUID.fromString(data.getCategoryId());
             Category category = categoryRepository.findById(categoryId)
                     .orElseThrow(() -> new IllegalArgumentException("Category not found: " + categoryId));
+            if (category.getUserId() != null && !category.getUserId().equals(userId)) {
+                return buildErrorResult(op, "Access denied: not your category");
+            }
+
+            UUID walletId = data.getWalletId() != null ? UUID.fromString(data.getWalletId()) : null;
+            if (walletId == null && tx.getWalletId() != null) {
+                walletId = tx.getWalletId();
+            }
+            Wallet wallet = null;
+            if (walletId != null) {
+                wallet = walletRepository.findByWalletIdAndUserIdAndDeletedAtIsNull(walletId, userId)
+                        .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+            }
 
             tx.setTransactionId(entityId);
-            tx.setWalletId(UUID.fromString(data.getWalletId()));
+            if (tx.getWalletId() != null && walletId != null && !tx.getWalletId().equals(walletId)) {
+                return buildConflictResult(op, tx.getVersion(), transactionToMap(tx));
+            }
+            if (walletId == null) {
+                return buildErrorResult(op, "walletId is required for transaction");
+            }
+            tx.setWalletId(walletId);
             tx.setCreatedBy(userId);
             tx.setCategory(category);
             tx.setAmount(data.getAmount());
+            tx.setType(resolveType(data.getType(), category.getType(), tx.getType()));
             tx.setNote(data.getNote());
             tx.setDate(data.getTxDate() != null ? LocalDate.parse(data.getTxDate()) : LocalDate.now());
             if (data.getDeletedAt() != null) {
                 tx.setDeletedAt(Instant.ofEpochMilli(data.getDeletedAt()));
             }
             transactionRepository.save(tx);
+            if (wallet != null) {
+                if (existingOpt.isPresent()) {
+                    walletBalanceService.applyTransactionUpdate(wallet, oldAmount, oldType, tx.getAmount(), tx.getType());
+                } else {
+                    walletBalanceService.applyTransactionCreate(wallet, tx);
+                }
+            }
+            syncChangeLogService.recordChange(userId, "transactions", tx.getTransactionId(), "UPSERT");
             return buildOkResult(op, tx.getVersion());
         }
     }
@@ -384,6 +509,7 @@ public class SyncService {
         map.put("name", wallet.getName());
         map.put("type", wallet.getType().name());
         map.put("currency", wallet.getCurrency());
+        map.put("openingBalance", wallet.getOpeningBalance());
         map.put("currentBalance", wallet.getCurrentBalance());
         map.put("description", wallet.getDescription());
         map.put("version", wallet.getVersion());
@@ -415,6 +541,7 @@ public class SyncService {
         map.put("walletId", tx.getWalletId().toString());
         map.put("categoryId", tx.getCategory().getCategoryId().toString());
         map.put("amount", tx.getAmount());
+        map.put("type", tx.getType() != null ? tx.getType().name() : null);
         map.put("note", tx.getNote());
         map.put("txDate", tx.getDate().toString());
         map.put("version", tx.getVersion());
@@ -422,5 +549,30 @@ public class SyncService {
         map.put("updatedAt", tx.getUpdatedAt().toEpochMilli());
         map.put("deletedAt", tx.getDeletedAt() != null ? tx.getDeletedAt().toEpochMilli() : null);
         return map;
+    }
+
+    private TransactionType resolveType(String requestedType, String categoryType, TransactionType fallback) {
+        TransactionType requested = parseType(requestedType);
+        if (requested != null) {
+            return requested;
+        }
+
+        TransactionType fromCategory = parseType(categoryType);
+        if (fromCategory != null) {
+            return fromCategory;
+        }
+
+        return fallback != null ? fallback : TransactionType.EXPENSE;
+    }
+
+    private TransactionType parseType(String type) {
+        if (type == null || type.isBlank()) {
+            return null;
+        }
+        try {
+            return TransactionType.valueOf(type.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 }

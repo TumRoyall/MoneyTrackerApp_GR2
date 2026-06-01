@@ -1,9 +1,11 @@
 import { Stack, useSegments } from 'expo-router';
 import { QueryProvider } from '@/core/providers/QueryProvider';
 import { useStreakNotification } from '@/shared/hooks/useStreakNotification';
+import { useSyncBootstrap } from '@/modules/sync/hooks/useSyncBootstrap';
 
 export default function RootLayout() {
   useStreakNotification();
+  useSyncBootstrap();
   const segments = useSegments();
 
   return (

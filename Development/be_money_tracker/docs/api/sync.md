@@ -15,6 +15,8 @@
   - hasMore (boolean)
   - changes (map: entity -> list of records)
   - deletes (map: entity -> list of UUID)
+  - record fields (wallets/categories/transactions):
+    - id, version, createdAt, updatedAt, deletedAt
 
 ### POST /api/sync/push
 - purpose: push thay doi offline
@@ -39,3 +41,7 @@
 - Planned feature, chua chinh thuc
 - JWT required
 - DB column dung cursor_id (tranh tu khoa cursor)
+- baseVersion bat buoc cho update/delete
+- Wallet currentBalance la server-calculated, client khong duoc push
+- Wallet can push openingBalance
+- Transaction can push type (INCOME/EXPENSE)

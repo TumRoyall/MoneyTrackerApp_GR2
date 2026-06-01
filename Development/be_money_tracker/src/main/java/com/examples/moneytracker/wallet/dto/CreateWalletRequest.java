@@ -18,6 +18,8 @@ public class CreateWalletRequest {
     @NotBlank
     private String currency;
 
+    private BigDecimal openingBalance;
+
     private BigDecimal currentBalance;
 
     private String description;

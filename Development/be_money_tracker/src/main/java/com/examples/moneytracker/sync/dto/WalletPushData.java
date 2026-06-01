@@ -11,6 +11,7 @@ public class WalletPushData {
     private String type;
     private String currency;
     private BigDecimal currentBalance;
+    private BigDecimal openingBalance;
     private String description;
     private Long version;
     private Long createdAt;

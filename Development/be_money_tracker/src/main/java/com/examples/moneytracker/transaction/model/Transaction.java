@@ -31,6 +31,10 @@ public class Transaction {
     @Column(precision = 18, scale = 2, nullable = false)
     private BigDecimal amount;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private TransactionType type;
+
     @Column(columnDefinition = "TEXT")
     private String note;
 
@@ -46,6 +50,7 @@ public class Transaction {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    @Version
     @Column(nullable = false)
     private Long version = 1L;
 
