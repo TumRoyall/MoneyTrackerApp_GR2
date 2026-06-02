@@ -19,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { queryAll, executeSql } from '@/core/db/sqlite';
 import { useAuthUsecases } from '@/modules/auth/usecases';
+import { Button, colors } from '@/components/common';
 
 const USERNAME_KEY = 'display_username';
 
@@ -235,15 +236,13 @@ export default function SettingsScreen() {
                 onChangeText={setDevQuery}
                 autoCapitalize="none"
               />
-              <Pressable
-                style={[styles.devBtn, isQuerying && styles.devBtnDisabled]}
+              <Button
+                title={isQuerying ? 'Đang thực thi...' : 'Thực thi Query'}
                 onPress={handleExecuteQuery}
+                variant="secondary"
+                loading={isQuerying}
                 disabled={isQuerying}
-              >
-                <Text style={styles.devBtnText}>
-                  {isQuerying ? 'Đang thực thi...' : 'Thực thi Query'}
-                </Text>
-              </Pressable>
+              />
 
               {queryResult ? (
                 <View style={styles.resultContainer}>
