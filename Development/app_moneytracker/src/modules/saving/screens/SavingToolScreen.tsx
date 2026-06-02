@@ -7,13 +7,21 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import {
+  BackButton,
+  Button,
+  Card,
+  EmptyState,
+  FAB,
+  ProgressBar,
+  Switch,
+} from '@/components/common';
 import { useSavingUsecases } from '@/modules/saving/usecases';
 import { Saving, SavingPeriodUnit, SavingType } from '@/modules/saving/models/saving.types';
 import { useCategoryUsecases } from '@/modules/category/usecases';
@@ -198,38 +206,36 @@ export const SavingToolScreen = () => {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools')}>
-            <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
-          </Pressable>
+          <BackButton to="/(tabs)/tools" />
           <Text style={styles.title}>Tiết kiệm</Text>
           <View style={{ width: 24 }} />
         </View>
 
         <View style={styles.toggleRow}>
           <Text style={styles.toggleLabel}>Ẩn đã hoàn thành</Text>
-          <Switch
-            value={hideCompleted}
-            onValueChange={setHideCompleted}
-            trackColor={{ false: '#d4dde3', true: '#33c3cd' }}
-            thumbColor={hideCompleted ? '#ffffff' : '#f1f5f8'}
-          />
+          <Switch value={hideCompleted} onValueChange={setHideCompleted} />
         </View>
 
-        <View style={styles.totalSummaryCard}>
+        <Card variant="elevated" style={styles.totalSummaryCard}>
           <Ionicons name="wallet" size={18} color="#2bb6c2" />
           <Text style={styles.totalSummaryText}>Tổng đã tiết kiệm</Text>
           <Text style={styles.totalSummaryAmount}>{formatVndAmount(totalSavedAllTime)}</Text>
-        </View>
+        </Card>
 
         {savingsQuery.isLoading ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>Đang tải mục tiêu tiết kiệm...</Text>
           </View>
         ) : filteredSavings.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Chưa có mục tiêu tiết kiệm</Text>
-            <Text style={styles.emptyText}>Hãy tạo mục tiêu tiết kiệm đầu tiên của bạn.</Text>
-          </View>
+          <EmptyState
+            icon="🎯"
+            title="Chưa có mục tiêu tiết kiệm"
+            description="Hãy tạo mục tiêu tiết kiệm đầu tiên của bạn."
+            action={{
+              title: 'Tạo mục tiêu',
+              onPress: () => setShowCreateModal(true),
+            }}
+          />
         ) : (
           filteredSavings.map((saving) => {
             const type = normalizeSavingType(saving.type);
@@ -239,8 +245,9 @@ export const SavingToolScreen = () => {
             const percent = progressTarget > 0 ? Math.min((totalSaved / progressTarget) * 100, 100) : 0;
 
             return (
-              <Pressable
+              <Card
                 key={saving.savingId}
+                variant="elevated"
                 style={styles.savingCard}
                 onPress={() =>
                   router.push({
@@ -286,22 +293,14 @@ export const SavingToolScreen = () => {
                   )}
                 </View>
 
-                <View style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width: `${percent}%` }]} />
-                  <View style={styles.progressBubble}>
-                    <Text style={styles.progressBubbleText}>{`${Math.round(percent)}%`}</Text>
-                  </View>
-                </View>
-              </Pressable>
+                <ProgressBar value={percent} showLabel />
+              </Card>
             );
           })
         )}
       </ScrollView>
 
-      <Pressable style={styles.fab} onPress={() => setShowCreateModal(true)}>
-        <Ionicons name="add" size={24} color="#fff" />
-        <Text style={styles.fabText}>Thêm tiết kiệm</Text>
-      </Pressable>
+      <FAB icon={<Ionicons name="add" />} label="Thêm mục tiêu" onPress={() => setShowCreateModal(true)} />
 
       <Modal visible={showCreateModal} transparent animationType="slide" onRequestClose={() => setShowCreateModal(false)}>
         <View style={styles.modalOverlay}>
@@ -405,9 +404,7 @@ export const SavingToolScreen = () => {
 
             <Text style={styles.noteText}>Ví tiết kiệm sẽ được tạo tự động với tên mục tiêu.</Text>
 
-            <Pressable style={styles.saveBtn} onPress={createSavingHandler}>
-              <Text style={styles.saveBtnText}>Lưu</Text>
-            </Pressable>
+            <Button title="Lưu" onPress={createSavingHandler} style={styles.saveBtn} />
           </View>
         </View>
       </Modal>
@@ -430,12 +427,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  backBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   title: {
     fontSize: 24,
     fontWeight: '700',
@@ -450,23 +441,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#4b5963',
     fontWeight: '500',
-  },
-  emptyCard: {
-    borderRadius: 14,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e6ecef',
-    padding: 20,
-    gap: 6,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1f1f1f',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#667179',
   },
   savingCard: {
     borderRadius: 16,
@@ -529,34 +503,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1099a4',
   },
-  progressTrack: {
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: '#e8edf0',
-    overflow: 'visible',
-    justifyContent: 'center',
-  },
-  progressFill: {
-    height: 6,
-    backgroundColor: '#29bcc8',
-  },
-  progressBubble: {
-    position: 'absolute',
-    alignSelf: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#2bb6c2',
-    zIndex: 2,
-    elevation: 2,
-  },
-  progressBubbleText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#1099a4',
-  },
   totalSummaryCard: {
     borderRadius: 16,
     backgroundColor: '#fff',
@@ -576,28 +522,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#1f1f1f',
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#2a8c9f',
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 28,
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  fabText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
   },
   modalOverlay: {
     flex: 1,
@@ -696,17 +620,5 @@ const styles = StyleSheet.create({
   noteText: {
     fontSize: 12,
     color: '#6b7680',
-  },
-  saveBtn: {
-    backgroundColor: '#22b8c8',
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  saveBtnText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#fff',
   },
 });
