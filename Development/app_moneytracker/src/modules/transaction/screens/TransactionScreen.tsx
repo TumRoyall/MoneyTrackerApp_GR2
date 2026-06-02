@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -15,6 +15,7 @@ import {
 
 import { Category } from '@/modules/category/models/category.types';
 import { useCategoryUsecases } from '@/modules/category/usecases';
+import { categoryIconOptions } from '@/modules/category/data/defaultCategories';
 import { Wallet } from '@/modules/wallet/models/wallet.types';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
 import {
@@ -53,36 +54,9 @@ const defaultCategoryTemplates: Array<{
     { name: 'Khác', type: 'INCOME', icon: '💰', color: '#BFEFF3' },
   ];
 
-const categoryIconOptions: Array<{ label: string; icon: string }> = [
-  { label: 'Giỏ hàng', icon: '🛒' },
-  { label: 'Đồ ăn', icon: '🍜' },
-  { label: 'Cà phê', icon: '☕' },
-  { label: 'Nhà', icon: '🏠' },
-  { label: 'Hóa đơn', icon: '🧾' },
-  { label: 'Dọn dẹp', icon: '🧹' },
-  { label: 'Điện thoại', icon: '📱' },
-  { label: 'Laptop', icon: '💻' },
-  { label: 'Giáo dục', icon: '🎓' },
-  { label: 'Sức khỏe', icon: '💊' },
-  { label: 'Thú cưng', icon: '🐾' },
-  { label: 'Du lịch', icon: '✈️' },
-  { label: 'Thể thao', icon: '⚽' },
-  { label: 'Giải trí', icon: '🎮' },
-  { label: 'Làm đẹp', icon: '💄' },
-  { label: 'Tiền mặt', icon: '💵' },
-  { label: 'Tiết kiệm', icon: '🏦' },
-  { label: 'Đầu tư', icon: '📈' },
-  { label: 'Quà tặng', icon: '🎁' },
-  { label: 'Lương', icon: '💼' },
-  { label: 'Ý tưởng', icon: '💡' },
-  { label: 'Xe cộ', icon: '🚗' },
-  { label: 'Tài liệu', icon: '📄' },
-  { label: 'Ăn uống', icon: '🍱' },
-];
-
 const defaultCategoryIconByType: Record<CategoryType, string> = {
-  EXPENSE: '🧾',
-  INCOME: '💰',
+  EXPENSE: 'cart',
+  INCOME: 'briefcase',
 };
 
 const timeModeLabel: Record<TimeMode, string> = {
@@ -885,7 +859,7 @@ export const TransactionScreen = () => {
           />
         ) : groupedByDate.length === 0 ? (
           <EmptyState
-            icon="receipt-outline"
+            icon="format-list-bulleted"
             title="Chưa có giao dịch"
             description="Hãy bắt đầu ghi nhận thu chi của bạn"
             action={{
@@ -915,7 +889,7 @@ export const TransactionScreen = () => {
                 return (
                   <Pressable key={item.transactionId} style={styles.transactionCard} onPress={() => openEditTransactionModal(item)}>
                     <View style={styles.transactionIconWrap}>
-                      <Text style={styles.transactionIconText}>{category?.icon || (isIncome ? '💰' : '🛒')}</Text>
+                      <MaterialCommunityIcons name={(category?.icon as any) || (isIncome ? 'briefcase' : 'cart')} size={24} color="#29bcc8" />
                     </View>
 
                     <View style={styles.transactionInfo}>
@@ -974,9 +948,7 @@ export const TransactionScreen = () => {
             >
               <View style={styles.categoryPickerValueWrap}>
                 <View style={styles.categoryPickerIconWrap}>
-                  <Text style={styles.categoryPickerIconText}>
-                    {categories.find((item) => item.categoryId === formCategoryId)?.icon || '❓'}
-                  </Text>
+                  <MaterialCommunityIcons name={(categories.find((item) => item.categoryId === formCategoryId)?.icon as any) || 'help'} size={18} color="#29bcc8" />
                 </View>
                 <Text style={styles.categoryPickerValueText}>
                   {categories.find((item) => item.categoryId === formCategoryId)?.name || 'Chọn danh mục'}
@@ -1099,7 +1071,7 @@ export const TransactionScreen = () => {
                         style={[styles.categoryGridItem, selected ? styles.categoryGridItemSelected : null]}
                       >
                         <View style={styles.categoryGridIconWrap}>
-                          <Text style={styles.categoryGridIconText}>{category.icon || '❓'}</Text>
+                          <MaterialCommunityIcons name={(category.icon as any) || 'help'} size={22} color="#29bcc8" />
                         </View>
                         <Text style={styles.categoryGridLabel} numberOfLines={2}>
                           {category.name}
@@ -1122,7 +1094,7 @@ export const TransactionScreen = () => {
                   <Pressable style={styles.pickIconButton} onPress={() => setShowIconOptions((prev) => !prev)}>
                     <View style={styles.pickIconValueWrap}>
                       <View style={styles.pickIconCircle}>
-                        <Text style={styles.pickIconText}>{newCategoryIcon}</Text>
+                        <MaterialCommunityIcons name={(newCategoryIcon as any) || 'cart'} size={18} color="#29bcc8" />
                       </View>
                       <Text style={styles.pickIconLabel}>Chọn icon</Text>
                     </View>
@@ -1140,7 +1112,7 @@ export const TransactionScreen = () => {
                             style={[styles.iconGridItem, selected ? styles.iconGridItemSelected : null]}
                           >
                             <View style={[styles.iconGridCircle, selected ? styles.iconGridCircleSelected : null]}>
-                              <Text style={styles.iconGridText}>{option.icon}</Text>
+                              <MaterialCommunityIcons name={(option.icon as any) || 'help'} size={24} color={selected ? '#29bcc8' : '#5a6672'} />
                             </View>
                             <Text style={styles.iconGridName} numberOfLines={1}>
                               {option.label}
@@ -1562,7 +1534,7 @@ export const TransactionScreen = () => {
                           }}
                         >
                           <View style={styles.searchResultIcon}>
-                            <Text style={styles.searchResultIconText}>{category?.icon || '❓'}</Text>
+                            <MaterialCommunityIcons name={(category?.icon as any) || 'help'} size={20} color="#29bcc8" />
                           </View>
                           <View style={styles.searchResultContent}>
                             <Text style={styles.searchResultCategory}>{category?.name || 'Danh mục'}</Text>
