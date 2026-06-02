@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { Button, BackButton, ProgressBar, colors, spacing } from '@/components/common';
 import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
@@ -111,24 +111,22 @@ export const BudgetDetailScreen = () => {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools/budgets')}>
-            <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
-          </Pressable>
+          <BackButton to="/(tabs)/tools/budgets" />
           <Text style={styles.title}>{budget?.title?.trim() || category?.name || 'Ngân sách'}</Text>
           {budget ? (
-            <Pressable
-              style={styles.editButton}
+            <Button
+              title=""
               onPress={() =>
                 router.push({
                   pathname: '/(tabs)/tools/budgets/[budgetId]/edit',
                   params: { budgetId },
                 })
               }
-            >
-              <Ionicons name="pencil" size={20} color="#1f1f1f" />
-            </Pressable>
+              variant="ghost"
+              iconLeft={<Text style={{ fontSize: 20 }}>✏️</Text>}
+            />
           ) : (
-            <View style={{ width: 24 }} />
+            <View style={{ width: 40 }} />
           )}
         </View>
 
@@ -174,9 +172,7 @@ export const BudgetDetailScreen = () => {
               <Text style={styles.amountLimit}>{formatVndAmount(budget.amountLimit)}</Text>
             </View>
 
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${percent}%` }]} />
-            </View>
+            <ProgressBar value={percent} showLabel />
 
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
@@ -231,44 +227,31 @@ export const BudgetDetailScreen = () => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f5f7f9',
+    backgroundColor: colors.backgroundSecondary,
   },
   content: {
-    padding: 16,
+    padding: spacing.md,
     paddingBottom: 40,
-    gap: 12,
+    gap: spacing.md,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  backBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   summaryCard: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#14b8c4',
-    backgroundColor: '#fff',
-    padding: 16,
-    gap: 10,
+    borderColor: colors.primary,
+    backgroundColor: colors.backgroundPrimary,
+    padding: spacing.md,
+    gap: spacing.md,
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -281,7 +264,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   summaryBadge: {
     minWidth: 56,
@@ -295,12 +278,12 @@ const styles = StyleSheet.create({
   summaryBadgeText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0f8c95',
+    color: colors.primaryDark,
   },
   categoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   categoryPill: {
     alignSelf: 'flex-start',
@@ -322,7 +305,7 @@ const styles = StyleSheet.create({
   },
   walletName: {
     fontSize: 14,
-    color: '#5b6770',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   amountRow: {
@@ -333,7 +316,7 @@ const styles = StyleSheet.create({
   amountSpent: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   amountDivider: {
     fontSize: 16,
@@ -344,16 +327,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7680',
     fontWeight: '700',
-  },
-  progressTrack: {
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: '#e8edf0',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: 10,
-    backgroundColor: '#29bcc8',
   },
   metaRow: {
     flexDirection: 'row',
@@ -399,28 +372,28 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 16,
     fontWeight: '800',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   sectionTitle: {
-    marginTop: 8,
+    marginTop: spacing.sm,
     fontSize: 16,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   emptyCard: {
     borderRadius: 14,
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     borderWidth: 1,
     borderColor: '#e6ecef',
-    padding: 16,
+    padding: spacing.md,
   },
   emptyText: {
     fontSize: 14,
-    color: '#667179',
+    color: colors.textSecondary,
   },
   transactionRow: {
     borderRadius: 14,
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     borderWidth: 1,
     borderColor: '#edf1f5',
     padding: 14,
@@ -438,13 +411,13 @@ const styles = StyleSheet.create({
   },
   transactionNote: {
     fontSize: 15,
-    color: '#1f1f1f',
+    color: colors.textPrimary,
     fontWeight: '600',
     flex: 1,
   },
   transactionAmount: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#e35d5d',
+    color: colors.error,
   },
 });
