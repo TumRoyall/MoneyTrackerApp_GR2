@@ -34,7 +34,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="tools/index"
+        name="tools"
         options={{
           title: 'Công cụ tiền tệ',
           tabBarIcon: ({ color, size }) => (
@@ -47,72 +47,6 @@ export default function TabsLayout() {
         options={{
           title: 'Cài đặt',
           tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="budgets/[budgetId]"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="budgets/[budgetId]/edit"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="tools/budgets/index"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="tools/budgets/[budgetId]"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="tools/budgets/[budgetId]/edit"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="tools/savings/index"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="tools/savings/[savingId]"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="tools/savings/[savingId]/edit"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="tools/debts/index"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="tools/debts/[debtId]"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="tools/debts/[debtId]/edit"
-        options={{
-          href: null,
         }}
       />
     </Tabs>

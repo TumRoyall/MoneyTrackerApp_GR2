@@ -450,11 +450,11 @@ export const SavingDetailScreen = () => {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools/savings')}>
             <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
           </Pressable>
           <Text style={styles.title}>{saving?.title || 'Tiết kiệm'}</Text>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools/savings')}>
             <Ionicons name="close" size={22} color="#1f1f1f" />
           </Pressable>
         </View>

@@ -427,11 +427,11 @@ export const DebtDetailScreen = () => {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools/debts')}>
             <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
           </Pressable>
           <Text style={styles.title}>{debt?.title || 'Món nợ'}</Text>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools/debts')}>
             <Ionicons name="close" size={22} color="#1f1f1f" />
           </Pressable>
         </View>

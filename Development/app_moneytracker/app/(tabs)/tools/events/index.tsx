@@ -1,6 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   ActivityIndicator,
@@ -44,9 +45,23 @@ export default function EventListScreen() {
   const eventsQuery = useQuery({
     queryKey: ['events'],
     queryFn: getEvents,
+    retry: 1,
+    staleTime: 30000, // 30 seconds
   });
 
+  // Polling: refetch every 30 seconds when screen is visible
+  useEffect(() => {
+    const interval = setInterval(() => {
+      eventsQuery.refetch();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [eventsQuery]);
+
   const events = eventsQuery.data ?? [];
+  const isLoading = eventsQuery.isLoading;
+  const isEmpty = !isLoading && events.length === 0;
+  const hasError = eventsQuery.isError;
 
   const handleCreateEvent = async () => {
     if (!eventName.trim()) {
@@ -127,11 +142,21 @@ export default function EventListScreen() {
       </View>
 
       {/* Event List */}
-      {eventsQuery.isLoading ? (
+      {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#29bcc8" />
         </View>
-      ) : events.length === 0 ? (
+      ) : hasError ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>⚠️</Text>
+          <Text style={styles.emptyTitle}>Không thể tải sự kiện</Text>
+          <Text style={styles.emptyText}>Vui lòng kiểm tra kết nối và thử lại</Text>
+          <Pressable style={styles.createBtn} onPress={() => eventsQuery.refetch()}>
+            <Ionicons name="refresh" size={20} color="#fff" />
+            <Text style={styles.createBtnText}>Thử lại</Text>
+          </Pressable>
+        </View>
+      ) : isEmpty ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>🎉</Text>
           <Text style={styles.emptyTitle}>Chưa có sự kiện nào</Text>

@@ -74,7 +74,7 @@ var BudgetDetailScreen = function () {
     return (<react_native_1.View style={styles.screen}>
       <react_native_1.ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <react_native_1.View style={styles.headerRow}>
-          <react_native_1.Pressable style={styles.backBtn} onPress={function () { return router.back(); }}>
+          <react_native_1.Pressable style={styles.backBtn} onPress={function () { return router.replace('/(tabs)/tools/budgets'); }}>
             <vector_icons_1.Ionicons name="chevron-back" size={24} color="#1f1f1f"/>
           </react_native_1.Pressable>
           <react_native_1.Text style={styles.title}>{(category === null || category === void 0 ? void 0 : category.name) || 'Ngân sách'}</react_native_1.Text>

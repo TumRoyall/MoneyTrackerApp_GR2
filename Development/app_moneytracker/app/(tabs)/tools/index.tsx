@@ -36,13 +36,6 @@ export default function ToolsScreen() {
       onPress: () => router.push('/tools/debts'),
     },
     {
-      id: 'challenge',
-      title: 'Thử thách',
-      description: 'Cạnh tranh với bạn bè để tiết kiệm nhiều hơn và leo lên bảng xếp hạng.',
-      icon: 'trophy-outline',
-      onPress: () => {},
-    },
-    {
       id: 'events',
       title: 'Sự kiện',
       description: 'Cùng bạn bè ghi nhận chi tiêu chung cho các sự kiện: cầu lông, sinh nhật, du lịch...',

@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useEventUsecases } from '@/modules/event/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
@@ -55,18 +55,21 @@ export default function EventDetailScreen() {
     queryKey: ['event', eventId],
     queryFn: () => getEventDetail(eventId!),
     enabled: !!eventId,
+    staleTime: 10000, // 10 seconds
   });
 
   const { data: members } = useQuery({
     queryKey: ['event-members', eventId],
     queryFn: () => getEventMembers(eventId!),
     enabled: !!eventId,
+    staleTime: 10000,
   });
 
   const { data: transactions } = useQuery({
     queryKey: ['event-transactions', eventId],
     queryFn: () => getEventTransactions(eventId!),
     enabled: !!eventId,
+    staleTime: 10000,
   });
 
   const { data: settlement } = useQuery({
@@ -74,6 +77,22 @@ export default function EventDetailScreen() {
     queryFn: () => getSettlement(eventId!),
     enabled: !!eventId && showSettlementModal,
   });
+
+  // Polling: refetch every 10 seconds for real-time updates
+  // Stop polling when event is settled
+  useEffect(() => {
+    if (event?.status === 'SETTLED' || event?.status === 'ARCHIVED') {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event-members', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event-transactions', eventId] });
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [eventId, queryClient, event?.status]);
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
@@ -180,7 +199,7 @@ export default function EventDetailScreen() {
     <View style={styles.screen}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.push('/(tabs)/tools/events')} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
         </Pressable>
         <View style={styles.headerTitle}>
