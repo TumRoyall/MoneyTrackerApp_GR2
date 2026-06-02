@@ -20,9 +20,7 @@ import { Wallet, WalletCreateInput, WalletType, WalletUpdateInput } from '@/modu
 import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
 import { TransactionFilters } from '@/modules/transaction/models/transaction.types';
-import { formatMoneyInput, parseMoneyInput, formatVndAmount, formatCurrency } from '@/shared/utils/money';
-import { StreakScreen } from '@/modules/streak/screens/StreakScreen';
-import { useStreakUsecases } from '@/modules/streak/usecases';
+import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing } from '@/components/common';
 
 type CategoryType = 'EXPENSE' | 'INCOME';
 type TimeMode = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
@@ -817,8 +815,8 @@ export const WalletHomeScreen = () => {
 
       </ScrollView>
 
-      <Pressable
-        style={styles.fab}
+      <FAB
+        icon={<Ionicons name="add" size={36} color="#fff" />}
         onPress={() => {
           if (!selectedWalletId) {
             Alert.alert('Chưa chọn ví', 'Vui lòng chọn một ví để tạo giao dịch.');
@@ -829,9 +827,7 @@ export const WalletHomeScreen = () => {
             params: { walletId: selectedWalletId, openCreate: '1' },
           });
         }}
-      >
-        <Ionicons name="add" size={36} color="#fff" />
-      </Pressable>
+      />
 
       <Modal visible={showCreateModal} animationType="slide" transparent onRequestClose={() => setShowCreateModal(false)}>
         <View style={styles.modalOverlay}>
@@ -884,12 +880,12 @@ export const WalletHomeScreen = () => {
               multiline
             />
 
-            <Pressable
+            <Button
+              title="Tạo ví"
               onPress={createWalletHandler}
-              style={({ pressed }) => [styles.createButton, pressed ? styles.createButtonPressed : null]}
-            >
-              <Text style={styles.createButtonText}>Tạo ví</Text>
-            </Pressable>
+              variant="primary"
+              size="lg"
+            />
           </View>
         </View>
       </Modal>
@@ -955,9 +951,7 @@ export const WalletHomeScreen = () => {
               <Pressable style={styles.rangeGhostBtn} onPress={() => setShowRangeModal(false)}>
                 <Text style={styles.rangeGhostBtnText}>Hủy</Text>
               </Pressable>
-              <Pressable style={styles.rangeConfirmBtn} onPress={applyCustomRange}>
-                <Text style={styles.rangeConfirmBtnText}>Áp dụng</Text>
-              </Pressable>
+              <Button title="Áp dụng" onPress={applyCustomRange} variant="primary" />
             </View>
           </View>
         </View>
@@ -1032,9 +1026,7 @@ export const WalletHomeScreen = () => {
               <Pressable style={styles.rangeGhostBtn} onPress={() => setShowCalendarModal(false)}>
                 <Text style={styles.rangeGhostBtnText}>Hủy</Text>
               </Pressable>
-              <Pressable style={styles.rangeConfirmBtn} onPress={applyCalendarSelection}>
-                <Text style={styles.rangeConfirmBtnText}>OK</Text>
-              </Pressable>
+              <Button title="OK" onPress={applyCalendarSelection} variant="primary" />
             </View>
           </View>
         </View>
@@ -1088,12 +1080,16 @@ export const WalletHomeScreen = () => {
             </View>
 
             <View style={styles.editActionRow}>
-              <Pressable style={styles.btnSave} onPress={updateWalletHandler}>
-                <Text style={styles.btnSaveText}>Lưu</Text>
-              </Pressable>
-              <Pressable style={styles.btnDelete} onPress={deleteWalletHandler}>
-                <Text style={styles.btnDeleteText}>Xóa ví</Text>
-              </Pressable>
+              <Button
+                title="Lưu"
+                onPress={updateWalletHandler}
+                variant="primary"
+              />
+              <Button
+                title="Xóa ví"
+                onPress={deleteWalletHandler}
+                variant="danger"
+              />
             </View>
           </ScrollView>
         </View>
