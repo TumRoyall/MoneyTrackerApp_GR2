@@ -24,6 +24,7 @@ import {
 } from '@/modules/transaction/models/transaction.types';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
 import { formatMoneyInput, parseMoneyInput, formatVndAmount } from '@/shared/utils/money';
+import { Button, EmptyState, FAB, colors } from '@/components/common';
 
 type CategoryType = 'EXPENSE' | 'INCOME';
 
@@ -877,13 +878,21 @@ export const TransactionScreen = () => {
         </View>
 
         {transactionsQuery.isLoading ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>Đang tải giao dịch...</Text>
-          </View>
+          <EmptyState
+            icon="loading"
+            title="Đang tải..."
+            description="Vui lòng chờ trong giây lát"
+          />
         ) : groupedByDate.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>Chưa có giao dịch trong tháng này.</Text>
-          </View>
+          <EmptyState
+            icon="receipt-outline"
+            title="Chưa có giao dịch"
+            description="Hãy bắt đầu ghi nhận thu chi của bạn"
+            action={{
+              title: 'Tạo giao dịch',
+              onPress: openCreateTransactionModal,
+            }}
+          />
         ) : (
           groupedByDate.map(([date, items]) => (
             <View key={date} style={styles.groupWrap}>
@@ -926,9 +935,10 @@ export const TransactionScreen = () => {
         )}
       </ScrollView>
 
-      <Pressable style={styles.fab} onPress={openCreateTransactionModal}>
-        <Ionicons name="add" size={36} color="#fff" />
-      </Pressable>
+      <FAB
+        icon={<Ionicons name="add" size={36} color="#fff" />}
+        onPress={openCreateTransactionModal}
+      />
 
       <Modal
         visible={showTransactionModal}
@@ -1002,11 +1012,12 @@ export const TransactionScreen = () => {
               multiline
             />
 
-            <Pressable style={styles.submitBtn} onPress={submitTransactionForm}>
-              <Text style={styles.submitBtnText}>
-                {transactionModalMode === 'edit' ? 'Lưu thay đổi' : 'Lưu giao dịch'}
-              </Text>
-            </Pressable>
+            <Button
+              title={transactionModalMode === 'edit' ? 'Lưu thay đổi' : 'Lưu giao dịch'}
+              onPress={submitTransactionForm}
+              variant="primary"
+              size="lg"
+            />
           </View>
         </View>
       </Modal>
