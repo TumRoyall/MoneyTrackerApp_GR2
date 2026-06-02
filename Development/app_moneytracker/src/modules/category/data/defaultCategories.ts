@@ -153,7 +153,7 @@ export const defaultCategories: DefaultCategory[] = [
   // =====================
   { name: 'Hoàn tiền', type: 'INCOME', icon: 'cash-refund', color: '#607D8B' },
   { name: 'Bán đồ cũ', type: 'INCOME', icon: 'tag-sell', color: '#607D8B' },
-  { name: 'Thưởng', type: 'INCOME', icon: 'medal', color: '#607D8B' },
+  { name: 'Thu nhập thưởng', type: 'INCOME', icon: 'medal', color: '#607D8B' },
   { name: 'Thu nhập khác', type: 'INCOME', icon: 'cash', color: '#607D8B' },
 ];
 
