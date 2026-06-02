@@ -4,7 +4,7 @@ export const colors = {
   // Primary Brand
   primary: '#29bcc8',
   primaryDark: '#1E8A8F',
-  primaryLight: '#E8F7F9',
+  primaryLight: '#e9fbfd',
 
   // Secondary
   secondary: '#1E6B7C',
