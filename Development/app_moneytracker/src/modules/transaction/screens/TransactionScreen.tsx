@@ -38,20 +38,20 @@ const defaultCategoryTemplates: Array<{
   icon: string;
   color: string;
 }> = [
-    { name: 'Chưa được phân loại', type: 'EXPENSE', icon: '❓', color: '#BFEFF3' },
-    { name: 'Thực phẩm', type: 'EXPENSE', icon: '🛒', color: '#BFEFF3' },
-    { name: 'Thú cưng', type: 'EXPENSE', icon: '🐾', color: '#BFEFF3' },
-    { name: 'Làm đẹp', type: 'EXPENSE', icon: '💄', color: '#BFEFF3' },
-    { name: 'Điện tử', type: 'EXPENSE', icon: '📱', color: '#BFEFF3' },
-    { name: 'Giáo dục', type: 'EXPENSE', icon: '🎓', color: '#BFEFF3' },
-    { name: 'Thể thao', type: 'EXPENSE', icon: '⚽', color: '#BFEFF3' },
-    { name: 'Sức khỏe', type: 'EXPENSE', icon: '💊', color: '#BFEFF3' },
-    { name: 'Du lịch', type: 'EXPENSE', icon: '✈️', color: '#BFEFF3' },
-    { name: 'Giải trí', type: 'EXPENSE', icon: '🎮', color: '#BFEFF3' },
-    { name: 'Lương', type: 'INCOME', icon: '💼', color: '#BFEFF3' },
-    { name: 'Thưởng', type: 'INCOME', icon: '🎁', color: '#BFEFF3' },
-    { name: 'Đầu tư', type: 'INCOME', icon: '📈', color: '#BFEFF3' },
-    { name: 'Khác', type: 'INCOME', icon: '💰', color: '#BFEFF3' },
+    { name: 'Siêu thị', type: 'EXPENSE', icon: 'cart', color: '#4CAF50' },
+    { name: 'Đồ ăn', type: 'EXPENSE', icon: 'food-fork-drink', color: '#4CAF50' },
+    { name: 'Thú cưng', type: 'EXPENSE', icon: 'dog', color: '#FFC107' },
+    { name: 'Làm đẹp', type: 'EXPENSE', icon: 'lipstick', color: '#E91E63' },
+    { name: 'Điện tử', type: 'EXPENSE', icon: 'cellphone', color: '#2196F3' },
+    { name: 'Sách', type: 'EXPENSE', icon: 'book', color: '#FF9800' },
+    { name: 'Gym/Fitness', type: 'EXPENSE', icon: 'dumbbell', color: '#F44336' },
+    { name: 'Sức khỏe', type: 'EXPENSE', icon: 'pill', color: '#F44336' },
+    { name: 'Du lịch', type: 'EXPENSE', icon: 'beach', color: '#9C27B0' },
+    { name: 'Giải trí', type: 'EXPENSE', icon: 'gamepad-variant', color: '#9C27B0' },
+    { name: 'Lương', type: 'INCOME', icon: 'briefcase', color: '#1565C0' },
+    { name: 'Thưởng', type: 'INCOME', icon: 'trophy', color: '#1565C0' },
+    { name: 'Đầu tư', type: 'INCOME', icon: 'chart-timeline-variant', color: '#FFD700' },
+    { name: 'Thu nhập khác', type: 'INCOME', icon: 'cash', color: '#607D8B' },
   ];
 
 const defaultCategoryIconByType: Record<CategoryType, string> = {
