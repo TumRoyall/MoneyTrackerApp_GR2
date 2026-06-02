@@ -1,4 +1,5 @@
 import { executeBatch, executeSql, queryOne } from '@/core/db/sqlite';
+import { defaultCategories } from '@/modules/category/data/defaultCategories';
 
 type Migration = {
   version: number;
@@ -90,6 +91,21 @@ const setUserVersion = async (version: number) => {
   await executeSql(`PRAGMA user_version = ${version}`);
 };
 
+const seedDefaultCategories = async () => {
+  const now = new Date().toISOString();
+
+  for (const cat of defaultCategories) {
+    const categoryId = `default_${cat.type.toLowerCase()}_${cat.name.toLowerCase().replace(/\s+/g, '_')}`;
+
+    await executeSql(
+      `INSERT OR REPLACE INTO categories
+       (categoryId, name, type, icon, color, isDefault, isHidden, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?)`,
+      [categoryId, cat.name, cat.type, cat.icon, cat.color, now, now]
+    );
+  }
+};
+
 export const runMigrations = async () => {
   const currentVersion = await getUserVersion();
   const pending = migrations.filter((m) => m.version > currentVersion).sort((a, b) => a.version - b.version);
@@ -97,5 +113,10 @@ export const runMigrations = async () => {
   for (const migration of pending) {
     await executeBatch(migration.statements);
     await setUserVersion(migration.version);
+
+    // Seed default categories after migration v1 (which creates categories table)
+    if (migration.version === 1) {
+      await seedDefaultCategories();
+    }
   }
 };
