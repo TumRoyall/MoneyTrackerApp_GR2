@@ -1,4 +1,4 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
@@ -15,6 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Button, FAB, EmptyState, colors, spacing } from '@/components/common';
 import { useEventUsecases } from '@/modules/event/usecases';
 import type { Event } from '@/modules/event/models/event.types';
 import { formatCurrency } from '@/shared/utils/money';
@@ -132,12 +133,14 @@ export default function EventListScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Sự kiện</Text>
         <View style={styles.headerActions}>
-          <Pressable style={styles.headerBtn} onPress={() => setShowJoinModal(true)}>
-            <Ionicons name="enter-outline" size={22} color="#1f1f1f" />
-          </Pressable>
-          <Pressable style={styles.addBtn} onPress={() => setShowCreateModal(true)}>
-            <Ionicons name="add" size={24} color="#fff" />
-          </Pressable>
+          <Button
+            title=""
+            variant="ghost"
+            size="sm"
+            iconLeft={<Ionicons name="enter-outline" size={22} color="#1f1f1f" />}
+            onPress={() => setShowJoinModal(true)}
+            style={styles.headerBtn}
+          />
         </View>
       </View>
 
@@ -147,25 +150,27 @@ export default function EventListScreen() {
           <ActivityIndicator size="large" color="#29bcc8" />
         </View>
       ) : hasError ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>⚠️</Text>
-          <Text style={styles.emptyTitle}>Không thể tải sự kiện</Text>
-          <Text style={styles.emptyText}>Vui lòng kiểm tra kết nối và thử lại</Text>
-          <Pressable style={styles.createBtn} onPress={() => eventsQuery.refetch()}>
-            <Ionicons name="refresh" size={20} color="#fff" />
-            <Text style={styles.createBtnText}>Thử lại</Text>
-          </Pressable>
-        </View>
+        <EmptyState
+          icon="⚠️"
+          title="Không thể tải sự kiện"
+          description="Vui lòng kiểm tra kết nối và thử lại"
+          action={{
+            title: "Thử lại",
+            icon: <Ionicons name="refresh" size={20} color="#fff" />,
+            onPress: () => eventsQuery.refetch(),
+          }}
+        />
       ) : isEmpty ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🎉</Text>
-          <Text style={styles.emptyTitle}>Chưa có sự kiện nào</Text>
-          <Text style={styles.emptyText}>Tạo sự kiện để cùng bạn bè ghi nhận chi tiêu chung</Text>
-          <Pressable style={styles.createBtn} onPress={() => setShowCreateModal(true)}>
-            <Ionicons name="add" size={20} color="#fff" />
-            <Text style={styles.createBtnText}>Tạo sự kiện</Text>
-          </Pressable>
-        </View>
+        <EmptyState
+          icon="🎉"
+          title="Chưa có sự kiện nào"
+          description="Tạo sự kiện để cùng bạn bè ghi nhận chi tiêu chung"
+          action={{
+            title: "Tạo sự kiện",
+            icon: <Ionicons name="add" size={20} color="#fff" />,
+            onPress: () => setShowCreateModal(true),
+          }}
+        />
       ) : (
         <FlatList
           data={events}
@@ -173,6 +178,15 @@ export default function EventListScreen() {
           keyExtractor={(item) => item.eventId}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+        />
+      )}
+
+      {/* FAB for create event */}
+      {!isEmpty && !isLoading && (
+        <FAB
+          icon={<Ionicons name="add" size={24} color="#fff" />}
+          label="Tạo sự kiện"
+          onPress={() => setShowCreateModal(true)}
         />
       )}
 
@@ -217,12 +231,11 @@ export default function EventListScreen() {
               multiline
             />
 
-            <Pressable
+            <Button
+              title="Tạo sự kiện"
               onPress={handleCreateEvent}
-              style={({ pressed }) => [styles.submitBtn, pressed && styles.submitBtnPressed]}
-            >
-              <Text style={styles.submitBtnText}>Tạo sự kiện</Text>
-            </Pressable>
+              size="lg"
+            />
           </View>
         </View>
       </Modal>
@@ -249,12 +262,11 @@ export default function EventListScreen() {
               maxLength={6}
             />
 
-            <Pressable
+            <Button
+              title="Tham gia"
               onPress={handleJoinEvent}
-              style={({ pressed }) => [styles.submitBtn, pressed && styles.submitBtnPressed]}
-            >
-              <Text style={styles.submitBtnText}>Tham gia</Text>
-            </Pressable>
+              size="lg"
+            />
           </View>
         </View>
       </Modal>
@@ -265,52 +277,42 @@ export default function EventListScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f5f7f9',
+    backgroundColor: colors.bgPrimary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    backgroundColor: colors.bgSecondary,
     borderBottomWidth: 1,
-    borderBottomColor: '#e8ebef',
+    borderBottomColor: colors.borderLight,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   headerBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f0f2f4',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#29bcc8',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.bgTertiary,
   },
   listContent: {
-    padding: 16,
+    padding: spacing.lg,
     gap: 12,
   },
   eventCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgSecondary,
     borderRadius: 16,
     padding: 16,
     gap: 14,
@@ -338,7 +340,7 @@ const styles = StyleSheet.create({
   eventName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   eventMeta: {
     flexDirection: 'row',
@@ -347,7 +349,7 @@ const styles = StyleSheet.create({
   },
   eventMetaText: {
     fontSize: 13,
-    color: '#6c737a',
+    color: colors.textSecondary,
   },
   eventStatusBadge: {
     paddingHorizontal: 10,
@@ -363,53 +365,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-    gap: 12,
-  },
-  emptyIcon: {
-    fontSize: 64,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1f1f1f',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#6c737a',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  createBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#29bcc8',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 16,
-    marginTop: 8,
-  },
-  createBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgSecondary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    gap: 16,
+    gap: spacing.md,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -419,22 +385,22 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#5f6b75',
+    color: colors.textSecondary,
   },
   input: {
     minHeight: 52,
     borderWidth: 1,
-    borderColor: '#d8dde3',
+    borderColor: colors.borderMedium,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
-    color: '#1a1a1a',
+    backgroundColor: colors.bgSecondary,
+    color: colors.textPrimary,
     fontSize: 16,
   },
   textArea: {
@@ -448,30 +414,12 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f0f2f4',
+    backgroundColor: colors.bgTertiary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   iconOptionSelected: {
-    backgroundColor: '#29bcc8',
-  },
-  iconOptionText: {
-    fontSize: 24,
-  },
-  submitBtn: {
-    backgroundColor: '#29bcc8',
-    borderRadius: 16,
-    minHeight: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitBtnPressed: {
-    opacity: 0.85,
-  },
-  submitBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    backgroundColor: colors.primary,
   },
 });
