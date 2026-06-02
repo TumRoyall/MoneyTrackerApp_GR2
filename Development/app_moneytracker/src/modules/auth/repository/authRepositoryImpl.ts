@@ -1,3 +1,4 @@
+import * as SecureStore from 'expo-secure-store';
 import { tokenStorage } from '@/core/storage/tokenStorage';
 import {
   AuthLoginResponseDto,
@@ -23,6 +24,13 @@ export class AuthRepositoryImpl implements AuthRepository {
   async login(payload: LoginRequestDto): Promise<AuthLoginResponseDto> {
     const result = await this.remote.login(payload);
     await tokenStorage.setAccessToken(result.token);
+    if (result.user?.fullName) {
+      try {
+        await SecureStore.setItemAsync('display_username', result.user.fullName);
+      } catch (e) {
+        console.warn('Failed to save username to SecureStore', e);
+      }
+    }
     return result;
   }
 

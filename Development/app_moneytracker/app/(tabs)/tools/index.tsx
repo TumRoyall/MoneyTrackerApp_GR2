@@ -42,6 +42,13 @@ export default function ToolsScreen() {
       icon: 'trophy-outline',
       onPress: () => {},
     },
+    {
+      id: 'events',
+      title: 'Sự kiện',
+      description: 'Cùng bạn bè ghi nhận chi tiêu chung cho các sự kiện: cầu lông, sinh nhật, du lịch...',
+      icon: 'calendar-outline',
+      onPress: () => router.push('/tools/events'),
+    },
   ];
 
   return (
