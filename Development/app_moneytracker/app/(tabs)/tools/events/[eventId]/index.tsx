@@ -17,6 +17,7 @@ import { useState, useEffect } from 'react';
 import { useEventUsecases } from '@/modules/event/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
+import { Button, BackButton, FAB, colors, spacing } from '@/components/common';
 import type { EventDetail, EventMember, EventTransaction, Settlement, CreateEventTransactionInput } from '@/modules/event/models/event.types';
 import { formatCurrency, parseMoneyInput } from '@/shared/utils/money';
 
@@ -199,9 +200,7 @@ export default function EventDetailScreen() {
     <View style={styles.screen}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.push('/(tabs)/tools/events')} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
-        </Pressable>
+        <BackButton to="/(tabs)/tools/events" />
         <View style={styles.headerTitle}>
           <Text style={styles.eventIcon}>{event.icon || '🎉'}</Text>
           <Text style={styles.eventName}>{event.name}</Text>
@@ -311,9 +310,7 @@ export default function EventDetailScreen() {
 
       {/* Add Transaction FAB */}
       {event.status === 'ACTIVE' && (
-        <Pressable style={styles.fab} onPress={() => setShowAddTxModal(true)}>
-          <Ionicons name="add" size={32} color="#fff" />
-        </Pressable>
+        <FAB icon="add" onPress={() => setShowAddTxModal(true)} />
       )}
 
       {/* Add Transaction Modal */}
@@ -382,17 +379,12 @@ export default function EventDetailScreen() {
               </>
             )}
 
-            <Pressable
+            <Button
+              title="Thêm chi tiêu"
               onPress={handleAddTransaction}
-              style={({ pressed }) => [styles.submitBtn, pressed && styles.submitBtnPressed]}
-              disabled={addTransactionMutation.isPending}
-            >
-              {addTransactionMutation.isPending ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitBtnText}>Thêm chi tiêu</Text>
-              )}
-            </Pressable>
+              variant="primary"
+              loading={addTransactionMutation.isPending}
+            />
           </ScrollView>
         </View>
       </Modal>
@@ -498,12 +490,11 @@ export default function EventDetailScreen() {
                 ))}
 
                 {event.status === 'ACTIVE' && (
-                  <Pressable
+                  <Button
+                    title="Hoàn thành kết toán"
                     onPress={handleSettle}
-                    style={({ pressed }) => [styles.settleBtn, pressed && styles.settleBtnPressed]}
-                  >
-                    <Text style={styles.settleBtnText}>Hoàn thành kết toán</Text>
-                  </Pressable>
+                    variant="primary"
+                  />
                 )}
               </>
             ) : (
@@ -554,7 +545,7 @@ const formatCurrencyInput = (value: string): string => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f5f7f9',
+    backgroundColor: colors.backgroundSecondary,
   },
   loadingContainer: {
     flex: 1,
@@ -568,25 +559,18 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#6c737a',
+    color: colors.textSecondary,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     paddingTop: 60,
-    paddingBottom: 16,
-    backgroundColor: '#fff',
+    paddingBottom: spacing.md,
+    backgroundColor: colors.backgroundPrimary,
     borderBottomWidth: 1,
     borderBottomColor: '#e8ebef',
     gap: 12,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   headerTitle: {
     flex: 1,
@@ -600,7 +584,7 @@ const styles = StyleSheet.create({
   eventName: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   headerActions: {
     flexDirection: 'row',
@@ -615,12 +599,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: {
-    padding: 16,
-    gap: 16,
+    padding: spacing.md,
+    gap: spacing.md,
     paddingBottom: 100,
   },
   overviewCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     borderRadius: 20,
     padding: 20,
     gap: 16,
@@ -628,7 +612,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   overviewRow: {
     flexDirection: 'row',
@@ -644,7 +628,7 @@ const styles = StyleSheet.create({
   },
   overviewLabel: {
     fontSize: 12,
-    color: '#6c737a',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   overviewDivider: {
@@ -662,15 +646,15 @@ const styles = StyleSheet.create({
   },
   perPersonLabel: {
     fontSize: 14,
-    color: '#6c737a',
+    color: colors.textSecondary,
   },
   perPersonValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     borderRadius: 20,
     padding: 20,
     gap: 16,
@@ -682,7 +666,7 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#6c737a',
+    color: colors.textSecondary,
   },
   memberRow: {
     flexDirection: 'row',
@@ -703,7 +687,7 @@ const styles = StyleSheet.create({
   memberAvatarText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#29bcc8',
+    color: colors.primary,
   },
   memberInfo: {
     flex: 1,
@@ -717,7 +701,7 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   ownerBadge: {
     backgroundColor: '#fef3c7',
@@ -732,7 +716,7 @@ const styles = StyleSheet.create({
   },
   memberContribution: {
     fontSize: 12,
-    color: '#6c737a',
+    color: colors.textSecondary,
   },
   balanceBadge: {
     paddingHorizontal: 10,
@@ -766,38 +750,22 @@ const styles = StyleSheet.create({
   txNote: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   txMeta: {
     fontSize: 12,
-    color: '#6c737a',
+    color: colors.textSecondary,
   },
   txAmount: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#f36e79',
+    color: colors.error,
   },
   emptyText: {
     fontSize: 14,
-    color: '#6c737a',
+    color: colors.textSecondary,
     textAlign: 'center',
     paddingVertical: 20,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 96,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#29bcc8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
   },
   modalOverlay: {
     flex: 1,
@@ -805,7 +773,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -814,7 +782,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -831,7 +799,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   label: {
     fontSize: 14,
@@ -845,8 +813,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
-    color: '#1a1a1a',
+    backgroundColor: colors.backgroundPrimary,
+    color: colors.textPrimary,
     fontSize: 16,
   },
   textArea: {
@@ -860,14 +828,14 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   selectBtnText: {
     fontSize: 16,
-    color: '#1a1a1a',
+    color: colors.textPrimary,
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -880,25 +848,10 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 15,
-    color: '#1f1f1f',
-  },
-  submitBtn: {
-    backgroundColor: '#29bcc8',
-    borderRadius: 16,
-    minHeight: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitBtnPressed: {
-    opacity: 0.85,
-  },
-  submitBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    color: colors.textPrimary,
   },
   pickerSheet: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -913,7 +866,7 @@ const styles = StyleSheet.create({
   pickerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   pickerItem: {
     flexDirection: 'row',
@@ -932,11 +885,11 @@ const styles = StyleSheet.create({
   pickerItemText: {
     flex: 1,
     fontSize: 16,
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   pickerItemBalance: {
     fontSize: 14,
-    color: '#6c737a',
+    color: colors.textSecondary,
   },
   settlementSummary: {
     backgroundColor: '#f0f7f9',
@@ -955,7 +908,7 @@ const styles = StyleSheet.create({
   settlementValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   settlementItem: {
     backgroundColor: '#f0f2f4',
@@ -965,22 +918,7 @@ const styles = StyleSheet.create({
   settlementItemText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1f1f1f',
-  },
-  settleBtn: {
-    backgroundColor: '#34a795',
-    borderRadius: 16,
-    minHeight: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settleBtnPressed: {
-    opacity: 0.85,
-  },
-  settleBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
+    color: colors.textPrimary,
   },
   shareCodeBox: {
     flexDirection: 'row',
@@ -993,12 +931,12 @@ const styles = StyleSheet.create({
   shareCodeText: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
     letterSpacing: 4,
   },
   shareLinkText: {
     fontSize: 14,
-    color: '#29bcc8',
+    color: colors.primary,
     flex: 1,
   },
 });
