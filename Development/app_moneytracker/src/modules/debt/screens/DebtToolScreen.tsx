@@ -7,13 +7,13 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing } from '@/components/common';
 import { useDebtUsecases } from '@/modules/debt/usecases';
 import { Debt } from '@/modules/debt/models/debt.types';
 import { formatMoneyInput, formatVndAmount, parseMoneyInput } from '@/shared/utils/money';
@@ -119,46 +119,49 @@ export const DebtToolScreen = () => {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools')}>
-            <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
-          </Pressable>
+          <BackButton to="/(tabs)/tools" />
           <Text style={styles.title}>Món nợ</Text>
           <View style={{ width: 24 }} />
         </View>
 
         <View style={styles.toggleRow}>
           <Text style={styles.toggleLabel}>Ẩn đã hoàn thành</Text>
-          <Switch
-            value={hideCompleted}
-            onValueChange={setHideCompleted}
-            trackColor={{ false: '#d4dde3', true: '#33c3cd' }}
-            thumbColor={hideCompleted ? '#ffffff' : '#f1f5f8'}
-          />
+          <Switch value={hideCompleted} onValueChange={setHideCompleted} />
         </View>
 
-        <View style={styles.totalSummaryCard}>
-          <Ionicons name="wallet" size={18} color="#2bb6c2" />
-          <Text style={styles.totalSummaryText}>Tổng đã trả</Text>
-          <Text style={styles.totalSummaryAmount}>{formatVndAmount(totalPaidAllTime)}</Text>
-        </View>
+        <Card variant="elevated" style={styles.totalSummaryCard}>
+          <View style={styles.totalSummaryContent}>
+            <Ionicons name="wallet" size={18} color={colors.primary} />
+            <Text style={styles.totalSummaryText}>Tổng đã trả</Text>
+            <Text style={styles.totalSummaryAmount}>{formatVndAmount(totalPaidAllTime)}</Text>
+          </View>
+        </Card>
 
         {debtsQuery.isLoading ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>Đang tải món nợ...</Text>
-          </View>
+          <EmptyState
+            icon="📊"
+            title="Đang tải món nợ..."
+            description="Vui lòng đợi trong giây lát."
+          />
         ) : filteredDebts.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Chưa có món nợ</Text>
-            <Text style={styles.emptyText}>Hãy tạo món nợ đầu tiên của bạn.</Text>
-          </View>
+          <EmptyState
+            icon="💳"
+            title="Chưa có món nợ"
+            description="Hãy tạo món nợ đầu tiên của bạn."
+            action={{
+              title: 'Tạo món nợ',
+              onPress: () => setShowCreateModal(true),
+            }}
+          />
         ) : (
           filteredDebts.map((debt) => {
             const { totalPaid, target, percent } = buildProgress(debt);
             const remaining = Math.max(target - totalPaid, 0);
 
             return (
-              <Pressable
+              <Card
                 key={debt.debtId}
+                variant="elevated"
                 style={styles.debtCard}
                 onPress={() =>
                   router.push({
@@ -198,22 +201,18 @@ export const DebtToolScreen = () => {
                   <Text style={styles.metaText}>Mục tiêu: {formatDisplayDate(debt.targetDate)}</Text>
                 </View>
 
-                <View style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width: `${percent}%` }]} />
-                  <View style={styles.progressBubble}>
-                    <Text style={styles.progressBubbleText}>{`${Math.round(percent)}%`}</Text>
-                  </View>
-                </View>
-              </Pressable>
+                <ProgressBar value={percent} showLabel />
+              </Card>
             );
           })
         )}
       </ScrollView>
 
-      <Pressable style={styles.fab} onPress={() => setShowCreateModal(true)}>
-        <Ionicons name="add" size={24} color="#fff" />
-        <Text style={styles.fabText}>Thêm món nợ</Text>
-      </Pressable>
+      <FAB
+        icon={<Ionicons name="add" size={24} color="#fff" />}
+        label="Thêm món nợ"
+        onPress={() => setShowCreateModal(true)}
+      />
 
       <Modal visible={showCreateModal} transparent animationType="slide" onRequestClose={() => setShowCreateModal(false)}>
         <View style={styles.modalOverlay}>
@@ -277,9 +276,7 @@ export const DebtToolScreen = () => {
 
             <Text style={styles.noteText}>Ví nợ sẽ được tạo tự động với tên món nợ.</Text>
 
-            <Pressable style={styles.saveBtn} onPress={createDebtHandler}>
-              <Text style={styles.saveBtnText}>Lưu</Text>
-            </Pressable>
+            <Button title="Lưu" onPress={createDebtHandler} style={styles.saveBtn} />
           </View>
         </View>
       </Modal>
@@ -290,11 +287,11 @@ export const DebtToolScreen = () => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f5f7f9',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 16,
-    gap: 14,
+    padding: spacing.md,
+    gap: spacing.md,
     paddingBottom: 24,
   },
   headerRow: {
@@ -302,16 +299,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  backBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   title: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1f1f1f',
+    color: colors.text,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -320,53 +311,30 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     fontSize: 14,
-    color: '#3b4b54',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   totalSummaryCard: {
+    padding: spacing.md,
+  },
+  totalSummaryContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e4edf0',
+    gap: spacing.sm,
   },
   totalSummaryText: {
     flex: 1,
     fontSize: 13,
-    color: '#4d5b64',
+    color: colors.textSecondary,
   },
   totalSummaryAmount: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1f1f1f',
-  },
-  emptyCard: {
-    borderRadius: 14,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e6ecef',
-    padding: 20,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1f1f1f',
-    marginBottom: 4,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#667179',
+    color: colors.text,
   },
   debtCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#e3edf1',
-    backgroundColor: '#fff',
-    padding: 16,
-    gap: 12,
+    padding: spacing.md,
+    gap: spacing.md,
   },
   debtCardHeader: {
     flexDirection: 'row',
@@ -376,7 +344,7 @@ const styles = StyleSheet.create({
   debtTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.text,
   },
   editButton: {
     width: 28,
@@ -392,24 +360,24 @@ const styles = StyleSheet.create({
   amountPrimary: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1f1f1f',
+    color: colors.text,
   },
   amountSecondary: {
     fontSize: 14,
-    color: '#7a8790',
+    color: colors.textSecondary,
   },
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   metaText: {
     fontSize: 12,
-    color: '#6b7780',
+    color: colors.textSecondary,
   },
   typeChip: {
-    backgroundColor: '#f0f6f9',
+    backgroundColor: colors.primaryLight,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
@@ -417,55 +385,7 @@ const styles = StyleSheet.create({
   typeChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#2a6b84',
-  },
-  progressTrack: {
-    height: 10,
-    borderRadius: 8,
-    backgroundColor: '#ecf1f4',
-    overflow: 'hidden',
-    position: 'relative',
-    marginTop: 4,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#2bb6c2',
-  },
-  progressBubble: {
-    position: 'absolute',
-    right: 8,
-    top: -18,
-    backgroundColor: '#2bb6c2',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  progressBubbleText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#2a6b84',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-  },
-  fabText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
+    color: colors.primary,
   },
   modalOverlay: {
     flex: 1,
@@ -473,11 +393,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 20,
-    gap: 12,
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -487,20 +407,20 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1f1f1f',
+    color: colors.text,
   },
   modalSubtitle: {
     fontSize: 13,
-    color: '#7b8891',
+    color: colors.textSecondary,
   },
   input: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e2e8ec',
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#1f1f1f',
+    color: colors.text,
   },
   dropdownWrapper: {
     position: 'relative',
@@ -509,17 +429,17 @@ const styles = StyleSheet.create({
   dropdownInput: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e2e8ec',
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
   },
   dropdownText: {
     fontSize: 15,
-    color: '#1f1f1f',
+    color: colors.text,
     fontWeight: '600',
   },
   dropdownMenu: {
@@ -529,8 +449,8 @@ const styles = StyleSheet.create({
     right: 0,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#e2e8ec',
-    backgroundColor: '#fff',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     paddingVertical: 6,
   },
   dropdownMenuItem: {
@@ -539,23 +459,14 @@ const styles = StyleSheet.create({
   },
   dropdownMenuItemText: {
     fontSize: 14,
-    color: '#1f1f1f',
+    color: colors.text,
     fontWeight: '600',
   },
   noteText: {
     fontSize: 12,
-    color: '#7b8891',
+    color: colors.textSecondary,
   },
   saveBtn: {
-    backgroundColor: '#22b8c8',
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  saveBtnText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#fff',
+    marginTop: spacing.xs,
   },
 });
