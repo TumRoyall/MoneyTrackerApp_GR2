@@ -4,15 +4,15 @@ import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Modal,
-  Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+
+import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing } from '@/components/common';
 
 import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
@@ -315,21 +315,14 @@ export const BudgetToolScreen = () => {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools')}>
-            <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
-          </Pressable>
+          <BackButton to="/(tabs)/tools" />
           <Text style={styles.title}>Ngân sách</Text>
           <View style={{ width: 24 }} />
         </View>
 
         <View style={styles.walletToggleRow}>
           <Text style={styles.walletToggleLabel}>Hiển thị tất cả ví</Text>
-          <Switch
-            value={showAllWallets}
-            onValueChange={setShowAllWallets}
-            trackColor={{ false: '#d4dde3', true: '#33c3cd' }}
-            thumbColor={showAllWallets ? '#ffffff' : '#f1f5f8'}
-          />
+          <Switch value={showAllWallets} onValueChange={setShowAllWallets} />
         </View>
 
         {!showAllWallets ? (
@@ -357,10 +350,12 @@ export const BudgetToolScreen = () => {
             <Text style={styles.emptyText}>Đang tải ngân sách...</Text>
           </View>
         ) : filteredBudgets.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Chưa có ngân sách</Text>
-            <Text style={styles.emptyText}>Bạn có thể tạo ngân sách đầu tiên bằng nút bên dưới.</Text>
-          </View>
+          <EmptyState
+            icon="💰"
+            title="Chưa có ngân sách"
+            description="Bạn có thể tạo ngân sách đầu tiên bằng nút bên dưới."
+            action={{ title: "Tạo ngân sách", onPress: () => setShowCreateModal(true) }}
+          />
         ) : (
           filteredBudgets.map((budget) => {
             const categoriesForBudget = (budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []))
@@ -398,16 +393,13 @@ export const BudgetToolScreen = () => {
             const neededAmount = Math.max(targetAmount - spent, 0);
 
             return (
-              <Pressable
-                key={budget.budgetId}
-                style={styles.budgetCard}
-                onPress={() =>
+              <Card variant="elevated" key={budget.budgetId}>
+                <Pressable onPress={() =>
                   router.push({
                     pathname: '/(tabs)/tools/budgets/[budgetId]',
                     params: { budgetId: budget.budgetId },
                   })
-                }
-              >
+                }>
                 <View style={styles.budgetCardHeader}>
                   <Text style={styles.budgetTitle}>{title}</Text>
                   <Pressable
@@ -466,19 +458,15 @@ export const BudgetToolScreen = () => {
                     : `${formatVndAmount(remainingAmount)} còn lại`}
                 </Text>
 
-                <View style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width: `${percent}%` }]} />
-                </View>
-              </Pressable>
+                <ProgressBar value={percent} showLabel />
+                </Pressable>
+              </Card>
             );
           })
         )}
       </ScrollView>
 
-      <Pressable style={styles.fab} onPress={() => setShowCreateModal(true)}>
-        <Ionicons name="add" size={24} color="#fff" />
-        <Text style={styles.fabText}>Thêm ngân sách</Text>
-      </Pressable>
+      <FAB icon={<Ionicons name="add" size={24} color="#fff" />} label="Thêm ngân sách" onPress={() => setShowCreateModal(true)} />
 
       <Modal visible={showCreateModal} transparent animationType="slide" onRequestClose={() => setShowCreateModal(false)}>
         <View style={styles.modalOverlay}>
@@ -623,9 +611,7 @@ export const BudgetToolScreen = () => {
               )}
             </ScrollView>
 
-            <Pressable style={styles.saveBtn} onPress={createBudgetHandler}>
-              <Text style={styles.saveBtnText}>Lưu</Text>
-            </Pressable>
+            <Button title="Lưu" onPress={createBudgetHandler} />
           </View>
         </View>
       </Modal>
@@ -692,12 +678,8 @@ export const BudgetToolScreen = () => {
             </View>
 
             <View style={styles.rangeActionRow}>
-              <Pressable style={styles.rangeGhostBtn} onPress={() => setShowCalendarModal(false)}>
-                <Text style={styles.rangeGhostBtnText}>Hủy</Text>
-              </Pressable>
-              <Pressable style={styles.rangeConfirmBtn} onPress={applyCalendarSelection}>
-                <Text style={styles.rangeConfirmBtnText}>OK</Text>
-              </Pressable>
+              <Button title="Hủy" variant="ghost" onPress={() => setShowCalendarModal(false)} />
+              <Button title="OK" onPress={applyCalendarSelection} />
             </View>
           </View>
         </View>
@@ -743,9 +725,7 @@ export const BudgetToolScreen = () => {
               )}
             </ScrollView>
 
-            <Pressable style={styles.categoryPickerDoneButton} onPress={() => setShowCategoryPickerModal(false)}>
-              <Text style={styles.categoryPickerDoneButtonText}>Xong</Text>
-            </Pressable>
+            <Button title="Xong" onPress={() => setShowCategoryPickerModal(false)} />
           </View>
         </View>
       </Modal>
