@@ -21,6 +21,9 @@ import {
   FAB,
   ProgressBar,
   Switch,
+  colors,
+  spacing,
+  typography,
 } from '@/components/common';
 import { useSavingUsecases } from '@/modules/saving/usecases';
 import { Saving, SavingPeriodUnit, SavingType } from '@/modules/saving/models/saving.types';
@@ -428,9 +431,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1f1f1f',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: typography.weights.bold,
+    color: colors.textPrimary,
   },
   toggleRow: {
     flexDirection: 'row',

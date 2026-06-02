@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TextInputProps } from 'react-native';
+import { StyleSheet, StyleProp, Text, View, TextInput, TextInputProps, TextStyle } from 'react-native';
 import { colors, borderRadius, spacing, typography } from './theme';
 
 interface InputProps extends TextInputProps {
@@ -20,18 +20,18 @@ export const Input = ({
 }: InputProps) => {
   const [isFocused, setIsFocused] = useState(false);
 
+  const inputStyles: StyleProp<TextStyle>[] = [styles.input];
+  if (leftIcon) inputStyles.push(styles.inputWithLeftIcon);
+  if (rightIcon) inputStyles.push(styles.inputWithRightIcon);
+  if (style) inputStyles.push(style as TextStyle);
+
   return (
     <View style={styles.wrapper}>
       {label && <Text style={styles.label}>{label}</Text>}
       <View style={[styles.inputWrapper, error && styles.inputError, isFocused && { borderColor: colors.primary }]}>
         {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
         <TextInput
-          style={[
-            styles.input,
-            leftIcon && styles.inputWithLeftIcon,
-            rightIcon && styles.inputWithRightIcon,
-            style,
-          ]}
+          style={inputStyles}
           placeholderTextColor={colors.textTertiary}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}

@@ -21,6 +21,10 @@ import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
 import { TransactionFilters } from '@/modules/transaction/models/transaction.types';
 import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing } from '@/components/common';
+import { useStreakUsecases } from '@/modules/streak/usecases/useStreakUsecases';
+import { formatCurrency } from '@/shared/utils/money';
+import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/money';
+import { StreakScreen } from '@/modules/streak/screens';
 
 type CategoryType = 'EXPENSE' | 'INCOME';
 type TimeMode = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';

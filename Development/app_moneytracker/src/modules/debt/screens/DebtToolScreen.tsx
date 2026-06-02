@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing } from '@/components/common';
+import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing, typography } from '@/components/common';
 import { useDebtUsecases } from '@/modules/debt/usecases';
 import { Debt } from '@/modules/debt/models/debt.types';
 import { formatMoneyInput, formatVndAmount, parseMoneyInput } from '@/shared/utils/money';
@@ -300,9 +300,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.text,
+    fontSize: typography.sizes['3xl'],
+    fontWeight: typography.weights.bold,
+    color: colors.textPrimary,
   },
   toggleRow: {
     flexDirection: 'row',

@@ -1,5 +1,5 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+let __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -8,8 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+let __generator = (this && this.__generator) || function (thisArg, body) {
+    let _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
     return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
@@ -35,7 +35,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+let __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
         if (ar || !(i in from)) {
             if (!ar) ar = Array.prototype.slice.call(from, 0, i);
@@ -46,61 +46,61 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BudgetToolScreen = void 0;
-var react_1 = require("react");
-var vector_icons_1 = require("@expo/vector-icons");
-var react_query_1 = require("@tanstack/react-query");
-var react_native_1 = require("react-native");
-var expo_router_1 = require("expo-router");
-var usecases_1 = require("@/modules/budget/usecases");
-var usecases_2 = require("@/modules/category/usecases");
-var usecases_3 = require("@/modules/wallet/usecases");
-var money_1 = require("@/shared/utils/money");
-var formatDateVi = function (isoDate) {
-    var _a = isoDate.split('-').map(Number), year = _a[0], month = _a[1], day = _a[2];
+let react_1 = require("react");
+let vector_icons_1 = require("@expo/vector-icons");
+let react_query_1 = require("@tanstack/react-query");
+let react_native_1 = require("react-native");
+let expo_router_1 = require("expo-router");
+let usecases_1 = require("@/modules/budget/usecases");
+let usecases_2 = require("@/modules/category/usecases");
+let usecases_3 = require("@/modules/wallet/usecases");
+let money_1 = require("@/shared/utils/money");
+let formatDateVi = function (isoDate) {
+    let _a = isoDate.split('-').map(Number), year = _a[0], month = _a[1], day = _a[2];
     if (!year || !month || !day) {
         return isoDate;
     }
     return "".concat(day, " thg ").concat(month, ", ").concat(year);
 };
-var parseIsoDate = function (value) {
-    var _a = value.split('-').map(function (item) { return Number(item); }), year = _a[0], month = _a[1], day = _a[2];
+let parseIsoDate = function (value) {
+    let _a = value.split('-').map(function (item) { return Number(item); }), year = _a[0], month = _a[1], day = _a[2];
     if (!year || !month || !day) {
         return null;
     }
-    var parsed = new Date(year, month - 1, day);
+    let parsed = new Date(year, month - 1, day);
     if (Number.isNaN(parsed.getTime())) {
         return null;
     }
     return parsed;
 };
-var normalizeCategoryType = function (value) {
-    var stringValue = String(value || '').toUpperCase();
+let normalizeCategoryType = function (value) {
+    let stringValue = String(value || '').toUpperCase();
     return stringValue === 'INCOME' ? 'INCOME' : 'EXPENSE';
 };
-var isSameDate = function (left, right) {
+let isSameDate = function (left, right) {
     return left.getFullYear() === right.getFullYear() &&
         left.getMonth() === right.getMonth() &&
         left.getDate() === right.getDate();
 };
-var buildCalendarMatrix = function (monthDate) {
-    var firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-    var startOffset = (firstDay.getDay() + 6) % 7;
-    var startDate = new Date(firstDay.getFullYear(), firstDay.getMonth(), 1 - startOffset);
+let buildCalendarMatrix = function (monthDate) {
+    let firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    let startOffset = (firstDay.getDay() + 6) % 7;
+    let startDate = new Date(firstDay.getFullYear(), firstDay.getMonth(), 1 - startOffset);
     return Array.from({ length: 42 }, function (_, index) {
-        var date = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + index);
-        var inCurrentMonth = date.getMonth() === monthDate.getMonth();
+        let date = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + index);
+        let inCurrentMonth = date.getMonth() === monthDate.getMonth();
         return { date: date, inCurrentMonth: inCurrentMonth };
     });
 };
-var getPeriodEndDate = function (startDateIso, periodType) {
-    var _a = startDateIso.split('-').map(Number), year = _a[0], month = _a[1], day = _a[2];
+let getPeriodEndDate = function (startDateIso, periodType) {
+    let _a = startDateIso.split('-').map(Number), year = _a[0], month = _a[1], day = _a[2];
     if (!year || !month || !day) {
         return startDateIso;
     }
-    var start = new Date(year, month - 1, day);
-    var end = new Date(start);
-    var preserveDay = start.getDate();
-    var normalizeMonthEnd = function () {
+    let start = new Date(year, month - 1, day);
+    let end = new Date(start);
+    let preserveDay = start.getDate();
+    let normalizeMonthEnd = function () {
         if (end.getDate() !== preserveDay) {
             end.setDate(0);
         }
@@ -131,75 +131,75 @@ var getPeriodEndDate = function (startDateIso, periodType) {
     }
     return "".concat(end.getFullYear(), "-").concat("".concat(end.getMonth() + 1).padStart(2, '0'), "-").concat("".concat(end.getDate()).padStart(2, '0'));
 };
-var toIsoDate = function (value) {
-    var year = value.getFullYear();
-    var month = "".concat(value.getMonth() + 1).padStart(2, '0');
-    var day = "".concat(value.getDate()).padStart(2, '0');
+let toIsoDate = function (value) {
+    let year = value.getFullYear();
+    let month = "".concat(value.getMonth() + 1).padStart(2, '0');
+    let day = "".concat(value.getDate()).padStart(2, '0');
     return "".concat(year, "-").concat(month, "-").concat(day);
 };
-var formatIsoDate = function (value) { return toIsoDate(value); };
-var BudgetToolScreen = function () {
-    var _a, _b, _c;
-    var router = (0, expo_router_1.useRouter)();
-    var queryClient = (0, react_query_1.useQueryClient)();
-    var _d = (0, usecases_1.useBudgetUsecases)(), getBudgets = _d.getBudgets, createBudget = _d.createBudget;
-    var getCategories = (0, usecases_2.useCategoryUsecases)().getCategories;
-    var getWallets = (0, usecases_3.useWalletUsecases)().getWallets;
-    var _e = (0, react_1.useState)(false), showCreateModal = _e[0], setShowCreateModal = _e[1];
-    var _f = (0, react_1.useState)(false), showCategoryPickerModal = _f[0], setShowCategoryPickerModal = _f[1];
-    var _g = (0, react_1.useState)(''), titleInput = _g[0], setTitleInput = _g[1];
-    var _h = (0, react_1.useState)(''), amountLimitInput = _h[0], setAmountLimitInput = _h[1];
-    var _j = (0, react_1.useState)('monthly'), periodType = _j[0], setPeriodType = _j[1];
-    var _k = (0, react_1.useState)(toIsoDate(new Date())), periodStart = _k[0], setPeriodStart = _k[1];
-    var _l = (0, react_1.useState)([]), selectedCategoryIds = _l[0], setSelectedCategoryIds = _l[1];
-    var _m = (0, react_1.useState)(null), selectedWalletId = _m[0], setSelectedWalletId = _m[1];
-    var _o = (0, react_1.useState)(true), showAllWallets = _o[0], setShowAllWallets = _o[1];
-    var _p = (0, react_1.useState)('EXPENSE'), budgetType = _p[0], setBudgetType = _p[1];
-    var _q = (0, react_1.useState)(false), showPeriodDropdown = _q[0], setShowPeriodDropdown = _q[1];
-    var _r = (0, react_1.useState)(false), showCalendarModal = _r[0], setShowCalendarModal = _r[1];
-    var _s = (0, react_1.useState)('day'), calendarTarget = _s[0], setCalendarTarget = _s[1];
-    var _t = (0, react_1.useState)(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), calendarMonth = _t[0], setCalendarMonth = _t[1];
-    var _u = (0, react_1.useState)(new Date()), calendarSelectedDate = _u[0], setCalendarSelectedDate = _u[1];
-    var budgetsQuery = (0, react_query_1.useQuery)({
+let formatIsoDate = function (value) { return toIsoDate(value); };
+let BudgetToolScreen = function () {
+    let _a, _b, _c;
+    let router = (0, expo_router_1.useRouter)();
+    let queryClient = (0, react_query_1.useQueryClient)();
+    let _d = (0, usecases_1.useBudgetUsecases)(), getBudgets = _d.getBudgets, createBudget = _d.createBudget;
+    let getCategories = (0, usecases_2.useCategoryUsecases)().getCategories;
+    let getWallets = (0, usecases_3.useWalletUsecases)().getWallets;
+    let _e = (0, react_1.useState)(false), showCreateModal = _e[0], setShowCreateModal = _e[1];
+    let _f = (0, react_1.useState)(false), showCategoryPickerModal = _f[0], setShowCategoryPickerModal = _f[1];
+    let _g = (0, react_1.useState)(''), titleInput = _g[0], setTitleInput = _g[1];
+    let _h = (0, react_1.useState)(''), amountLimitInput = _h[0], setAmountLimitInput = _h[1];
+    let _j = (0, react_1.useState)('monthly'), periodType = _j[0], setPeriodType = _j[1];
+    let _k = (0, react_1.useState)(toIsoDate(new Date())), periodStart = _k[0], setPeriodStart = _k[1];
+    let _l = (0, react_1.useState)([]), selectedCategoryIds = _l[0], setSelectedCategoryIds = _l[1];
+    let _m = (0, react_1.useState)(null), selectedWalletId = _m[0], setSelectedWalletId = _m[1];
+    let _o = (0, react_1.useState)(true), showAllWallets = _o[0], setShowAllWallets = _o[1];
+    let _p = (0, react_1.useState)('EXPENSE'), budgetType = _p[0], setBudgetType = _p[1];
+    let _q = (0, react_1.useState)(false), showPeriodDropdown = _q[0], setShowPeriodDropdown = _q[1];
+    let _r = (0, react_1.useState)(false), showCalendarModal = _r[0], setShowCalendarModal = _r[1];
+    let _s = (0, react_1.useState)('day'), calendarTarget = _s[0], setCalendarTarget = _s[1];
+    let _t = (0, react_1.useState)(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), calendarMonth = _t[0], setCalendarMonth = _t[1];
+    let _u = (0, react_1.useState)(new Date()), calendarSelectedDate = _u[0], setCalendarSelectedDate = _u[1];
+    let budgetsQuery = (0, react_query_1.useQuery)({
         queryKey: ['budgets'],
         queryFn: getBudgets,
     });
-    var categoriesQuery = (0, react_query_1.useQuery)({
+    let categoriesQuery = (0, react_query_1.useQuery)({
         queryKey: ['categories'],
         queryFn: getCategories,
     });
-    var walletsQuery = (0, react_query_1.useQuery)({
+    let walletsQuery = (0, react_query_1.useQuery)({
         queryKey: ['wallets'],
         queryFn: getWallets,
     });
-    var budgets = (_a = budgetsQuery.data) !== null && _a !== void 0 ? _a : [];
-    var categories = (_b = categoriesQuery.data) !== null && _b !== void 0 ? _b : [];
-    var wallets = (_c = walletsQuery.data) !== null && _c !== void 0 ? _c : [];
-    var budgetTypeCategories = (0, react_1.useMemo)(function () { return categories.filter(function (item) { return normalizeCategoryType(item.type) === budgetType; }); }, [categories, budgetType]);
-    var categoryMap = (0, react_1.useMemo)(function () { return new Map(categories.map(function (item) { return [item.categoryId, item]; })); }, [categories]);
-    var walletMap = (0, react_1.useMemo)(function () { return new Map(wallets.map(function (item) { return [item.walletId, item]; })); }, [wallets]);
+    let budgets = (_a = budgetsQuery.data) !== null && _a !== void 0 ? _a : [];
+    let categories = (_b = categoriesQuery.data) !== null && _b !== void 0 ? _b : [];
+    let wallets = (_c = walletsQuery.data) !== null && _c !== void 0 ? _c : [];
+    let budgetTypeCategories = (0, react_1.useMemo)(function () { return categories.filter(function (item) { return normalizeCategoryType(item.type) === budgetType; }); }, [categories, budgetType]);
+    let categoryMap = (0, react_1.useMemo)(function () { return new Map(categories.map(function (item) { return [item.categoryId, item]; })); }, [categories]);
+    let walletMap = (0, react_1.useMemo)(function () { return new Map(wallets.map(function (item) { return [item.walletId, item]; })); }, [wallets]);
     (0, react_1.useEffect)(function () {
         if (!selectedWalletId && wallets.length > 0) {
             setSelectedWalletId(wallets[0].walletId);
         }
     }, [selectedWalletId, wallets]);
-    var filteredBudgets = (0, react_1.useMemo)(function () {
+    let filteredBudgets = (0, react_1.useMemo)(function () {
         if (showAllWallets || !selectedWalletId) {
             return budgets;
         }
         return budgets.filter(function (budget) { return budget.walletId === selectedWalletId; });
     }, [budgets, selectedWalletId, showAllWallets]);
-    var selectedCategories = (0, react_1.useMemo)(function () { return categories.filter(function (item) { return selectedCategoryIds.includes(item.categoryId); }); }, [categories, selectedCategoryIds]);
-    var openCalendarPicker = function (target, valueIso) {
-        var parsed = valueIso ? parseIsoDate(valueIso) : null;
-        var base = parsed !== null && parsed !== void 0 ? parsed : new Date();
+    let selectedCategories = (0, react_1.useMemo)(function () { return categories.filter(function (item) { return selectedCategoryIds.includes(item.categoryId); }); }, [categories, selectedCategoryIds]);
+    let openCalendarPicker = function (target, valueIso) {
+        let parsed = valueIso ? parseIsoDate(valueIso) : null;
+        let base = parsed !== null && parsed !== void 0 ? parsed : new Date();
         setCalendarTarget(target);
         setCalendarSelectedDate(base);
         setCalendarMonth(new Date(base.getFullYear(), base.getMonth(), 1));
         setShowCalendarModal(true);
     };
-    var applyCalendarSelection = function () {
-        var value = formatIsoDate(calendarSelectedDate);
+    let applyCalendarSelection = function () {
+        let value = formatIsoDate(calendarSelectedDate);
         if (calendarTarget === 'day') {
             setPeriodStart(value);
         }
@@ -210,14 +210,14 @@ var BudgetToolScreen = function () {
             return current.filter(function (id) { return budgetTypeCategories.some(function (item) { return item.categoryId === id; }); });
         });
     }, [budgetTypeCategories]);
-    var periodEnd = (0, react_1.useMemo)(function () { return getPeriodEndDate(periodStart, periodType); }, [periodStart, periodType]);
-    var toggleCategoryId = function (categoryId) {
+    let periodEnd = (0, react_1.useMemo)(function () { return getPeriodEndDate(periodStart, periodType); }, [periodStart, periodType]);
+    let toggleCategoryId = function (categoryId) {
         setSelectedCategoryIds(function (current) {
             return current.includes(categoryId) ? current.filter(function (id) { return id !== categoryId; }) : __spreadArray(__spreadArray([], current, true), [categoryId], false);
         });
     };
-    var createBudgetHandler = function () { return __awaiter(void 0, void 0, void 0, function () {
-        var amountLimit, _a;
+    let createBudgetHandler = function () { return __awaiter(void 0, void 0, void 0, function () {
+        let amountLimit, _a;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -289,7 +289,7 @@ var BudgetToolScreen = function () {
 
         {!showAllWallets ? (<react_native_1.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletRow}>
             {wallets.map(function (wallet) {
-                var selected = selectedWalletId === wallet.walletId;
+                let selected = selectedWalletId === wallet.walletId;
                 return (<react_native_1.Pressable key={wallet.walletId} style={[styles.walletChip, selected ? styles.walletChipActive : null]} onPress={function () { return setSelectedWalletId(wallet.walletId); }}>
                   <react_native_1.Text style={[styles.walletChipText, selected ? styles.walletChipTextActive : null]}>
                     {wallet.name}
@@ -304,16 +304,16 @@ var BudgetToolScreen = function () {
             <react_native_1.Text style={styles.emptyTitle}>Chưa có ngân sách</react_native_1.Text>
             <react_native_1.Text style={styles.emptyText}>Bạn có thể tạo ngân sách đầu tiên bằng nút bên dưới.</react_native_1.Text>
           </react_native_1.View>) : (filteredBudgets.map(function (budget) {
-            var _a, _b, _c;
-            var category = budget.categoryId ? categoryMap.get(budget.categoryId) : undefined;
-            var wallet = budget.walletId ? walletMap.get(budget.walletId) : undefined;
-            var spent = Number((_a = budget.spentAmount) !== null && _a !== void 0 ? _a : (budget.remainingAmount == null ? 0 : budget.amountLimit - budget.remainingAmount));
-            var percent = budget.amountLimit > 0 ? Math.min((spent / budget.amountLimit) * 100, 100) : 0;
-            var title = ((_b = budget.title) === null || _b === void 0 ? void 0 : _b.trim()) || (category === null || category === void 0 ? void 0 : category.name) || 'Ngân sách';
-            var isIncome = (category === null || category === void 0 ? void 0 : category.type) === 'INCOME';
-            var remainingAmount = Math.max((_c = budget.remainingAmount) !== null && _c !== void 0 ? _c : budget.amountLimit - spent, 0);
-            var targetAmount = budget.amountLimit;
-            var neededAmount = Math.max(targetAmount - spent, 0);
+            let _a, _b, _c;
+            let category = budget.categoryId ? categoryMap.get(budget.categoryId) : undefined;
+            let wallet = budget.walletId ? walletMap.get(budget.walletId) : undefined;
+            let spent = Number((_a = budget.spentAmount) !== null && _a !== void 0 ? _a : (budget.remainingAmount == null ? 0 : budget.amountLimit - budget.remainingAmount));
+            let percent = budget.amountLimit > 0 ? Math.min((spent / budget.amountLimit) * 100, 100) : 0;
+            let title = ((_b = budget.title) === null || _b === void 0 ? void 0 : _b.trim()) || (category === null || category === void 0 ? void 0 : category.name) || 'Ngân sách';
+            let isIncome = (category === null || category === void 0 ? void 0 : category.type) === 'INCOME';
+            let remainingAmount = Math.max((_c = budget.remainingAmount) !== null && _c !== void 0 ? _c : budget.amountLimit - spent, 0);
+            let targetAmount = budget.amountLimit;
+            let neededAmount = Math.max(targetAmount - spent, 0);
             return (<react_native_1.Pressable key={budget.budgetId} style={styles.budgetCard} onPress={function () {
                     return router.push({
                         pathname: '/(tabs)/budgets/[budgetId]',
@@ -380,7 +380,7 @@ var BudgetToolScreen = function () {
 
             <react_native_1.View style={styles.typeToggleTopRow}>
               {['EXPENSE', 'INCOME'].map(function (type) {
-            var selected = budgetType === type;
+            let selected = budgetType === type;
             return (<react_native_1.Pressable key={type} style={[styles.typeToggleButton, selected ? styles.typeToggleButtonActive : null]} onPress={function () {
                     setBudgetType(type);
                     setShowPeriodDropdown(false);
@@ -451,7 +451,7 @@ var BudgetToolScreen = function () {
               {wallets.length === 0 ? (<react_native_1.View style={styles.walletEmptyChip}>
                   <react_native_1.Text style={styles.walletEmptyText}>Chưa có ví</react_native_1.Text>
                 </react_native_1.View>) : (wallets.map(function (wallet) {
-            var selected = selectedWalletId === wallet.walletId;
+            let selected = selectedWalletId === wallet.walletId;
             return (<react_native_1.Pressable key={wallet.walletId} onPress={function () { return setSelectedWalletId(wallet.walletId); }} style={[styles.walletChip, selected ? styles.walletChipActive : null]}>
                       <react_native_1.Text style={[styles.walletChipText, selected ? styles.walletChipTextActive : null]}>
                         {wallet.name}
@@ -494,7 +494,7 @@ var BudgetToolScreen = function () {
 
             <react_native_1.View style={styles.calendarGrid}>
               {buildCalendarMatrix(calendarMonth).map(function (cell, index) {
-            var selected = isSameDate(cell.date, calendarSelectedDate);
+            let selected = isSameDate(cell.date, calendarSelectedDate);
             return (<react_native_1.Pressable key={"".concat(cell.date.toISOString(), "-").concat(index)} onPress={function () { return setCalendarSelectedDate(cell.date); }} style={[styles.calendarCell, selected ? styles.calendarCellSelected : null]}>
                     <react_native_1.Text style={[
                     styles.calendarCellText,
@@ -531,7 +531,7 @@ var BudgetToolScreen = function () {
 
             <react_native_1.ScrollView contentContainerStyle={styles.categoryPickerContent} showsVerticalScrollIndicator={false}>
               {budgetTypeCategories.length === 0 ? (<react_native_1.Text style={styles.selectedCategoryEmpty}>Chưa có danh mục phù hợp.</react_native_1.Text>) : (budgetTypeCategories.map(function (item) {
-            var selected = selectedCategoryIds.includes(item.categoryId);
+            let selected = selectedCategoryIds.includes(item.categoryId);
             return (<react_native_1.Pressable key={item.categoryId} onPress={function () { return toggleCategoryId(item.categoryId); }} style={[styles.categoryPickerItem, selected ? styles.categoryPickerItemSelected : null]}>
                       <react_native_1.View style={styles.categoryPickerIconWrap}>
                         <react_native_1.Text style={styles.categoryPickerIcon}>{item.icon || '💸'}</react_native_1.Text>

@@ -4,6 +4,7 @@ import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing } from '@/components/common';
+import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing, typography } from '@/components/common';
 
 import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
@@ -164,12 +165,12 @@ export const BudgetToolScreen = () => {
     queryKey: ['transactions-for-budgets', showAllWallets ? 'all' : selectedWalletId],
     queryFn: () =>
       getTransactions({
-        walletId: showAllWallets ? undefined : selectedWalletId ?? undefined,
+        walletId: selectedWalletId ?? undefined,
         page: 0,
         size: 1000,
         sort: 'date,desc',
       }),
-    enabled: showAllWallets || Boolean(selectedWalletId),
+    enabled: Boolean(selectedWalletId),
   });
 
   const budgets = budgetsQuery.data ?? [];
@@ -747,18 +748,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  backBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: '#1f1f1f',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: typography.weights.bold,
+    color: colors.textPrimary,
   },
   walletToggleRow: {
     flexDirection: 'row',
@@ -780,9 +775,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f1f1f',
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
   },
   emptyText: {
     fontSize: 14,
@@ -1164,7 +1159,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   categoryPickerIcon: {
-    fontSize: 18,
+    fontSize: typography.sizes.lg,
   },
   categoryPickerName: {
     flex: 1,

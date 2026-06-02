@@ -1,54 +1,54 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BudgetDetailScreen = void 0;
-var react_1 = require("react");
-var vector_icons_1 = require("@expo/vector-icons");
-var react_query_1 = require("@tanstack/react-query");
-var react_native_1 = require("react-native");
-var expo_router_1 = require("expo-router");
-var usecases_1 = require("@/modules/budget/usecases");
-var usecases_2 = require("@/modules/category/usecases");
-var usecases_3 = require("@/modules/transaction/usecases");
-var usecases_4 = require("@/modules/wallet/usecases");
-var money_1 = require("@/shared/utils/money");
-var formatDateVi = function (isoDate) {
-    var _a = isoDate.split('-').map(Number), year = _a[0], month = _a[1], day = _a[2];
+let react_1 = require("react");
+let vector_icons_1 = require("@expo/vector-icons");
+let react_query_1 = require("@tanstack/react-query");
+let react_native_1 = require("react-native");
+let expo_router_1 = require("expo-router");
+let usecases_1 = require("@/modules/budget/usecases");
+let usecases_2 = require("@/modules/category/usecases");
+let usecases_3 = require("@/modules/transaction/usecases");
+let usecases_4 = require("@/modules/wallet/usecases");
+let money_1 = require("@/shared/utils/money");
+let formatDateVi = function (isoDate) {
+    let _a = isoDate.split('-').map(Number), year = _a[0], month = _a[1], day = _a[2];
     if (!year || !month || !day) {
         return isoDate;
     }
     return "".concat(day, " thg ").concat(month, ", ").concat(year);
 };
-var BudgetDetailScreen = function () {
-    var _a, _b, _c;
-    var router = (0, expo_router_1.useRouter)();
-    var params = (0, expo_router_1.useLocalSearchParams)();
-    var budgetId = params.budgetId || '';
-    var getBudget = (0, usecases_1.useBudgetUsecases)().getBudget;
-    var getCategories = (0, usecases_2.useCategoryUsecases)().getCategories;
-    var getWallets = (0, usecases_4.useWalletUsecases)().getWallets;
-    var getTransactions = (0, usecases_3.useTransactionUsecases)().getTransactions;
-    var budgetQuery = (0, react_query_1.useQuery)({
+let BudgetDetailScreen = function () {
+    let _a, _b, _c;
+    let router = (0, expo_router_1.useRouter)();
+    let params = (0, expo_router_1.useLocalSearchParams)();
+    let budgetId = params.budgetId || '';
+    let getBudget = (0, usecases_1.useBudgetUsecases)().getBudget;
+    let getCategories = (0, usecases_2.useCategoryUsecases)().getCategories;
+    let getWallets = (0, usecases_4.useWalletUsecases)().getWallets;
+    let getTransactions = (0, usecases_3.useTransactionUsecases)().getTransactions;
+    let budgetQuery = (0, react_query_1.useQuery)({
         queryKey: ['budget', budgetId],
         queryFn: function () { return getBudget(budgetId); },
         enabled: Boolean(budgetId),
     });
-    var categoriesQuery = (0, react_query_1.useQuery)({
+    let categoriesQuery = (0, react_query_1.useQuery)({
         queryKey: ['categories'],
         queryFn: getCategories,
     });
-    var walletsQuery = (0, react_query_1.useQuery)({
+    let walletsQuery = (0, react_query_1.useQuery)({
         queryKey: ['wallets'],
         queryFn: getWallets,
     });
-    var budget = budgetQuery.data;
-    var categories = (_a = categoriesQuery.data) !== null && _a !== void 0 ? _a : [];
-    var wallets = (_b = walletsQuery.data) !== null && _b !== void 0 ? _b : [];
-    var category = (0, react_1.useMemo)(function () { return categories.find(function (item) { return item.categoryId === (budget === null || budget === void 0 ? void 0 : budget.categoryId); }); }, [categories, budget === null || budget === void 0 ? void 0 : budget.categoryId]);
-    var wallet = (0, react_1.useMemo)(function () { return wallets.find(function (item) { return item.walletId === (budget === null || budget === void 0 ? void 0 : budget.walletId); }); }, [wallets, budget === null || budget === void 0 ? void 0 : budget.walletId]);
-    var transactionsQuery = (0, react_query_1.useQuery)({
+    let budget = budgetQuery.data;
+    let categories = (_a = categoriesQuery.data) !== null && _a !== void 0 ? _a : [];
+    let wallets = (_b = walletsQuery.data) !== null && _b !== void 0 ? _b : [];
+    let category = (0, react_1.useMemo)(function () { return categories.find(function (item) { return item.categoryId === (budget === null || budget === void 0 ? void 0 : budget.categoryId); }); }, [categories, budget === null || budget === void 0 ? void 0 : budget.categoryId]);
+    let wallet = (0, react_1.useMemo)(function () { return wallets.find(function (item) { return item.walletId === (budget === null || budget === void 0 ? void 0 : budget.walletId); }); }, [wallets, budget === null || budget === void 0 ? void 0 : budget.walletId]);
+    let transactionsQuery = (0, react_query_1.useQuery)({
         queryKey: ['budget-transactions', budget === null || budget === void 0 ? void 0 : budget.budgetId],
         queryFn: function () {
-            var _a, _b;
+            let _a, _b;
             return getTransactions({
                 walletId: (_a = budget === null || budget === void 0 ? void 0 : budget.walletId) !== null && _a !== void 0 ? _a : undefined,
                 categoryId: (_b = budget === null || budget === void 0 ? void 0 : budget.categoryId) !== null && _b !== void 0 ? _b : undefined,
@@ -62,15 +62,15 @@ var BudgetDetailScreen = function () {
         },
         enabled: Boolean((budget === null || budget === void 0 ? void 0 : budget.walletId) && (budget === null || budget === void 0 ? void 0 : budget.categoryId)),
     });
-    var transactions = (_c = transactionsQuery.data) !== null && _c !== void 0 ? _c : [];
-    var spentAmount = (0, react_1.useMemo)(function () {
+    let transactions = (_c = transactionsQuery.data) !== null && _c !== void 0 ? _c : [];
+    let spentAmount = (0, react_1.useMemo)(function () {
         if ((budget === null || budget === void 0 ? void 0 : budget.spentAmount) != null) {
             return budget.spentAmount;
         }
         return transactions.reduce(function (sum, item) { return sum + item.amount; }, 0);
     }, [budget === null || budget === void 0 ? void 0 : budget.spentAmount, transactions]);
-    var remainingAmount = budget ? budget.amountLimit - spentAmount : 0;
-    var percent = budget && budget.amountLimit > 0 ? Math.min((spentAmount / budget.amountLimit) * 100, 100) : 0;
+    let remainingAmount = budget ? budget.amountLimit - spentAmount : 0;
+    let percent = budget && budget.amountLimit > 0 ? Math.min((spentAmount / budget.amountLimit) * 100, 100) : 0;
     return (<react_native_1.View style={styles.screen}>
       <react_native_1.ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <react_native_1.View style={styles.headerRow}>

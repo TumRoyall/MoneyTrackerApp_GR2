@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TextStyle } from 'react-native';
 
 export const colors = {
   // Primary Brand
@@ -18,17 +18,25 @@ export const colors = {
   warning: '#F5A623',
 
   // Neutrals
+  background: '#F5F7F9',
+  surface: '#FFFFFF',
   bgPrimary: '#F5F7F9',
   bgSecondary: '#FFFFFF',
   bgTertiary: '#F0F2F4',
+  // Aliases
+  backgroundPrimary: '#F5F7F9',
+  backgroundSecondary: '#FFFFFF',
 
   // Text
+  text: '#1F1F1F',
   textPrimary: '#1F1F1F',
   textSecondary: '#6C737A',
   textTertiary: '#8B8B8B',
   textInverse: '#FFFFFF',
+  textDisabled: '#ADB5BD',
 
   // Borders
+  border: '#E8EBEF',
   borderLight: '#E8EBEF',
   borderMedium: '#D8DDE3',
   borderDark: '#C5CBD1',
@@ -66,10 +74,10 @@ export const typography = {
     '4xl': 34,
   },
   weights: {
-    regular: '400',
-    medium: '500',
-    semibold: '600',
-    bold: '700',
+    regular: '400' as TextStyle['fontWeight'],
+    medium: '500' as TextStyle['fontWeight'],
+    semibold: '600' as TextStyle['fontWeight'],
+    bold: '700' as TextStyle['fontWeight'],
   },
 };
 

@@ -1,15 +1,16 @@
 import { Stack } from 'expo-router';
+import { useCallback } from 'react';
 
 export default function ToolsStackLayout() {
+  const screenOptions = useCallback(() => ({
+    headerShown: false,
+    tabBarStyle: {
+      display: 'none',
+    },
+  }), []);
+
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          display: 'none',
-        },
-      }}
-    >
+    <Stack screenOptions={screenOptions}>
       <Stack.Screen name="index" />
       <Stack.Screen name="budgets/index" />
       <Stack.Screen name="budgets/[budgetId]" />

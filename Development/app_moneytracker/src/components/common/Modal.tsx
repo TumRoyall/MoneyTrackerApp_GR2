@@ -43,7 +43,11 @@ export const Modal = ({
   );
 };
 
-Modal.Header = ({ title, onClose }: { title: string; onClose?: () => void }) => (
+// =====================
+// COMPOUND COMPONENTS
+// =====================
+
+const ModalHeader = ({ title, onClose }: { title: string; onClose?: () => void }) => (
   <View style={styles.header}>
     <Text style={styles.title}>{title}</Text>
     {onClose && (
@@ -53,14 +57,20 @@ Modal.Header = ({ title, onClose }: { title: string; onClose?: () => void }) => 
     )}
   </View>
 );
+ModalHeader.displayName = 'Modal.Header';
+Modal.Header = ModalHeader;
 
-Modal.Body = ({ children }: { children: ReactNode }) => (
+const ModalBody = ({ children }: { children: ReactNode }) => (
   <View style={styles.content}>{children}</View>
 );
+ModalBody.displayName = 'Modal.Body';
+Modal.Body = ModalBody;
 
-Modal.Footer = ({ children }: { children: ReactNode }) => (
+const ModalFooter = ({ children }: { children: ReactNode }) => (
   <View style={styles.footer}>{children}</View>
 );
+ModalFooter.displayName = 'Modal.Footer';
+Modal.Footer = ModalFooter;
 
 const styles = StyleSheet.create({
   overlay: {

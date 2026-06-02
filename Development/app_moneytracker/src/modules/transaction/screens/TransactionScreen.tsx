@@ -16,7 +16,6 @@ import {
 import { Category } from '@/modules/category/models/category.types';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { categoryIconOptions } from '@/modules/category/data/defaultCategories';
-import { Wallet } from '@/modules/wallet/models/wallet.types';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
 import {
   Transaction,
@@ -32,12 +31,12 @@ type CategoryType = 'EXPENSE' | 'INCOME';
 type TimeMode = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
 type CalendarTarget = 'day' | 'customStart' | 'customEnd' | 'formDate';
 
-const defaultCategoryTemplates: Array<{
+const defaultCategoryTemplates: {
   name: string;
   type: CategoryType;
   icon: string;
   color: string;
-}> = [
+}[] = [
     { name: 'Siêu thị', type: 'EXPENSE', icon: 'cart', color: '#4CAF50' },
     { name: 'Đồ ăn', type: 'EXPENSE', icon: 'food-fork-drink', color: '#4CAF50' },
     { name: 'Thú cưng', type: 'EXPENSE', icon: 'dog', color: '#FFC107' },

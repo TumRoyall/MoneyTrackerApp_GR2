@@ -1,12 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient , useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import {
-  ActivityIndicator,
   Alert,
-  FlatList,
   Modal,
   Pressable,
   ScrollView,
@@ -15,9 +12,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Button, FAB, EmptyState, colors, spacing } from '@/components/common';
+import { Button, FAB, EmptyState, BackButton, borderRadius, colors, spacing, typography } from '@/components/common';
 import { useEventUsecases } from '@/modules/event/usecases';
-import type { Event } from '@/modules/event/models/event.types';
 import { formatCurrency } from '@/shared/utils/money';
 
 const eventStatusColors: Record<string, string> = {
@@ -102,84 +98,73 @@ export default function EventListScreen() {
     }
   };
 
-  const renderEventItem = ({ item }: { item: Event }) => (
-    <Pressable style={styles.eventCard} onPress={() => router.push(`/tools/events/${item.eventId}`)}>
-      <View style={styles.eventIconWrap}>
-        <Text style={styles.eventIcon}>{item.icon || '🎉'}</Text>
-      </View>
-      <View style={styles.eventInfo}>
-        <Text style={styles.eventName}>{item.name}</Text>
-        <View style={styles.eventMeta}>
-          <Text style={styles.eventMetaText}>
-            👥 {item.memberCount} người
-          </Text>
-          <Text style={styles.eventMetaText}>
-            💰 {formatCurrency(item.totalSpent || 0, 'VND')}
-          </Text>
-          <View style={[styles.eventStatusBadge, { backgroundColor: eventStatusColors[item.status] + '20' }]}>
-            <Text style={[styles.eventStatusText, { color: eventStatusColors[item.status] }]}>
-              {eventStatusLabels[item.status]}
-            </Text>
-          </View>
-        </View>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color="#6c737a" />
-    </Pressable>
-  );
-
   return (
     <View style={styles.screen}>
-      {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.headerRow}>
+        <BackButton to="/(tabs)/tools" />
         <Text style={styles.title}>Sự kiện</Text>
         <View style={styles.headerActions}>
-          <Button
-            title=""
-            variant="ghost"
-            size="sm"
-            iconLeft={<Ionicons name="enter-outline" size={22} color="#1f1f1f" />}
-            onPress={() => setShowJoinModal(true)}
-            style={styles.headerBtn}
-          />
+          <Pressable style={styles.joinBtn} onPress={() => setShowJoinModal(true)}>
+            <Ionicons name="enter-outline" size={22} color="#1f1f1f" />
+          </Pressable>
         </View>
       </View>
 
       {/* Event List */}
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#29bcc8" />
-        </View>
-      ) : hasError ? (
-        <EmptyState
-          icon="⚠️"
-          title="Không thể tải sự kiện"
-          description="Vui lòng kiểm tra kết nối và thử lại"
-          action={{
-            title: "Thử lại",
-            icon: <Ionicons name="refresh" size={20} color="#fff" />,
-            onPress: () => eventsQuery.refetch(),
-          }}
-        />
-      ) : isEmpty ? (
-        <EmptyState
-          icon="🎉"
-          title="Chưa có sự kiện nào"
-          description="Tạo sự kiện để cùng bạn bè ghi nhận chi tiêu chung"
-          action={{
-            title: "Tạo sự kiện",
-            icon: <Ionicons name="add" size={20} color="#fff" />,
-            onPress: () => setShowCreateModal(true),
-          }}
-        />
-      ) : (
-        <FlatList
-          data={events}
-          renderItem={renderEventItem}
-          keyExtractor={(item) => item.eventId}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {isLoading ? (
+          <EmptyState
+            icon="📊"
+            title="Đang tải sự kiện..."
+            description="Vui lòng đợi trong giây lát."
+          />
+        ) : hasError ? (
+          <EmptyState
+            icon="⚠️"
+            title="Không thể tải sự kiện"
+            description="Vui lòng kiểm tra kết nối và thử lại"
+            action={{
+              title: "Thử lại",
+              onPress: () => eventsQuery.refetch(),
+            }}
+          />
+        ) : isEmpty ? (
+          <EmptyState
+            icon="🎉"
+            title="Chưa có sự kiện nào"
+            description="Tạo sự kiện để cùng bạn bè ghi nhận chi tiêu chung"
+            action={{
+              title: "Tạo sự kiện",
+              onPress: () => setShowCreateModal(true),
+            }}
+          />
+        ) : (
+          events.map((event) => (
+            <Pressable key={event.eventId} style={styles.eventCard} onPress={() => router.push(`/tools/events/${event.eventId}`)}>
+              <View style={styles.eventIconWrap}>
+                <Text style={styles.eventIcon}>{event.icon || '🎉'}</Text>
+              </View>
+              <View style={styles.eventInfo}>
+                <Text style={styles.eventName}>{event.name}</Text>
+                <View style={styles.eventMeta}>
+                  <Text style={styles.eventMetaText}>
+                    👥 {event.memberCount} người
+                  </Text>
+                  <Text style={styles.eventMetaText}>
+                    💰 {formatCurrency(event.totalSpent || 0, 'VND')}
+                  </Text>
+                  <View style={[styles.eventStatusBadge, { backgroundColor: eventStatusColors[event.status] + '20' }]}>
+                    <Text style={[styles.eventStatusText, { color: eventStatusColors[event.status] }]}>
+                      {eventStatusLabels[event.status]}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#6c737a" />
+            </Pressable>
+          ))
+        )}
+      </ScrollView>
 
       {/* FAB for create event */}
       {!isEmpty && !isLoading && (
@@ -277,21 +262,18 @@ export default function EventListScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bgPrimary,
+    backgroundColor: colors.background,
   },
-  header: {
+  headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    backgroundColor: colors.bgSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: typography.sizes['3xl'],
+    fontWeight: typography.weights.bold,
     color: colors.textPrimary,
   },
   headerActions: {
@@ -299,34 +281,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  headerBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.bgTertiary,
+  joinBtn: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  content: {
+    padding: spacing.md,
+    gap: spacing.md,
+    paddingBottom: 100,
   },
   listContent: {
-    padding: spacing.lg,
-    gap: 12,
+    gap: spacing.md,
   },
   eventCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.bgSecondary,
-    borderRadius: 16,
-    padding: 16,
-    gap: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.md,
   },
   eventIconWrap: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#eef7f8',
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -335,35 +318,30 @@ const styles = StyleSheet.create({
   },
   eventInfo: {
     flex: 1,
-    gap: 6,
+    gap: spacing.sm,
   },
   eventName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
   },
   eventMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   eventMetaText: {
-    fontSize: 13,
+    fontSize: typography.sizes.sm,
     color: colors.textSecondary,
   },
   eventStatusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
   },
   eventStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
   },
   modalOverlay: {
     flex: 1,
@@ -371,10 +349,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: colors.bgSecondary,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.lg,
     gap: spacing.md,
   },
   modalHeader: {
@@ -383,25 +361,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
+    fontSize: typography.sizes.xl,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
     color: colors.textSecondary,
   },
   input: {
     minHeight: 52,
     borderWidth: 1,
-    borderColor: colors.borderMedium,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: colors.bgSecondary,
-    color: colors.textPrimary,
-    fontSize: 16,
+    borderColor: colors.border,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
+    color: colors.text,
+    fontSize: typography.sizes.md,
   },
   textArea: {
     minHeight: 80,
@@ -411,13 +389,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   iconOption: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: spacing['2xl'],
+    height: spacing['2xl'],
+    borderRadius: borderRadius.full,
     backgroundColor: colors.bgTertiary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.sm,
+  },
+  iconOptionText: {
+    fontSize: 20,
   },
   iconOptionSelected: {
     backgroundColor: colors.primary,

@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, StyleProp, View, Text, ViewStyle } from 'react-native';
 import { colors, borderRadius, spacing } from './theme';
 
 // =====================
@@ -8,37 +8,44 @@ import { colors, borderRadius, spacing } from './theme';
 
 interface CardProps {
   variant?: 'elevated' | 'flat' | 'outlined';
+  style?: StyleProp<ViewStyle>;
   children: ReactNode;
 }
 
-export const Card = ({ variant = 'elevated', children }: CardProps) => {
+export const Card = ({ variant = 'elevated', style, children }: CardProps) => {
   const variantStyles = {
     elevated: [styles.elevated],
     flat: styles.flat,
     outlined: styles.outlined,
   };
 
-  return <View style={variantStyles[variant]}>{children}</View>;
+  return <View style={[variantStyles[variant], style]}>{children}</View>;
 };
 
 // =====================
 // COMPOUND COMPONENTS
 // =====================
 
-Card.Header = ({ title, action }: { title: string; action?: ReactNode }) => (
+const CardHeader = ({ title, action }: { title: string; action?: ReactNode }) => (
   <View style={styles.header}>
     <Text style={styles.titleText}>{title}</Text>
     {action && <View style={styles.headerAction}>{action}</View>}
   </View>
 );
+CardHeader.displayName = 'Card.Header';
+Card.Header = CardHeader;
 
-Card.Body = ({ children }: { children: ReactNode }) => (
+const CardBody = ({ children }: { children: ReactNode }) => (
   <View>{children}</View>
 );
+CardBody.displayName = 'Card.Body';
+Card.Body = CardBody;
 
-Card.Footer = ({ children }: { children: ReactNode }) => (
+const CardFooter = ({ children }: { children: ReactNode }) => (
   <View style={styles.footer}>{children}</View>
 );
+CardFooter.displayName = 'Card.Footer';
+Card.Footer = CardFooter;
 
 // =====================
 // STYLES

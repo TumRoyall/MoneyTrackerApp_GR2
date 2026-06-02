@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, StyleProp, Text, View, ViewStyle } from 'react-native';
 import { colors, spacing, borderRadius, typography } from './theme';
 
 interface ButtonProps {
@@ -10,6 +10,7 @@ interface ButtonProps {
   disabled?: boolean;
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
 }
 
 const heights = { sm: 40, md: 48, lg: 54 };
@@ -24,6 +25,7 @@ export const Button = ({
   disabled = false,
   iconLeft,
   iconRight,
+  style,
 }: ButtonProps) => {
   const isDisabled = disabled || loading;
 
@@ -58,6 +60,7 @@ export const Button = ({
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.button,
+        style,
         {
           height: heights[size],
           paddingHorizontal: paddingH[size],

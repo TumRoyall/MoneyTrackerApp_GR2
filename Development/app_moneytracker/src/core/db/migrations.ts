@@ -3,7 +3,7 @@ import { defaultCategories } from '@/modules/category/data/defaultCategories';
 
 type Migration = {
   version: number;
-  statements: Array<{ sql: string; params?: Array<string | number | null> }>;
+  statements: { sql: string; params?: (string | number | null)[] }[];
 };
 
 const migrations: Migration[] = [

@@ -11,7 +11,7 @@ export const BackButton = ({ to }: BackButtonProps) => {
 
   return (
     <Pressable
-      onPress={() => (to ? router.replace(to) : router.back())}
+      onPress={() => (to ? router.replace(to as any) : router.back())}
       style={styles.button}
     >
       <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
