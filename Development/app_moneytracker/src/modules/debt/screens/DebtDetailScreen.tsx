@@ -5,6 +5,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 
+import { Button, BackButton, colors, spacing } from '@/components/common';
 import { useDebtUsecases } from '@/modules/debt/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
@@ -427,11 +428,9 @@ export const DebtDetailScreen = () => {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools/debts')}>
-            <Ionicons name="chevron-back" size={24} color="#1f1f1f" />
-          </Pressable>
+          <BackButton to="/(tabs)/tools/debts" />
           <Text style={styles.title}>{debt?.title || 'Món nợ'}</Text>
-          <Pressable style={styles.backBtn} onPress={() => router.replace('/(tabs)/tools/debts')}>
+          <Pressable onPress={() => router.replace('/(tabs)/tools/debts')}>
             <Ionicons name="close" size={22} color="#1f1f1f" />
           </Pressable>
         </View>
@@ -661,14 +660,18 @@ export const DebtDetailScreen = () => {
               </>
             ) : null}
 
-            <Pressable style={styles.saveButton} onPress={submitAddRecord}>
-              <Text style={styles.saveButtonText}>Lưu</Text>
-            </Pressable>
+            <Button
+              title="Lưu"
+              onPress={submitAddRecord}
+              variant="primary"
+            />
 
             {recordModalMode === 'edit' ? (
-              <Pressable style={styles.deleteButton} onPress={confirmDeleteRecord}>
-                <Text style={styles.deleteButtonText}>Xóa bản ghi</Text>
-              </Pressable>
+              <Button
+                title="Xóa bản ghi"
+                onPress={confirmDeleteRecord}
+                variant="danger"
+              />
             ) : null}
           </View>
         </View>
@@ -680,35 +683,29 @@ export const DebtDetailScreen = () => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f5f7f9',
+    backgroundColor: colors.backgroundSecondary,
   },
   content: {
-    padding: 16,
+    padding: spacing.md,
     paddingBottom: 120,
-    gap: 12,
+    gap: spacing.md,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  backBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   title: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   card: {
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#e3edf1',
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: colors.backgroundPrimary,
+    padding: spacing.md,
     gap: 14,
   },
   progressWrap: {
@@ -723,7 +720,7 @@ const styles = StyleSheet.create({
   percentText: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#2bb6c2',
+    color: colors.primary,
   },
   percentCaption: {
     fontSize: 12,
@@ -741,12 +738,12 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#7b8891',
+    color: colors.textSecondary,
   },
   statValue: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   statDivider: {
     width: 1,
@@ -762,7 +759,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#e4edf0',
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 4,
@@ -771,7 +768,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#e4edf0',
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     paddingHorizontal: 12,
     paddingVertical: 10,
     flexDirection: 'row',
@@ -785,10 +782,10 @@ const styles = StyleSheet.create({
   dateValue: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   sectionHeader: {
-    marginTop: 8,
+    marginTop: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -796,22 +793,22 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   sectionCount: {
     fontSize: 12,
-    color: '#7b8891',
+    color: colors.textSecondary,
   },
   emptyState: {
     borderRadius: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     padding: 20,
     borderWidth: 1,
     borderColor: '#e4edf0',
   },
   emptyStateText: {
     fontSize: 13,
-    color: '#7b8891',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   addRecordButton: {
@@ -842,7 +839,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -856,11 +853,11 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   modalSubtitle: {
     fontSize: 13,
-    color: '#7b8891',
+    color: colors.textSecondary,
   },
   modalLabel: {
     fontSize: 13,
@@ -874,11 +871,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   inputDisabled: {
     backgroundColor: '#f2f5f7',
-    color: '#7b8891',
+    color: colors.textSecondary,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -891,11 +888,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8ec',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
   },
   toggleButtonActive: {
-    backgroundColor: '#2bb6c2',
-    borderColor: '#2bb6c2',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   toggleButtonText: {
     fontSize: 14,
@@ -903,7 +900,7 @@ const styles = StyleSheet.create({
     color: '#4b5963',
   },
   toggleButtonTextActive: {
-    color: '#fff',
+    color: colors.textInverse,
   },
   walletChipRow: {
     flexDirection: 'row',
@@ -916,10 +913,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#e2e8ec',
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
   },
   walletChipActive: {
-    borderColor: '#2bb6c2',
+    borderColor: colors.primary,
     backgroundColor: '#e7f7f9',
   },
   walletChipText: {
@@ -928,7 +925,7 @@ const styles = StyleSheet.create({
     color: '#3d4a53',
   },
   walletChipTextActive: {
-    color: '#179ea9',
+    color: colors.primaryDark,
   },
   emptyWalletChip: {
     paddingVertical: 10,
@@ -940,41 +937,18 @@ const styles = StyleSheet.create({
   },
   emptyWalletText: {
     fontSize: 13,
-    color: '#7b8891',
-  },
-  saveButton: {
-    marginTop: 6,
-    backgroundColor: '#22b8c8',
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  deleteButton: {
-    backgroundColor: '#f25c64',
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  deleteButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
+    color: colors.textSecondary,
   },
   activityGroup: {
     gap: 8,
   },
   activityDate: {
     fontSize: 12,
-    color: '#7b8891',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   activityItem: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.backgroundPrimary,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#e4edf0',
@@ -992,7 +966,7 @@ const styles = StyleSheet.create({
   activityTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1f1f1f',
+    color: colors.textPrimary,
   },
   activitySubRow: {
     flexDirection: 'row',
@@ -1001,16 +975,16 @@ const styles = StyleSheet.create({
   },
   activitySubtitle: {
     fontSize: 12,
-    color: '#7b8891',
+    color: colors.textSecondary,
   },
   activityAmount: {
     fontSize: 15,
     fontWeight: '700',
   },
   activityAmountIncome: {
-    color: '#24a37a',
+    color: colors.success,
   },
   activityAmountExpense: {
-    color: '#d85a62',
+    color: colors.error,
   },
 });
