@@ -139,13 +139,13 @@ export const DebtToolScreen = () => {
 
         {debtsQuery.isLoading ? (
           <EmptyState
-            icon="📊"
+            icon="sync"
             title="Đang tải món nợ..."
             description="Vui lòng đợi trong giây lát."
           />
         ) : filteredDebts.length === 0 ? (
           <EmptyState
-            icon="💳"
+            icon="cash-outline"
             title="Chưa có món nợ"
             description="Hãy tạo món nợ đầu tiên của bạn."
             action={{

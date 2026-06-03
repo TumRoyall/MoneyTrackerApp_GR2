@@ -13,7 +13,8 @@ import java.util.UUID;
 public class CreateTransactionRequest {
     @NotNull
     private UUID walletId;
-    @NotNull private UUID categoryId;
+    @NotNull
+    private UUID categoryId;
     @NotNull @Positive
     private BigDecimal amount;
 

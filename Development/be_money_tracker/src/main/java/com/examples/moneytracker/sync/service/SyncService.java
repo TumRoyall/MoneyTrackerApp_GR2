@@ -156,7 +156,7 @@ public class SyncService {
 
         List<CategoryResponse> categoryChanges = categoryUpserts.isEmpty()
             ? List.of()
-            : categoryRepository.findByCategoryIdInAndDeletedAtIsNull(categoryUpserts)
+            : categoryRepository.findByCategoryIdInRaw(categoryUpserts)
             .stream()
             .filter(c -> Boolean.TRUE.equals(c.getIsDefault()) || userId.equals(c.getUserId()))
             .map(this::toCategoryResponse)
@@ -209,7 +209,7 @@ public class SyncService {
         return new TransactionResponse(
             tx.getTransactionId(),
             tx.getWalletId(),
-            tx.getCategory().getCategoryId(),
+            tx.getCategoryId(),
             tx.getAmount(),
             tx.getType() != null ? tx.getType().name() : null,
             tx.getNote(),
@@ -425,13 +425,28 @@ public class SyncService {
             TransactionPushData data = objectMapper.convertValue(op.getData(), TransactionPushData.class);
             Transaction tx = existingOpt.orElse(new Transaction());
 
+            // Parse categoryId from string to UUID
+            UUID categoryId;
+            try {
+                categoryId = data.getCategoryId() != null ? UUID.fromString(data.getCategoryId()) : null;
+            } catch (IllegalArgumentException e) {
+                return buildErrorResult(op, "Invalid categoryId format: " + data.getCategoryId());
+            }
+            if (categoryId == null) {
+                return buildErrorResult(op, "categoryId is required");
+            }
+
             // Get category
-            UUID categoryId = UUID.fromString(data.getCategoryId());
-            Category category = categoryRepository.findById(categoryId)
-                    .orElseThrow(() -> new IllegalArgumentException("Category not found: " + categoryId));
+            Category category = categoryRepository.findByCategoryIdRaw(categoryId)
+                    .orElseThrow(() -> new IllegalArgumentException("Category not found: " + data.getCategoryId()));
+
+            // Verify user has access to this category
             if (category.getUserId() != null && !category.getUserId().equals(userId)) {
                 return buildErrorResult(op, "Access denied: not your category");
             }
+
+            // Set categoryId as UUID
+            tx.setCategoryId(categoryId);
 
             UUID walletId = data.getWalletId() != null ? UUID.fromString(data.getWalletId()) : null;
             if (walletId == null && tx.getWalletId() != null) {
@@ -452,7 +467,7 @@ public class SyncService {
             }
             tx.setWalletId(walletId);
             tx.setCreatedBy(userId);
-            tx.setCategory(category);
+            tx.setCategoryId(categoryId);
             tx.setAmount(data.getAmount());
             tx.setType(resolveType(data.getType(), category.getType(), tx.getType()));
             tx.setNote(data.getNote());
@@ -545,7 +560,7 @@ public class SyncService {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("transactionId", tx.getTransactionId().toString());
         map.put("walletId", tx.getWalletId().toString());
-        map.put("categoryId", tx.getCategory().getCategoryId().toString());
+        map.put("categoryId", tx.getCategoryId());
         map.put("amount", tx.getAmount());
         map.put("type", tx.getType() != null ? tx.getType().name() : null);
         map.put("note", tx.getNote());

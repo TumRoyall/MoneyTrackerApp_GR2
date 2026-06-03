@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from './theme';
 
 interface EmptyStateProps {
-  icon: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
   title: string;
   description: string;
   action?: {
@@ -15,7 +15,9 @@ interface EmptyStateProps {
 
 export const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => (
   <View style={styles.container}>
-    <Text style={styles.iconText}>{icon}</Text>
+    <View style={styles.iconWrap}>
+      <Ionicons name={icon} size={56} color="#b0bec5" />
+    </View>
     <Text style={styles.title}>{title}</Text>
     <Text style={styles.description}>{description}</Text>
     {action && (
@@ -33,6 +35,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing['2xl'],
     gap: spacing.md,
+  },
+  iconWrap: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#e8f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
   iconText: {
     fontSize: 64,

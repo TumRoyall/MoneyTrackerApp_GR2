@@ -24,8 +24,12 @@ public class Transaction {
     @Column(nullable = false)
     private UUID createdBy;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "category_id", nullable = false)
+    // Support both UUID (user categories) and String (default categories)
+    @Column(name = "category_id", nullable = false)
+    private UUID categoryId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", insertable = false, updatable = false)
     private Category category;
 
     @Column(precision = 18, scale = 2, nullable = false)

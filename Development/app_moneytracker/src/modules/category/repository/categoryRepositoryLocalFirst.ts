@@ -64,26 +64,30 @@ export class CategoryRepositoryLocalFirst implements CategoryRepository {
     };
 
     await this.local.upsert(category);
-    await this.syncService.enqueueOperation({
-      requestId: Crypto.randomUUID(),
-      entity: 'categories',
-      entityId: category.categoryId,
-      op: 'UPSERT',
-      baseVersion: null,
-      data: {
-        categoryId: category.categoryId,
-        name: category.name,
-        type: category.type,
-        icon: category.icon,
-        color: category.color,
-        isDefault: category.isDefault,
-        isHidden: category.isHidden,
-        createdAt: category.createdAt ? new Date(category.createdAt).getTime() : undefined,
-        updatedAt: category.updatedAt ? new Date(category.updatedAt).getTime() : undefined,
-      },
-    });
 
-    void this.syncService.syncInBackground();
+    // Only sync user-created categories, not default categories
+    // Default categories (isDefault=true) should be managed by the server
+    if (!category.isDefault) {
+      await this.syncService.enqueueOperation({
+        requestId: Crypto.randomUUID(),
+        entity: 'categories',
+        entityId: category.categoryId,
+        op: 'UPSERT',
+        baseVersion: null,
+        data: {
+          categoryId: category.categoryId,
+          name: category.name,
+          type: category.type,
+          icon: category.icon,
+          color: category.color,
+          isDefault: category.isDefault,
+          isHidden: category.isHidden,
+          createdAt: category.createdAt ? new Date(category.createdAt).getTime() : undefined,
+          updatedAt: category.updatedAt ? new Date(category.updatedAt).getTime() : undefined,
+        },
+      });
+      void this.syncService.syncInBackground();
+    }
 
     return category;
   }
@@ -93,6 +97,11 @@ export class CategoryRepositoryLocalFirst implements CategoryRepository {
     const existing = await this.local.getCategoryById(categoryId);
     if (!existing) {
       throw new Error('Category not found');
+    }
+
+    // Prevent updating default categories
+    if (existing.isDefault) {
+      throw new Error('Default category cannot be updated');
     }
 
     const updated: Category = {
@@ -131,6 +140,11 @@ export class CategoryRepositoryLocalFirst implements CategoryRepository {
     await this.syncService.ensureInitialized();
     const existing = await this.local.getCategoryById(categoryId);
     if (!existing) {
+      return;
+    }
+
+    // Prevent deleting default categories - only hide them locally
+    if (existing.isDefault) {
       return;
     }
 

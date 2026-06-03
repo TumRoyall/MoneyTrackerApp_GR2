@@ -72,21 +72,21 @@ public class TransactionService {
                 )
                 .orElseThrow(() -> new AccessDeniedException("Not your category"));
 
-                TransactionType type = resolveType(req.getType(), cat.getType(), null);
+        TransactionType type = resolveType(req.getType(), cat.getType(), null);
 
-                // ===== SAVE TRANSACTION =====
+        // ===== SAVE TRANSACTION =====
         Transaction tx = new Transaction();
         tx.setWalletId(wallet.getWalletId());
         tx.setCreatedBy(userId);
-        tx.setCategory(cat);
+        tx.setCategoryId(req.getCategoryId());
         tx.setAmount(req.getAmount());
-                tx.setType(type);
+        tx.setType(type);
         tx.setNote(req.getNote());
         tx.setDate(req.getDate() != null ? req.getDate() : LocalDate.now());
 
         txRepo.save(tx);
-                walletBalanceService.applyTransactionCreate(wallet, tx);
-                syncChangeLogService.recordChange(userId, "transactions", tx.getTransactionId(), "UPSERT");
+        walletBalanceService.applyTransactionCreate(wallet, tx);
+        syncChangeLogService.recordChange(userId, "transactions", tx.getTransactionId(), "UPSERT");
         return map(tx);
     }
 
@@ -108,11 +108,11 @@ public class TransactionService {
         BigDecimal oldAmount = tx.getAmount();
         TransactionType oldType = tx.getType() != null
                 ? tx.getType()
-                : resolveType(null, tx.getCategory().getType(), TransactionType.EXPENSE);
+                : resolveType(null, newCat.getType(), TransactionType.EXPENSE);
 
         TransactionType newType = resolveType(req.getType(), newCat.getType(), oldType);
 
-        tx.setCategory(newCat);
+        tx.setCategoryId(req.getCategoryId());
         tx.setAmount(req.getAmount());
         tx.setType(newType);
         tx.setNote(req.getNote());
@@ -150,16 +150,16 @@ public class TransactionService {
     private TransactionResponse map(Transaction tx) {
         return new TransactionResponse(
                 tx.getTransactionId(),
-                                tx.getWalletId(),
-                tx.getCategory().getCategoryId(),
+                tx.getWalletId(),
+                tx.getCategoryId(),
                 tx.getAmount(),
-                                tx.getType() != null ? tx.getType().name() : null,
+                tx.getType() != null ? tx.getType().name() : null,
                 tx.getNote(),
                 tx.getDate(),
                 tx.getCreatedAt(),
-                                tx.getUpdatedAt(),
-                                tx.getDeletedAt(),
-                                tx.getVersion()
+                tx.getUpdatedAt(),
+                tx.getDeletedAt(),
+                tx.getVersion()
         );
     }
 

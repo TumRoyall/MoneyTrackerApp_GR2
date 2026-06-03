@@ -352,7 +352,7 @@ export const BudgetToolScreen = () => {
           </View>
         ) : filteredBudgets.length === 0 ? (
           <EmptyState
-            icon="💰"
+            icon="wallet-outline"
             title="Chưa có ngân sách"
             description="Bạn có thể tạo ngân sách đầu tiên bằng nút bên dưới."
             action={{ title: "Tạo ngân sách", onPress: () => setShowCreateModal(true) }}

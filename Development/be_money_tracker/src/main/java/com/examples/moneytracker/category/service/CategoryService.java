@@ -61,6 +61,7 @@ public class CategoryService {
     public CategoryResponse createCategory(UUID userId, CreateCategoryRequest request) {
         Category category = new Category();
         category.setUserId(userId);
+        category.setCategoryId(UUID.randomUUID());
         category.setName(request.getName());
         category.setType(request.getType());
         category.setIcon(request.getIcon());
@@ -69,7 +70,10 @@ public class CategoryService {
         category.setIsHidden(false);
 
         categoryRepository.save(category);
-        syncChangeLogService.recordChange(userId, "categories", category.getCategoryId(), "UPSERT");
+        // Only record sync change for user-created categories
+        if (category.getUserId() != null) {
+            syncChangeLogService.recordChange(userId, "categories", category.getCategoryId(), "UPSERT");
+        }
         return toResponse(category);
     }
 

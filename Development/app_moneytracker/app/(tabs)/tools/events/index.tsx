@@ -114,13 +114,13 @@ export default function EventListScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {isLoading ? (
           <EmptyState
-            icon="📊"
+            icon="sync"
             title="Đang tải sự kiện..."
             description="Vui lòng đợi trong giây lát."
           />
         ) : hasError ? (
           <EmptyState
-            icon="⚠️"
+            icon="warning"
             title="Không thể tải sự kiện"
             description="Vui lòng kiểm tra kết nối và thử lại"
             action={{
@@ -130,7 +130,7 @@ export default function EventListScreen() {
           />
         ) : isEmpty ? (
           <EmptyState
-            icon="🎉"
+            icon="calendar-outline"
             title="Chưa có sự kiện nào"
             description="Tạo sự kiện để cùng bạn bè ghi nhận chi tiêu chung"
             action={{

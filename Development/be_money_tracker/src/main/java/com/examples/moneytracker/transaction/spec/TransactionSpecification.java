@@ -5,6 +5,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.UUID;
 
 public class TransactionSpecification {
@@ -28,16 +29,16 @@ public class TransactionSpecification {
         return (root, query, cb) ->
                 categoryId == null
                         ? cb.conjunction()
-                        : cb.equal(root.get("category").get("categoryId"), categoryId);
+                        : cb.equal(root.get("categoryId"), categoryId);
     }
 
     // ===== CATEGORIES (IN LIST) =====
-    public static Specification<Transaction> hasCategories(java.util.Collection<UUID> categoryIds) {
+    public static Specification<Transaction> hasCategories(Collection<UUID> categoryIds) {
         return (root, query, cb) -> {
             if (categoryIds == null || categoryIds.isEmpty())
                 return cb.conjunction();
 
-            return root.get("category").get("categoryId").in(categoryIds);
+            return root.get("categoryId").in(categoryIds);
         };
     }
 

@@ -231,7 +231,7 @@ export const SavingToolScreen = () => {
           </View>
         ) : filteredSavings.length === 0 ? (
           <EmptyState
-            icon="🎯"
+            icon="analytics-outline"
             title="Chưa có mục tiêu tiết kiệm"
             description="Hãy tạo mục tiêu tiết kiệm đầu tiên của bạn."
             action={{

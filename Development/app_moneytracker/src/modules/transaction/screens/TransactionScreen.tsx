@@ -15,7 +15,7 @@ import {
 
 import { Category } from '@/modules/category/models/category.types';
 import { useCategoryUsecases } from '@/modules/category/usecases';
-import { categoryIconOptions } from '@/modules/category/data/defaultCategories';
+import { categoryGroups, expenseGroups, incomeGroups } from '@/modules/category/data/categoryIconGroups';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
 import {
   Transaction,
@@ -37,24 +37,30 @@ const defaultCategoryTemplates: {
   icon: string;
   color: string;
 }[] = [
-    { name: 'Siêu thị', type: 'EXPENSE', icon: 'cart', color: '#4CAF50' },
-    { name: 'Đồ ăn', type: 'EXPENSE', icon: 'food-fork-drink', color: '#4CAF50' },
-    { name: 'Thú cưng', type: 'EXPENSE', icon: 'dog', color: '#FFC107' },
-    { name: 'Làm đẹp', type: 'EXPENSE', icon: 'lipstick', color: '#E91E63' },
-    { name: 'Điện tử', type: 'EXPENSE', icon: 'cellphone', color: '#2196F3' },
-    { name: 'Sách', type: 'EXPENSE', icon: 'book', color: '#FF9800' },
-    { name: 'Gym/Fitness', type: 'EXPENSE', icon: 'dumbbell', color: '#F44336' },
-    { name: 'Sức khỏe', type: 'EXPENSE', icon: 'pill', color: '#F44336' },
-    { name: 'Du lịch', type: 'EXPENSE', icon: 'beach', color: '#9C27B0' },
-    { name: 'Giải trí', type: 'EXPENSE', icon: 'gamepad-variant', color: '#9C27B0' },
+    // 13 EXPENSE categories
+    { name: 'Thức ăn & Đồ uống', type: 'EXPENSE', icon: 'food-fork-drink', color: '#FF6B6B' },
+    { name: 'Mua sắm', type: 'EXPENSE', icon: 'cart', color: '#4ECDC4' },
+    { name: 'Du lịch', type: 'EXPENSE', icon: 'airplane', color: '#45B7D1' },
+    { name: 'Sức khỏe', type: 'EXPENSE', icon: 'pill', color: '#FF8A80' },
+    { name: 'Giải trí', type: 'EXPENSE', icon: 'movie', color: '#DDA0DD' },
+    { name: 'Thú cưng', type: 'EXPENSE', icon: 'dog', color: '#FFD54F' },
+    { name: 'Thực phẩm', type: 'EXPENSE', icon: 'food-apple', color: '#81C784' },
+    { name: 'Điện tử', type: 'EXPENSE', icon: 'cellphone', color: '#90CAF9' },
+    { name: 'Làm đẹp', type: 'EXPENSE', icon: 'lipstick', color: '#F48FB1' },
+    { name: 'Thể thao', type: 'EXPENSE', icon: 'dumbbell', color: '#FF7043' },
+    { name: 'Giáo dục', type: 'EXPENSE', icon: 'book', color: '#FFB74D' },
+    { name: 'Giao thông', type: 'EXPENSE', icon: 'car', color: '#80DEEA' },
+    { name: 'Nhà', type: 'EXPENSE', icon: 'home', color: '#A5D6A7' },
+    // 5 INCOME categories
     { name: 'Lương', type: 'INCOME', icon: 'briefcase', color: '#1565C0' },
-    { name: 'Thưởng', type: 'INCOME', icon: 'trophy', color: '#1565C0' },
-    { name: 'Đầu tư', type: 'INCOME', icon: 'chart-timeline-variant', color: '#FFD700' },
-    { name: 'Thu nhập khác', type: 'INCOME', icon: 'cash', color: '#607D8B' },
+    { name: 'Thưởng', type: 'INCOME', icon: 'trophy', color: '#FFD700' },
+    { name: 'Đầu tư', type: 'INCOME', icon: 'chart-timeline-variant', color: '#00BCD4' },
+    { name: 'Freelance', type: 'INCOME', icon: 'laptop', color: '#9C27B0' },
+    { name: 'Quà tặng', type: 'INCOME', icon: 'gift', color: '#E91E63' },
   ];
 
 const defaultCategoryIconByType: Record<CategoryType, string> = {
-  EXPENSE: 'cart',
+  EXPENSE: 'food-fork-drink',
   INCOME: 'briefcase',
 };
 
@@ -311,6 +317,7 @@ export const TransactionScreen = () => {
   const [formCategoryType, setFormCategoryType] = useState<CategoryType>('EXPENSE');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryIcon, setNewCategoryIcon] = useState(defaultCategoryIconByType.EXPENSE);
+  const [newCategoryColor, setNewCategoryColor] = useState('#FF6B6B');
   const [formAmount, setFormAmount] = useState('');
   const [formNote, setFormNote] = useState('');
   const [formDate, setFormDate] = useState(formatIsoDate(new Date()));
@@ -558,7 +565,14 @@ export const TransactionScreen = () => {
 
   const changeFormCategoryType = (nextType: CategoryType) => {
     setFormCategoryType(nextType);
-    setNewCategoryIcon(defaultCategoryIconByType[nextType]);
+    const defaultIcon = defaultCategoryIconByType[nextType];
+    setNewCategoryIcon(defaultIcon);
+    // Get color for default icon
+    const group = (nextType === 'EXPENSE' ? expenseGroups : incomeGroups).find(g => g.subIcons.some(i => i.icon === defaultIcon));
+    if (group) {
+      const subIcon = group.subIcons.find(i => i.icon === defaultIcon);
+      setNewCategoryColor(subIcon?.color || group.color);
+    }
     setShowIconOptions(false);
     const current = categories.find((item) => item.categoryId === formCategoryId);
     if (current && normalizeCategoryType(current.type) !== nextType) {
@@ -568,7 +582,14 @@ export const TransactionScreen = () => {
 
   const openCreateCategoryComposer = () => {
     setNewCategoryName('');
-    setNewCategoryIcon(defaultCategoryIconByType[formCategoryType]);
+    const defaultIcon = defaultCategoryIconByType[formCategoryType];
+    setNewCategoryIcon(defaultIcon);
+    // Get color for default icon
+    const group = (formCategoryType === 'EXPENSE' ? expenseGroups : incomeGroups).find(g => g.subIcons.some(i => i.icon === defaultIcon));
+    if (group) {
+      const subIcon = group.subIcons.find(i => i.icon === defaultIcon);
+      setNewCategoryColor(subIcon?.color || group.color);
+    }
     setShowIconOptions(false);
     setShowCreateCategoryComposer(true);
   };
@@ -858,7 +879,7 @@ export const TransactionScreen = () => {
           />
         ) : groupedByDate.length === 0 ? (
           <EmptyState
-            icon="format-list-bulleted"
+            icon="receipt-outline"
             title="Chưa có giao dịch"
             description="Hãy bắt đầu ghi nhận thu chi của bạn"
             action={{
@@ -1059,6 +1080,7 @@ export const TransactionScreen = () => {
                 <View style={styles.categoryGrid}>
                   {createModalCategories.map((category) => {
                     const selected = formCategoryId === category.categoryId;
+                    const catColor = category.color || '#29bcc8';
                     return (
                       <Pressable
                         key={category.categoryId}
@@ -1067,12 +1089,12 @@ export const TransactionScreen = () => {
                           setShowCategoryPickerModal(false);
                           closeCreateCategoryComposer();
                         }}
-                        style={[styles.categoryGridItem, selected ? styles.categoryGridItemSelected : null]}
+                        style={[styles.categoryGridItem, selected && { borderColor: catColor, backgroundColor: catColor + '15' }]}
                       >
-                        <View style={styles.categoryGridIconWrap}>
-                          <MaterialCommunityIcons name={(category.icon as any) || 'help'} size={22} color="#29bcc8" />
+                        <View style={[styles.categoryGridIconWrap, { backgroundColor: catColor + '20' }]}>
+                          <MaterialCommunityIcons name={(category.icon as any) || 'help'} size={22} color={catColor} />
                         </View>
-                        <Text style={styles.categoryGridLabel} numberOfLines={2}>
+                        <Text style={[styles.categoryGridLabel, selected && { color: catColor }]} numberOfLines={2}>
                           {category.name}
                         </Text>
                       </Pressable>
@@ -1092,33 +1114,48 @@ export const TransactionScreen = () => {
 
                   <Pressable style={styles.pickIconButton} onPress={() => setShowIconOptions((prev) => !prev)}>
                     <View style={styles.pickIconValueWrap}>
-                      <View style={styles.pickIconCircle}>
-                        <MaterialCommunityIcons name={(newCategoryIcon as any) || 'cart'} size={18} color="#29bcc8" />
+                      <View style={[styles.pickIconCircle, { backgroundColor: newCategoryColor + '25' }]}>
+                        <MaterialCommunityIcons name={(newCategoryIcon as any) || 'cart'} size={18} color={newCategoryColor} />
                       </View>
-                      <Text style={styles.pickIconLabel}>Chọn icon</Text>
+                      <Text style={[styles.pickIconLabel, { color: newCategoryColor }]}>Chọn icon</Text>
                     </View>
                     <Ionicons name={showIconOptions ? 'chevron-up' : 'chevron-down'} size={18} color="#4a5963" />
                   </Pressable>
 
                   {showIconOptions ? (
-                    <View style={styles.iconGrid}>
-                      {categoryIconOptions.map((option) => {
-                        const selected = newCategoryIcon === option.icon;
-                        return (
-                          <Pressable
-                            key={option.icon}
-                            onPress={() => setNewCategoryIcon(option.icon)}
-                            style={[styles.iconGridItem, selected ? styles.iconGridItemSelected : null]}
-                          >
-                            <View style={[styles.iconGridCircle, selected ? styles.iconGridCircleSelected : null]}>
-                              <MaterialCommunityIcons name={(option.icon as any) || 'help'} size={24} color={selected ? '#29bcc8' : '#5a6672'} />
+                    <View style={styles.iconGroupContainer}>
+                      <ScrollView style={styles.iconGroupScroll} nestedScrollEnabled>
+                        {(formCategoryType === 'EXPENSE' ? expenseGroups : incomeGroups).map((group) => (
+                          <View key={group.id} style={styles.iconGroupSection}>
+                            <View style={styles.iconGroupHeader}>
+                              <Text style={styles.iconGroupEmoji}>{group.emoji}</Text>
+                              <Text style={[styles.iconGroupName, { color: group.color }]}>{group.name}</Text>
                             </View>
-                            <Text style={styles.iconGridName} numberOfLines={1}>
-                              {option.label}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
+                            <View style={styles.iconSubGrid}>
+                              {group.subIcons.map((iconOption) => {
+                                const selected = newCategoryIcon === iconOption.icon;
+                                return (
+                                  <Pressable
+                                    key={iconOption.icon}
+                                    onPress={() => {
+                                      setNewCategoryIcon(iconOption.icon);
+                                      setNewCategoryColor(iconOption.color);
+                                    }}
+                                    style={[styles.iconSubItem, selected && { borderColor: iconOption.color }]}
+                                  >
+                                    <View style={[styles.iconSubCircle, { backgroundColor: iconOption.color + '25' }]}>
+                                      <MaterialCommunityIcons name={(iconOption.icon as any) || 'help'} size={20} color={iconOption.color} />
+                                    </View>
+                                    <Text style={[styles.iconSubLabel, selected && { color: iconOption.color, fontWeight: '600' }]} numberOfLines={1}>
+                                      {iconOption.label}
+                                    </Text>
+                                  </Pressable>
+                                );
+                              })}
+                            </View>
+                          </View>
+                        ))}
+                      </ScrollView>
                     </View>
                   ) : null}
 
@@ -2386,6 +2423,65 @@ const styles = StyleSheet.create({
   iconGridName: {
     fontSize: 11,
     color: '#667179',
+    textAlign: 'center',
+  },
+  iconGroupContainer: {
+    maxHeight: 320,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d5dde3',
+    backgroundColor: '#fafbfc',
+    overflow: 'hidden',
+  },
+  iconGroupScroll: {
+    padding: 8,
+  },
+  iconGroupSection: {
+    marginBottom: 16,
+  },
+  iconGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  iconGroupEmoji: {
+    fontSize: 20,
+  },
+  iconGroupName: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  iconSubGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  iconSubItem: {
+    width: '23%',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
+  },
+  iconSubItemSelected: {
+    borderColor: '#29bcc8',
+    backgroundColor: '#e9fbfd',
+  },
+  iconSubCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  iconSubLabel: {
+    fontSize: 10,
+    color: '#4a5963',
     textAlign: 'center',
   },
   addCategoryActionRow: {

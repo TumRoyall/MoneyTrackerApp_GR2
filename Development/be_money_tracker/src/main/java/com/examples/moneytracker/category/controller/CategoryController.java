@@ -25,44 +25,44 @@ public class CategoryController {
 
     // GET /api/categories
     @GetMapping
-        public ResponseEntity<ApiResponse<List<CategoryResponse>>> getCategories(
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getCategories(
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-                return ResponseEntity.ok(ApiResponse.of(categoryService.getAccessibleCategories(user.getId())));
+        return ResponseEntity.ok(ApiResponse.of(categoryService.getAccessibleCategories(user.getId())));
     }
 
     // GET /api/categories/{id}
     @GetMapping("/{id}")
-        public ResponseEntity<ApiResponse<CategoryResponse>> getCategory(
+    public ResponseEntity<ApiResponse<CategoryResponse>> getCategory(
             @PathVariable UUID id,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-                return ResponseEntity.ok(ApiResponse.of(categoryService.getCategoryById(user.getId(), id)));
-        }
+        return ResponseEntity.ok(ApiResponse.of(categoryService.getCategoryById(user.getId(), id)));
+    }
 
-        @PostMapping
-        public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(
-                        @RequestBody @Valid CreateCategoryRequest request,
-                        @AuthenticationPrincipal CustomUserDetails user
-        ) {
-                return ResponseEntity.ok(ApiResponse.of(categoryService.createCategory(user.getId(), request)));
-        }
+    @PostMapping
+    public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(
+            @RequestBody @Valid CreateCategoryRequest request,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        return ResponseEntity.ok(ApiResponse.of(categoryService.createCategory(user.getId(), request)));
+    }
 
-        @PutMapping("/{id}")
-        public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(
-                        @PathVariable UUID id,
-                        @RequestBody @Valid UpdateCategoryRequest request,
-                        @AuthenticationPrincipal CustomUserDetails user
-        ) {
-                return ResponseEntity.ok(ApiResponse.of(categoryService.updateCategory(user.getId(), id, request)));
-        }
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(
+            @PathVariable UUID id,
+            @RequestBody @Valid UpdateCategoryRequest request,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        return ResponseEntity.ok(ApiResponse.of(categoryService.updateCategory(user.getId(), id, request)));
+    }
 
-        @PatchMapping("/{id}/hide")
-        public ResponseEntity<ApiResponse<Map<String, Boolean>>> hideCategory(
-                        @PathVariable UUID id,
-                        @AuthenticationPrincipal CustomUserDetails user
-        ) {
-                categoryService.hideCategory(user.getId(), id);
-                return ResponseEntity.ok(ApiResponse.of(Map.of("hidden", true)));
+    @PatchMapping("/{id}/hide")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> hideCategory(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        categoryService.hideCategory(user.getId(), id);
+        return ResponseEntity.ok(ApiResponse.of(Map.of("hidden", true)));
     }
 }
