@@ -38,6 +38,23 @@ Tách thành **3 features độc lập**, ship theo thứ tự ưu tiên. Mỗi 
 
 ---
 
+## F1 Status
+
+✅ **F1 PercentAdjuster complete** (see `2026-06-05-f1-percent-adjuster-plan.md` for implementation plan).
+
+**Components delivered:**
+- `usePercentSum` hook (auto-balancing percent allocator) - 9 tests
+- `PercentAdjuster` component (input + ±5% buttons + VND amount) - 10 tests
+- `PercentAdjusterRow` wrapper (icon + name + adjuster + AI reasoning)
+
+**Test coverage:** 19/19 tests passing
+**Branch:** `code_ver2`
+**Commits:** `1f016c4` (test infra), `1d5275a` (hook), `ff900ea` (component), `f079242` (wrapper)
+
+Ready for F2 (AI Budget) integration.
+
+---
+
 ## Quyết định thiết kế chính (áp dụng cho F1 + F2)
 
 | Câu hỏi | Quyết định | Lý do |
