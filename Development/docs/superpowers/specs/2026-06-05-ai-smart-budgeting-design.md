@@ -1,0 +1,514 @@
+# Design: AI-Powered Smart Budgeting
+
+**Date:** 2026-06-05
+**Status:** Draft (For Review)
+**Type:** Feature Design
+**Scope:** Reference / Brainstorm only - not yet committed to implementation
+
+## Overview
+
+Cho phép người dùng tạo ngân sách hàng tháng bằng AI. User khai báo thu nhập thực tế + text mô tả nhu cầu, hệ thống gọi Gemini để sinh draft budget (4-6 categories), user xem preview + chỉnh slider → bấm xác nhận → lưu batch vào DB.
+
+## Giải quyết vấn đề
+
+- **Cold start:** User mới không biết lập budget thế nào → AI gợi ý theo profile + lịch sử
+- **Cá nhân hóa:** Không dùng mô hình cứng nhắc (50/30/20), AI điều chỉnh theo income type + goal
+- **Tiết kiệm thời gian:** Không phải tự tính %, tự tạo từng category
+
+---
+
+## Scope: 3 Features tách biệt (Option A)
+
+Tách thành **3 features độc lập**, ship theo thứ tự ưu tiên. Mỗi feature có design riêng, có thể hủy bỏ nếu feedback xấu.
+
+| # | Feature | Mục đích | Effort | Phụ thuộc |
+|---|---------|----------|--------|-----------|
+| **F1** | **Slider Component cho Budget** | Thanh kéo điều chỉnh amount (dùng cho cả manual + AI) | Nhỏ (~1 tuần) | Không |
+| **F2** | **AI Budget Generation** | Gọi Gemini sinh draft budget, dùng slider từ F1 | Trung bình (~2-3 tuần) | F1 (UX) |
+| **F3** | **User Onboarding (3 câu hỏi)** | Thu thập profile cho future AI features | Trung bình (~1-2 tuần) | Độc lập |
+
+**Thứ tự ship:** F1 → F2 → F3 (F3 có thể song song với F1/F2)
+
+### Tại sao tách 3 features?
+
+1. **Validate UX slider** với manual trước → bớt rủi ro cho F2
+2. **AI Budget không cần onboarding** → có thể dùng local profile cho MVP F2
+3. **Mỗi feature có thể hủy** nếu feedback xấu → không lãng phí effort
+4. **F3 Onboarding** có thể dùng cho nhiều AI features sau, không chỉ budget
+
+---
+
+## Quyết định thiết kế chính (áp dụng cho F1 + F2)
+
+| Câu hỏi | Quyết định | Lý do |
+|---------|-----------|-------|
+| Wallet scope | Hybrid: nullable walletId, user chọn scope khi generate | Linh hoạt + không phức tạp edit |
+| RAG strategy | Context Injection (không vector DB) | Data structured, không cần retrieval |
+| LLM provider | Gemini (đã tích hợp) | Tận dụng AiProviderGateway hiện có |
+| AI approach | Structured Output với Enum Constraint | Cân bằng đơn giản + robust |
+| Số category | Tối đa 6 (khuyến nghị 4-5) | Tránh vặt vãnh |
+| Base category | Luôn có "Tiết kiệm" trong output | Đảm bảo saving rate |
+| Confirmation | Bắt buộc user confirm + slider | Không tự save, cho user kiểm soát |
+| Draft state | Mobile local (AsyncStorage) | Không cần DB cho MVP |
+
+---
+
+## F1: Slider Component cho Budget
+
+### Mục tiêu
+Refactor `BudgetEditScreen` hiện tại (đang sửa) để dùng slider thay vì input số truyền thống. Cải thiện UX cho cả manual và AI budget sau này.
+
+### Loại Slider: **Phần trăm (% trên 100)**
+
+> Slider điều chỉnh **% phân bổ** (0-100), không phải số tiền VND. Số tiền = `income × % / 100` tự động tính.
+
+**Lý do dùng % thay vì VND:**
+- User dễ hình dung ("Ăn uống 25% thu nhập")
+- Tổng % luôn = 100, dễ validate (1 đường thẳng so với tổng tiền)
+- Khi sửa income → tự động tính lại số tiền
+- AI sinh dễ hơn (chia % thay vì số tiền chính xác)
+
+### UX Slider (cho Budget)
+
+```
+┌─────────────────────────────────────┐
+│ 🍜 Ăn uống                          │
+│                                     │
+│  [━━━━━━●━━━━━━] 25%                │
+│                                     │
+│  = 5,000,000 VND  (auto)            │
+│                                     │
+│  AI: "Ăn uống ~130k/ngày"           │
+└─────────────────────────────────────┘
+```
+
+User kéo slider → % thay đổi → số tiền auto update. Các category khác auto-adjust để tổng = 100%.
+
+### Quy tắc Slider
+
+1. **Slider thường**: kéo được, % từ 0-100
+2. **Slider cuối (Tiết kiệm)**: **DISABLED**, auto = `100 - sum(cate khác)`
+3. **Realtime update**: kéo 1 cái → các cái khác auto rebalance
+4. **Có thể gõ số % trực tiếp** vào textbox bên cạnh slider (cho user thích nhập số chính xác)
+5. **Hiển thị số tiền** bên phải dưới dạng readonly (auto-calculated)
+
+### Components cần tạo
+
+- `modules/budget/components/PercentSlider.tsx` - Slider component (range 0-100%)
+- `modules/budget/components/PercentSliderRow.tsx` - Row đầy đủ (icon + name + slider + % + amount + AI reason)
+- `modules/budget/hooks/usePercentSum.ts` - Hook tính tổng % + auto-adjust category cuối
+
+### Files cần thay đổi
+
+- `modules/budget/screens/BudgetEditScreen.tsx` (đang sửa) - tích hợp slider
+- `modules/budget/screens/BudgetCreateScreen.tsx` (nếu có) - tích hợp slider
+- `modules/budget/screens/BudgetDetailScreen.tsx` (đang sửa) - hiển thị slider readonly
+
+### Acceptance criteria
+
+- [ ] Slider hoạt động mượt trên Android + iOS
+- [ ] Kéo slider → % update → amount auto update
+- [ ] Có thể gõ số % trực tiếp (textbox bên cạnh)
+- [ ] Tổng % luôn = 100 (category cuối auto-fill)
+- [ ] Format tiền VND đúng (1,000,000)
+- [ ] Category cuối (Tiết kiệm) slider bị disable + tooltip "Tự động tính"
+
+---
+
+## F2: AI Budget Generation
+
+### Mục tiêu
+Cho phép user tạo budget bằng AI. Tận dụng slider **%** từ F1 cho UX chỉnh sửa.
+
+### User Flow (F2 only, không cần F3)
+
+1. User vào tab Budget → nhấn nút "Tạo bằng AI"
+2. **Màn Create** (`AiBudgetCreateScreen`):
+   - Nhập **income thực tế** (VD: 20,000,000)
+   - Nhập **text mô tả** (VD: "Đám cưới 2tr, muốn mua iPhone")
+   - Chọn **wallet scope**: Tất cả ví / 1 ví cụ thể
+   - Chọn **thời gian** (default: tháng hiện tại, có thể sửa)
+3. Bấm "Tạo" → loading → backend gọi Gemini
+4. **Màn Preview** (`AiBudgetPreviewScreen`):
+   - Hiển thị **time range** (editable)
+   - Hiển thị **tổng income** (editable)
+   - Hiển thị **danh sách categories** với slider % (từ F1) + AI reasoning
+   - **Tiết kiệm** ở cuối, auto-fill = 100 - sum
+   - **Toggle "Áp dụng cho ví"** (giống màn Create)
+5. User chỉnh slider nếu muốn → bấm "Xác nhận" → batch save
+
+### Layout chi tiết màn Preview
+
+```
+┌──────────────────────────────────────────────┐
+│ ←  AI Budget Draft                          │
+│                                              │
+│ ╔══════════════════════════════════════════╗ │
+│ ║ 📅 Thời gian budget                     ║ │  ← Editable
+│ ║ 01/06/2026 → 30/06/2026  [Chỉnh] [▼]   ║ │
+│ ╚══════════════════════════════════════════╝ │
+│                                              │
+│ ╔══════════════════════════════════════════╗ │
+│ ║ 💰 Tổng thu nhập                        ║ │  ← Editable
+│ ║ [   20,000,000 VND    ]                 ║ │
+│ ╚══════════════════════════════════════════╝ │
+│                                              │
+│ ┌─ AI gợi ý ──────────────────────────────┐ │
+│ │ 🍜 Ăn uống                              │ │
+│ │   [━━━━━●━━━━━━] 25%   [25]  [5tr VND] │ │
+│ │   "Ăn uống ~130k/ngày"                  │ │
+│ │                                          │ │
+│ │ 🏠 Tiền nhà                              │ │
+│ │   [━━━━━━●━━━] 30%    [30]  [6tr VND]  │ │
+│ │   "Tiền nhà cố định"                    │ │
+│ │                                          │ │
+│ │ ⛽ Xăng xe                               │ │
+│ │   [━━━●━━━━━] 15%      [15]  [3tr VND]  │ │
+│ │   "Xăng + Grab"                          │ │
+│ │                                          │ │
+│ │ 🎬 Giải trí                              │ │
+│ │   [━●━━━━━━] 10%        [10]  [2tr VND]  │ │
+│ │   "Cuối tuần"                            │ │
+│ │                                          │ │
+│ │ 💰 Tiết kiệm 🔒 (auto)                   │ │
+│ │   [━━━━━━━━━●] 20%      [20]  [4tr VND]  │ │
+│ │   "Dành mua iPhone"                      │ │
+│ └──────────────────────────────────────────┘ │
+│                                              │
+│ Tổng: 100% = 20,000,000 VND ✓              │
+│                                              │
+│ ╔══════════════════════════════════════════╗ │
+│ ║ Áp dụng cho ví                           ║ │
+│ ║ ● Tất cả ví                              ║ │
+│ ║ ○ Chỉ ví: [Tiền mặt ▼]                  ║ │
+│ ╚══════════════════════════════════════════╝ │
+│                                              │
+│ [    Xác nhận & Tạo budget    ]            │
+└──────────────────────────────────────────────┘
+```
+
+### Database Schema (F2 only)
+
+#### `budgets` (mở rộng - **không cần thay đổi `users` cho F2**)
+
+```sql
+ALTER TABLE budgets MODIFY:
+  wallet_id DROP NOT NULL;  -- NULL = budget cho tất cả ví
+
+ALTER TABLE budgets ADD COLUMN:
+  source VARCHAR(20),        -- MANUAL | AI_CONFIRMED
+  ai_reasoning TEXT,
+  draft_id VARCHAR(36);      -- Nhóm budget cùng 1 lần tạo
+```
+
+**Quyết định:** F2 **không cần** mở rộng `users`. Profile data (income, goal) lưu local AsyncStorage trên mobile. Khi F3 (Onboarding) ship, sẽ sync lên server.
+
+### API Endpoints (F2)
+
+#### Generate AI Draft
+
+```
+POST /api/ai/budget/draft
+Auth: Required
+Body: {
+  "income": 20000000,
+  "userPrompt": "Đám cưới 2tr, muốn mua iPhone",
+  "walletId": "uuid-or-null",     // null = tất cả ví
+  "periodStart": "2026-06-01",
+  "periodEnd": "2026-06-30"
+}
+Response: 200 OK {
+  "draftId": "uuid",
+  "items": [
+    {
+      "categoryId": "uuid",
+      "categoryName": "Tiền nhà",
+      "percent": 30,                    // % (0-100), thay vì amount
+      "amount": 6000000,                // = income × percent / 100 (auto-calculated)
+      "aiReasoning": "Tiền nhà cố định"
+    }
+  ],
+  "summary": {
+    "totalIncome": 20000000,
+    "totalPercent": 100,
+    "totalBudget": 20000000,
+    "savingsPercent": 20,
+    "savingsAmount": 4000000,
+    "strategy": "Tăng tiết kiệm cho iPhone"
+  }
+}
+Error: 400 nếu income <= 0, 503 nếu AI service down
+```
+
+#### Batch Save (User đã confirm)
+
+```
+POST /api/budgets/batch
+Auth: Required
+Body: {
+  "draftId": "uuid",  // Reference từ draft, dùng làm idempotency key
+  "walletId": "uuid-or-null",
+  "periodStart": "2026-06-01",
+  "periodEnd": "2026-06-30",
+  "income": 20000000,                  // Có thể đã sửa từ draft
+  "items": [
+    { "categoryId": "uuid", "percent": 30, "amount": 6000000, "aiReasoning": "..." }
+  ]
+}
+Response: 201 Created { budgets: [...BudgetResponse] }
+```
+
+### Context Injection (F2: 2 layers, không cần F3)
+
+Vì F2 không cần onboarding, chỉ dùng 2 layers:
+
+#### Layer 1: Prompt-time Context (luôn có)
+- `income`: Thu nhập thực tế tháng này
+- `userPrompt`: Text mô tả nhu cầu
+- `walletScope`: Ví cụ thể hay tất cả ví
+
+#### Layer 2: Historical Stats (chỉ khi có data)
+Trigger khi user có ≥ 10 transactions (giảm từ 30 vì không có onboarding, user dùng manual trước).
+
+Query SQL aggregate:
+```sql
+SELECT c.category_id, c.name, AVG(t.amount) as avg_amount, COUNT(*) as cnt
+FROM transactions t
+JOIN categories c ON t.category_id = c.category_id
+WHERE t.user_id = ?
+  AND t.type = 'EXPENSE'
+  AND t.deleted_at IS NULL
+  AND t.transaction_date >= ?  -- now - 6 months
+GROUP BY c.category_id, c.name
+HAVING cnt >= 3  -- Chỉ lấy category có đủ data
+ORDER BY avg_amount DESC
+LIMIT 15;
+```
+
+### System Prompt
+
+```markdown
+# ROLE
+Bạn là trợ lý tài chính cá nhân. Phân bổ ngân sách tháng cho user dựa trên thu nhập và lịch sử chi tiêu.
+
+# QUY TẮC BẮT BUỘC
+
+1. CHỈ sử dụng categoryId từ AVAILABLE_CATEGORIES. Không tạo category mới.
+2. Trả về **PERCENT** (số nguyên 0-100) cho mỗi category, KHÔNG trả về amount. Mobile sẽ tự tính amount = income × percent / 100.
+3. Tổng tất cả percent PHẢI BẰNG CHÍNH XÁC 100.
+4. LUÔN bao gồm category "Tiết kiệm" trong output.
+5. Tối đa 6 categories (khuyến nghị 4-5).
+6. Mỗi category có aiReasoning (1 câu, ≤ 100 ký tự, tiếng Việt).
+7. Phân bổ theo nguyên tắc:
+   - Thiếu data (user mới): dùng 50/30/20 baseline (50 needs, 30 wants, 20 savings)
+   - Có historical: category hay chi nhiều → percent cao hơn để tránh vỡ
+   - Có userPrompt đặc biệt (đám cưới, du lịch) → ưu tiên category phù hợp
+
+# OUTPUT FORMAT
+{
+  "items": [
+    { "categoryId": "uuid", "percent": 25, "aiReasoning": "Lý do" }
+  ],
+  "summary": {
+    "strategy": "Mô tả chiến lược (1-2 câu)"
+  }
+}
+```
+
+### Validation Logic (Backend)
+
+```java
+// 1. Validate categoryId tồn tại (filter invalid)
+// 2. Tính tổng percent
+// 3. Ensure "Tiết kiệm" có mặt (nếu thiếu → thêm với diff percent)
+// 4. Nếu sum(percent) != 100:
+//    - Thiếu → cộng vào Tiết kiệm
+//    - Thừa → scale down proportionally
+// 5. Nếu > 6 categories: gộp category nhỏ nhất vào category linh hoạt
+// 6. Mobile tự tính amount = income × percent / 100 sau khi nhận response
+// 7. Round amount về 1000 VND ở mobile trước khi gửi batch save
+```
+
+### Sequence Diagram
+
+```
+Mobile → Backend: POST /ai/budget/draft { income, prompt, walletId, period }
+Backend → Backend: Build context (categories + historical stats)
+Backend → Gemini: HTTPS POST (system prompt + user context, JSON mode)
+Gemini → Backend: Raw JSON response
+Backend → Backend: Parse + validate + auto-adjust
+Backend → Mobile: Return draft + summary
+
+[User xem preview, chỉnh slider (F1)]
+
+Mobile → Backend: POST /budgets/batch { draftId, items[] }
+Backend → DB: Insert N Budget rows (source=AI_CONFIRMED, draftId, aiReasoning)
+Backend → Mobile: 201 + budgets
+```
+
+### Edge Cases & Error Handling
+
+| Case | Handling |
+|------|----------|
+| Gemini timeout/down | Return 503 với message "AI tạm thời không khả dụng" |
+| User mới, chưa có transactions | Skip Layer 2, chỉ dùng Layer 1 + 50/30/20 baseline |
+| User nhập income = 0 hoặc âm | Return 400 "Income phải > 0" |
+| AI trả về category không tồn tại | Filter ra, log warning, tiếp tục validate |
+| Sum(percent) != 100 | Auto-adjust (scale hoặc add to savings) |
+| User spam /ai/budget/draft | Rate limit 10 lần/giờ/user |
+| User confirm 2 lần (network retry) | Idempotency qua draftId |
+| User sửa income trên Preview | Mobile recalc tất cả amount = income × percent / 100 |
+| User sửa slider | Category cuối (Tiết kiệm) auto-fill = 100 - sum(khác) |
+| User sửa % thành số lẻ (23.5) | Round về integer khi gửi API |
+
+### Files cần thay đổi (F2)
+
+**Backend:**
+- `budget/model/Budget.java` - thêm source, aiReasoning, draftId; nullable walletId
+- `budget/dto/BatchCreateBudgetRequest.java` - mới
+- `budget/dto/BatchCreateBudgetResponse.java` - mới
+- `budget/service/BudgetService.java` - thêm `createBatch()`
+- `budget/controller/BudgetController.java` - endpoint POST /batch
+- `ai/dto/AiBudgetDraftRequest.java` - mới
+- `ai/dto/AiBudgetDraftResponse.java` - mới
+- `ai/dto/BudgetItemDto.java` - mới
+- `ai/service/AiBudgetService.java` - mới (orchestrate context + call Gemini + validate)
+- `ai/controller/AiBudgetController.java` - mới
+- `ai/prompt/BudgetPromptBuilder.java` - mới
+- `ai/validation/BudgetDraftValidator.java` - mới
+- `ai/repository/HistoricalStatsRepository.java` - mới (query aggregate)
+- Migration Flyway: V14__add_ai_budgeting.sql
+
+**Mobile:**
+- `modules/budget/screens/AiBudgetCreateScreen.tsx` - mới (nhập income + prompt + wallet)
+- `modules/budget/screens/AiBudgetPreviewScreen.tsx` - mới (xem draft + slider từ F1)
+- `modules/budget/api/aiBudgetApi.ts` - mới
+- `modules/budget/storage/draftStorage.ts` - mới (AsyncStorage)
+- `modules/budget/storage/profileStorage.ts` - mới (lưu local profile tạm thời)
+
+---
+
+## F3: User Onboarding (3 câu hỏi)
+
+### Mục tiêu
+Thu thập thông tin tài chính cơ bản của user để cá nhân hóa AI features (không chỉ budget).
+
+### 3 câu hỏi Onboarding
+
+1. **Thu nhập dự kiến hàng tháng?** (nhập số)
+2. **Tính chất thu nhập?** (Lương cố định / Biến động theo tháng / Freelance)
+3. **Mục tiêu tài chính lớn nhất?** (Quỹ khẩn cấp / Mua nhà / Trả nợ / Du lịch / Nghỉ hưu / Khác)
+
+### Database Schema (F3)
+
+```sql
+ALTER TABLE users ADD COLUMN:
+  monthly_income_estimate DECIMAL(18,2),
+  income_type VARCHAR(20),              -- STABLE | VARIABLE | FREELANCE
+  financial_goal VARCHAR(50),           -- EMERGENCY_FUND | SAVE_HOUSE | DEBT_PAYOFF | TRAVEL | RETIREMENT | OTHER
+  goal_target_amount DECIMAL(18,2),
+  goal_target_date DATE,
+  onboarding_completed_at TIMESTAMP;
+```
+
+### API Endpoints (F3)
+
+```
+POST /api/users/onboarding
+Body: { monthlyIncomeEstimate, incomeType, financialGoal, goalTargetAmount, goalTargetDate }
+→ 200 OK { UserResponse }
+Side effect: Set onboardingCompletedAt = now()
+```
+
+### UX Flow (F3)
+
+- App mở lần đầu → check `onboardingCompletedAt`
+- Nếu NULL → show 3 màn onboarding tuần tự
+- Có thể skip (lưu NULL) → dùng default values
+- Sau khi complete → vào Home
+- Có thể edit trong Profile settings
+
+### Files cần thay đổi (F3)
+
+**Backend:**
+- `user/model/User.java` - thêm 6 fields onboarding
+- `user/dto/OnboardingRequest.java` - mới
+- `user/service/UserService.java` - thêm `completeOnboarding()`
+- `user/controller/UserController.java` - endpoint POST /onboarding
+- Migration Flyway: V15__add_user_onboarding.sql
+
+**Mobile:**
+- `app/(onboarding)/welcome.tsx` - mới
+- `app/(onboarding)/income-step.tsx` - mới
+- `app/(onboarding)/goal-step.tsx` - mới
+- `app/(onboarding)/_layout.tsx` - mới (onboarding navigation)
+- `core/storage/onboardingStorage.ts` - mới (track completed)
+- Update `app/_layout.tsx` - route check onboarding
+
+---
+
+## Khuyến nghị triển khai
+
+### Phase 1: F1 Slider (~1 tuần)
+- Tạo `BudgetSlider` component
+- Refactor `BudgetEditScreen` + `BudgetDetailScreen` dùng slider
+- Test trên manual budget (không cần AI)
+- **Validate UX slider** với user thật trước
+
+### Phase 2: F2 AI Budget (~2-3 tuần, sau F1)
+- DB migration cho `budgets`
+- Backend: 2 endpoints + Gemini integration
+- Mobile: 2 màn mới (Create + Preview) + dùng slider từ F1
+- Test với nhiều user personas (user mới, user có data)
+- **Validate AI chất lượng draft** với user thật
+
+### Phase 3: F3 Onboarding (~1-2 tuần, có thể song song)
+- DB migration cho `users`
+- Backend: endpoint onboarding
+- Mobile: 3 màn onboarding + routing logic
+- **Khi F3 ship**: F2 sẽ dùng onboarding profile thay vì local storage
+
+### Phase 4: Polish
+- Rate limiting
+- Caching draft ở Redis
+- Analytics tracking
+- "Regenerate" button (nếu user không thích draft)
+- A/B test nhiều prompt variants
+
+### Phase 5: Advanced
+- AI đề xuất điều chỉnh giữa tháng khi vượt budget
+- So sánh budget qua các tháng
+- Gợi ý "category nào nên thêm/bớt" dựa trên pattern
+
+---
+
+## Open Questions (cần verify khi implement)
+
+| # | Câu hỏi | Cần check |
+|---|---------|-----------|
+| 1 | App hiện tại đã có onboarding chưa? | Có → mở rộng. Chưa → tạo mới (F3 tăng scope) |
+| 2 | Slider library nào dùng? | `@react-native-community/slider` hoặc custom |
+| 3 | Sync logic cho budget mới từ AI? | Mobile local cache có cần field `source`? |
+| 4 | Tần suất user nhập transaction thực tế? | Ảnh hưởng trigger Layer 2 (10 vs 30) |
+| 5 | Cost estimate Gemini API? | Cần test với real data |
+| 6 | Có cần auth/permission riêng cho AI? | Rate limit theo user tier? |
+
+---
+
+## Tài liệu tham khảo
+
+- [Gemini JSON Mode](https://ai.google.dev/docs/json_mode)
+- [Codebase: AiProviderGateway](../be_money_tracker/src/main/java/com/examples/moneytracker/ai/provider/AiProviderGateway.java)
+- [Codebase: Budget entity](../be_money_tracker/src/main/java/com/examples/moneytracker/budget/model/Budget.java)
+- [Codebase: Category icons spec](./2026-06-03-category-icons-design.md)
+
+---
+
+## Ghi chú quan trọng
+
+**Status: Reference/Brainstorm only.** Document này tổng hợp ý tưởng + review từ user. Chưa có commitment để implement. Nếu user quyết định làm, cần:
+
+1. Verify các Open Questions ở trên
+2. Estimate effort thực tế với codebase hiện tại
+3. Có thể dùng lại approach này cho feature khác (AI phân tích chi tiêu, AI gợi ý tiết kiệm)
+4. Bắt đầu từ F1 (Slider) → validate UX trước khi invest vào F2 (AI)
