@@ -89,6 +89,38 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleClearCache = async () => {
+    Alert.alert(
+      '🗑️ Xóa Cache',
+      'Xóa toàn bộ dữ liệu cục bộ (SQLite)?\n\nBao gồm:\n• Giao dịch\n• Ví\n• Danh mục\n• Outbox sync\n\nDữ liệu trên server sẽ không bị ảnh hưởng.',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa ngay',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Lấy danh sách bảng tồn tại trước khi xóa
+              const tables = await queryAll<{ name: string }>("SELECT name FROM sqlite_master WHERE type='table'");
+              const tableNames = tables.map(t => t.name).filter(name => name !== 'android_metadata' && name !== 'sqlite_sequence');
+
+              for (const table of tableNames) {
+                await executeSql(`DELETE FROM ${table}`);
+              }
+              // Reset migration version để seed lại default categories
+              await executeSql('PRAGMA user_version = 0');
+
+              Alert.alert('✅ Thành công', 'Đã xóa toàn bộ cache. Vui lòng tắt và mở lại app.');
+            } catch (error: any) {
+              console.error('Clear cache error:', error);
+              Alert.alert('❌ Lỗi', `Không thể xóa cache: ${error?.message}`);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleLogout = async () => {
     Alert.alert('Xác nhận', 'Bạn có chắc chắn muốn đăng xuất?', [
       { text: 'Hủy', style: 'cancel' },
@@ -218,6 +250,8 @@ export default function SettingsScreen() {
               {renderSettingItem('notifications-outline', 'Thông báo', () => {})}
               <View style={styles.divider} />
               {renderSettingItem('help-circle-outline', 'Trợ giúp & Hỗ trợ', () => {})}
+              <View style={styles.divider} />
+              {renderSettingItem('trash-outline', 'Xóa Cache & Dữ liệu', handleClearCache, '#e67e22', false)}
               <View style={styles.divider} />
               {renderSettingItem('log-out-outline', 'Đăng xuất', handleLogout, '#e14343', false)}
             </View>
