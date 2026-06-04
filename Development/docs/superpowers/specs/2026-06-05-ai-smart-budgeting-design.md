@@ -501,14 +501,14 @@ Side effect: Set onboardingCompletedAt = now()
 
 ## Open Questions (cần verify khi implement)
 
-| # | Câu hỏi | Cần check | Status |
-|---|---------|-----------|--------|
-| 1 | App hiện tại đã có onboarding chưa? | Có → mở rộng. Chưa → tạo mới (F3 tăng scope) | Chưa verify |
+| # | Câu hỏi | Kết quả verify | Status |
+|---|---------|----------------|--------|
+| 1 | App hiện tại đã có onboarding chưa? | **KHÔNG có**. `app/index.tsx` redirect thẳng về `/login`. `RegisterScreen` chỉ có form cơ bản. F3 sẽ tạo mới hoàn toàn. | ✅ Resolved |
 | 2 | ~~Slider library nào dùng?~~ | ~~`@react-native-community/slider` hoặc custom~~ | ✅ Resolved: Bỏ slider bar, dùng input số + nút +/-5% |
-| 3 | Sync logic cho budget mới từ AI? | Mobile local cache có cần field `source`? | Chưa verify |
-| 4 | Tần suất user nhập transaction thực tế? | Ảnh hưởng trigger Layer 2 (10 vs 30) | Chưa verify |
-| 5 | Cost estimate Gemini API? | Cần test với real data | Chưa verify |
-| 6 | Có cần auth/permission riêng cho AI? | Rate limit theo user tier? | Chưa verify |
+| 3 | Sync logic cho budget mới từ AI? | **SyncService đã có sẵn infrastructure** (outbox pattern, push/pull, handle conflict). Cần thêm `budgetLocalDataSource` + update `applyChanges`/`applyDeletes` thêm `budgets`. F2 mobile +1-2 ngày cho sync. | ✅ Resolved |
+| 4 | Tần suất user nhập transaction thực tế? | Không verify được (cần data thật). Estimate: 3-10 tx/tuần → 1 tháng = 12-40 tx. Trigger `≥ 10 transactions` hợp lý. | ✅ Resolved (giữ trigger 10, điều chỉnh sau) |
+| 5 | Cost estimate Gemini API? | Không verify được. Estimate: Gemini 1.5 Flash ~$0.0002/lần generate. Rate limit 10/giờ/user → max $0.05/ngày/user. 1000 user = $50/ngày. **Không concern cho MVP.** | ✅ Resolved (cost thấp) |
+| 6 | Có cần auth/permission riêng cho AI? | Chưa verify. Có thể bỏ qua MVP, dùng JWT hiện có + rate limit theo userId. Tier-based limit để phase sau. | ⚠️ Partial: dùng JWT + simple rate limit |
 | 7 | Manual budget hiện support N categories/budget, AI sẽ 1 category/budget. Có conflict không? | Check `BudgetEditScreen` (đã thấy) | ✅ Resolved: Giữ manual như cũ, AI dùng model mới |
 
 ---
