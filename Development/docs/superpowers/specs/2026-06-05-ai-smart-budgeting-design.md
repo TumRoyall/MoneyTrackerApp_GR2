@@ -53,65 +53,75 @@ Tách thành **3 features độc lập**, ship theo thứ tự ưu tiên. Mỗi 
 
 ---
 
-## F1: Slider Component cho Budget
+## F1: Đơn giản hóa UX điều chỉnh Budget
 
 ### Mục tiêu
-Refactor `BudgetEditScreen` hiện tại (đang sửa) để dùng slider thay vì input số truyền thống. Cải thiện UX cho cả manual và AI budget sau này.
+**BỎ slider bar**. Dùng **input số đơn giản + nút +5% / -5%** cho AI Budget. Manual giữ nguyên input VND như hiện tại.
 
-### Loại Slider: **Phần trăm (% trên 100)**
+### Lý do bỏ slider
 
-> Slider điều chỉnh **% phân bổ** (0-100), không phải số tiền VND. Số tiền = `income × % / 100` tự động tính.
+- Mobile slider thường khó chỉnh chính xác
+- User quen thuộc với input số + nút tăng/giảm hơn
+- UX đơn giản, dễ implement, dễ test
+- Không cần cài thêm dependency (`@react-native-community/slider`)
 
-**Lý do dùng % thay vì VND:**
-- User dễ hình dung ("Ăn uống 25% thu nhập")
-- Tổng % luôn = 100, dễ validate (1 đường thẳng so với tổng tiền)
-- Khi sửa income → tự động tính lại số tiền
-- AI sinh dễ hơn (chia % thay vì số tiền chính xác)
+### Phân biệt Manual vs AI
 
-### UX Slider (cho Budget)
+| Use case | Điều chỉnh amount |
+|----------|-------------------|
+| **Manual budget** (hiện tại) | Input số VND trực tiếp + format VND (giữ nguyên) |
+| **AI Budget** (F2) | Input % + nút +5% / -5%, hiển thị amount auto-calculated |
+
+### UX điều chỉnh % (chỉ cho AI Budget)
 
 ```
 ┌─────────────────────────────────────┐
 │ 🍜 Ăn uống                          │
 │                                     │
-│  [━━━━━━●━━━━━━] 25%                │
+│  [ -5% ]  [ 25  ] %  [ +5% ]        │
 │                                     │
-│  = 5,000,000 VND  (auto)            │
+│  = 5,000,000 VND                    │
 │                                     │
 │  AI: "Ăn uống ~130k/ngày"           │
 └─────────────────────────────────────┘
 ```
 
-User kéo slider → % thay đổi → số tiền auto update. Các category khác auto-adjust để tổng = 100%.
+- **Input số %** (0-100): user gõ trực tiếp
+- **Nút -5% / +5%**: bước nhảy nhanh, không cần kéo
+- **Amount** = `income × % / 100` (auto-calculated, hiển thị readonly)
+- **Category cuối (Tiết kiệm)**: input + nút bị **disable**, auto-fill = `100 - sum(khác)`
 
-### Quy tắc Slider
+### Quy tắc
 
-1. **Slider thường**: kéo được, % từ 0-100
-2. **Slider cuối (Tiết kiệm)**: **DISABLED**, auto = `100 - sum(cate khác)`
-3. **Realtime update**: kéo 1 cái → các cái khác auto rebalance
-4. **Có thể gõ số % trực tiếp** vào textbox bên cạnh slider (cho user thích nhập số chính xác)
-5. **Hiển thị số tiền** bên phải dưới dạng readonly (auto-calculated)
+1. Input số % chấp nhận số nguyên 0-100
+2. Nút -5% / +5%: bước nhảy cố định 5, round về 0 nếu âm
+3. Khi user sửa 1 category → các category khác auto rebalance (trừ category cuối)
+4. Category cuối (Tiết kiệm) luôn = 100 - sum(các category còn lại)
+5. Nếu tổng sau khi sửa > 100: cảnh báo đỏ "Tổng vượt 100%"
+6. Amount hiển thị format VND (1,000,000)
+7. Nếu user sửa income: tất cả amount tự động recalc
 
 ### Components cần tạo
 
-- `modules/budget/components/PercentSlider.tsx` - Slider component (range 0-100%)
-- `modules/budget/components/PercentSliderRow.tsx` - Row đầy đủ (icon + name + slider + % + amount + AI reason)
+- `modules/budget/components/PercentAdjuster.tsx` - Input số + nút +/- 5%
+- `modules/budget/components/PercentAdjusterRow.tsx` - Row đầy đủ (icon + name + adjuster + amount + AI reason)
 - `modules/budget/hooks/usePercentSum.ts` - Hook tính tổng % + auto-adjust category cuối
 
-### Files cần thay đổi
+### Files cần thay đổi (F1 - chỉ AI Budget)
 
-- `modules/budget/screens/BudgetEditScreen.tsx` (đang sửa) - tích hợp slider
-- `modules/budget/screens/BudgetCreateScreen.tsx` (nếu có) - tích hợp slider
-- `modules/budget/screens/BudgetDetailScreen.tsx` (đang sửa) - hiển thị slider readonly
+**Không thay đổi** `BudgetEditScreen` (manual) - giữ nguyên input số VND.
+
+**F1 chỉ cần**: tạo components mới, dùng cho F2 (`AiBudgetPreviewScreen`).
 
 ### Acceptance criteria
 
-- [ ] Slider hoạt động mượt trên Android + iOS
-- [ ] Kéo slider → % update → amount auto update
-- [ ] Có thể gõ số % trực tiếp (textbox bên cạnh)
-- [ ] Tổng % luôn = 100 (category cuối auto-fill)
+- [ ] Input số % chỉ chấp nhận số nguyên 0-100
+- [ ] Nút -5% / +5% hoạt động đúng (giảm/tăng 5, round về 0)
+- [ ] Amount auto-update khi đổi %
+- [ ] Tổng % luôn = 100 sau khi user chỉnh (category cuối auto-fill)
 - [ ] Format tiền VND đúng (1,000,000)
-- [ ] Category cuối (Tiết kiệm) slider bị disable + tooltip "Tự động tính"
+- [ ] Category cuối (Tiết kiệm) input + nút bị disable
+- [ ] Không cần cài thêm dependency (dùng component có sẵn)
 
 ---
 
@@ -155,23 +165,28 @@ Cho phép user tạo budget bằng AI. Tận dụng slider **%** từ F1 cho UX 
 │                                              │
 │ ┌─ AI gợi ý ──────────────────────────────┐ │
 │ │ 🍜 Ăn uống                              │ │
-│ │   [━━━━━●━━━━━━] 25%   [25]  [5tr VND] │ │
+│ │   [-5%] [ 25 ] % [+5%]                   │ │
+│ │   = 5,000,000 VND                       │ │
 │ │   "Ăn uống ~130k/ngày"                  │ │
 │ │                                          │ │
 │ │ 🏠 Tiền nhà                              │ │
-│ │   [━━━━━━●━━━] 30%    [30]  [6tr VND]  │ │
+│ │   [-5%] [ 30 ] % [+5%]                   │ │
+│ │   = 6,000,000 VND                       │ │
 │ │   "Tiền nhà cố định"                    │ │
 │ │                                          │ │
 │ │ ⛽ Xăng xe                               │ │
-│ │   [━━━●━━━━━] 15%      [15]  [3tr VND]  │ │
+│ │   [-5%] [ 15 ] % [+5%]                   │ │
+│ │   = 3,000,000 VND                       │ │
 │ │   "Xăng + Grab"                          │ │
 │ │                                          │ │
 │ │ 🎬 Giải trí                              │ │
-│ │   [━●━━━━━━] 10%        [10]  [2tr VND]  │ │
+│ │   [-5%] [ 10 ] % [+5%]                   │ │
+│ │   = 2,000,000 VND                       │ │
 │ │   "Cuối tuần"                            │ │
 │ │                                          │ │
 │ │ 💰 Tiết kiệm 🔒 (auto)                   │ │
-│ │   [━━━━━━━━━●] 20%      [20]  [4tr VND]  │ │
+│ │   [   ] [ 20 ] % [   ]                   │ │
+│ │   = 4,000,000 VND                       │ │
 │ │   "Dành mua iPhone"                      │ │
 │ └──────────────────────────────────────────┘ │
 │                                              │
@@ -449,11 +464,13 @@ Side effect: Set onboardingCompletedAt = now()
 
 ## Khuyến nghị triển khai
 
-### Phase 1: F1 Slider (~1 tuần)
-- Tạo `BudgetSlider` component
-- Refactor `BudgetEditScreen` + `BudgetDetailScreen` dùng slider
-- Test trên manual budget (không cần AI)
-- **Validate UX slider** với user thật trước
+### Phase 1: F1 PercentAdjuster (~3-5 ngày)
+- Tạo `PercentAdjuster` component (input số + nút +/-5%)
+- Tạo `usePercentSum` hook
+- **Không cần** refactor `BudgetEditScreen` (manual giữ nguyên)
+- F1 chỉ dùng cho F2 AI Budget sau này
+- Test component độc lập
+- **Validate UX** với user thật trước khi sang F2
 
 ### Phase 2: F2 AI Budget (~2-3 tuần, sau F1)
 - DB migration cho `budgets`
@@ -484,14 +501,15 @@ Side effect: Set onboardingCompletedAt = now()
 
 ## Open Questions (cần verify khi implement)
 
-| # | Câu hỏi | Cần check |
-|---|---------|-----------|
-| 1 | App hiện tại đã có onboarding chưa? | Có → mở rộng. Chưa → tạo mới (F3 tăng scope) |
-| 2 | Slider library nào dùng? | `@react-native-community/slider` hoặc custom |
-| 3 | Sync logic cho budget mới từ AI? | Mobile local cache có cần field `source`? |
-| 4 | Tần suất user nhập transaction thực tế? | Ảnh hưởng trigger Layer 2 (10 vs 30) |
-| 5 | Cost estimate Gemini API? | Cần test với real data |
-| 6 | Có cần auth/permission riêng cho AI? | Rate limit theo user tier? |
+| # | Câu hỏi | Cần check | Status |
+|---|---------|-----------|--------|
+| 1 | App hiện tại đã có onboarding chưa? | Có → mở rộng. Chưa → tạo mới (F3 tăng scope) | Chưa verify |
+| 2 | ~~Slider library nào dùng?~~ | ~~`@react-native-community/slider` hoặc custom~~ | ✅ Resolved: Bỏ slider bar, dùng input số + nút +/-5% |
+| 3 | Sync logic cho budget mới từ AI? | Mobile local cache có cần field `source`? | Chưa verify |
+| 4 | Tần suất user nhập transaction thực tế? | Ảnh hưởng trigger Layer 2 (10 vs 30) | Chưa verify |
+| 5 | Cost estimate Gemini API? | Cần test với real data | Chưa verify |
+| 6 | Có cần auth/permission riêng cho AI? | Rate limit theo user tier? | Chưa verify |
+| 7 | Manual budget hiện support N categories/budget, AI sẽ 1 category/budget. Có conflict không? | Check `BudgetEditScreen` (đã thấy) | ✅ Resolved: Giữ manual như cũ, AI dùng model mới |
 
 ---
 
