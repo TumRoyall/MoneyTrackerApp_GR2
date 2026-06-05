@@ -55,6 +55,38 @@ Ready for F2 (AI Budget) integration.
 
 ---
 
+## F2 Status
+
+✅ **F2 AI Budget Generation — MVP complete** (see `2026-06-05-f2-ai-budget-plan.md` for full plan).
+
+**Components delivered:**
+- Backend: `BudgetSource` enum (MANUAL | AI_CONFIRMED) + nullable `walletId` + 3 AI metadata fields (`source`, `aiReasoning`, `draftId`)
+- Backend: `BudgetDraftValidator` with full spec coverage (7 tests, TDD)
+- Backend: `AiBudgetService` orchestrating Gemini + validator (inline prompt, 50/30/20 baseline)
+- Backend: `AiBudgetController` (`POST /api/ai/budget/draft`)
+- Backend: `BudgetService.createBatch()` + `POST /api/budgets/batch` endpoint
+- Mobile: `aiBudgetApi.ts` (generateDraft + batchCreate)
+- Mobile: `profileStorage.ts` (local-only SecureStore, no server sync)
+- Mobile: `AiBudgetCreateScreen` (income + prompt + wallet scope)
+- Mobile: `AiBudgetPreviewScreen` (reuses F1 `PercentAdjusterRow` + `usePercentSum`)
+- Mobile: Routes `ai-create` + `ai-preview` registered, "Tạo bằng AI" button on BudgetToolScreen
+
+**Test coverage:** 7 validator tests (TDD). Mobile: visual smoke test required.
+
+**Branch:** `code_ver2`
+
+**Scope decisions (vs original plan):**
+- Dropped `HistoricalStatsRepository` → 50/30/20 baseline only (skip historical context for MVP)
+- Dropped `draftStorage` → not needed, `profileStorage` is enough for resume
+- Dropped `BudgetLocalDataSource` + sync update → rely on existing TanStack Query refetch + outbox pull
+- Dropped 2 useEffect conflict in PreviewScreen → use `usePercentSum.amounts` as source of truth (no duplicate state)
+
+**Known limitations (follow-ups):**
+- PreviewScreen re-calls Gemini on mount (acceptable for MVP, could add ref guard)
+- No rate limiting on `/api/ai/budget/draft`
+- Period is read-only current month (date picker = follow-up)
+- TypeScript may show "route not in type union" warning until expo-router regenerates (cache, not a real error)
+
 ## Quyết định thiết kế chính (áp dụng cho F1 + F2)
 
 | Câu hỏi | Quyết định | Lý do |
