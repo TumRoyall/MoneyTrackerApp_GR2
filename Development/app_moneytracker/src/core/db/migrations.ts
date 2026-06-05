@@ -1,3 +1,4 @@
+import * as Crypto from 'expo-crypto';
 import { executeBatch, executeSql, queryOne } from '@/core/db/sqlite';
 import { defaultCategories } from '@/modules/category/data/defaultCategories';
 
@@ -95,7 +96,7 @@ const seedDefaultCategories = async () => {
   const now = new Date().toISOString();
 
   for (const cat of defaultCategories) {
-    const categoryId = `default_${cat.type.toLowerCase()}_${cat.name.toLowerCase().replace(/\s+/g, '_')}`;
+    const categoryId = Crypto.randomUUID();
 
     await executeSql(
       `INSERT OR REPLACE INTO categories

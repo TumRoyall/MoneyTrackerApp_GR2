@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -769,7 +769,7 @@ export const WalletHomeScreen = () => {
                         key={marker.key}
                         style={[styles.donutMarker, { left: x, top: y, borderColor: marker.color }]}
                       >
-                        <Text style={styles.donutMarkerText}>{marker.icon}</Text>
+                        <MaterialCommunityIcons name={(marker.icon as any) || 'dots-horizontal'} size={16} color={marker.color} />
                       </View>
                     );
                   })}
@@ -787,7 +787,7 @@ export const WalletHomeScreen = () => {
                 {categoryBreakdown.map((item) => (
                   <View key={item.category.categoryId} style={styles.categoryRow}>
                     <View style={styles.categoryIcon}>
-                      <Text style={styles.categoryIconText}>{item.category.icon || '•'}</Text>
+                      <MaterialCommunityIcons name={(item.category.icon as any) || 'dots-horizontal'} size={26} color={item.color} />
                     </View>
                     <View style={styles.categoryInfo}>
                       <View style={styles.categoryHeaderRow}>
@@ -1475,12 +1475,8 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#e8f8f9',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  categoryIconText: {
-    fontSize: 26,
   },
   categoryInfo: {
     flex: 1,
@@ -1772,9 +1768,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
-  },
-  donutMarkerText: {
-    fontSize: 16,
   },
   donutValue: {
     fontSize: 16,

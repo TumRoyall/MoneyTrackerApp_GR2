@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -409,7 +409,7 @@ export const BudgetEditScreen = () => {
                     style={styles.selectedCategoryChip}
                     onPress={() => toggleCategoryId(item.categoryId)}
                   >
-                    <Text style={styles.selectedCategoryIcon}>{item.icon || '💸'}</Text>
+                    <MaterialCommunityIcons name={(item.icon as any) || 'cash'} size={16} color={(item as any).color || '#0f8c95'} />
                     <Text style={styles.selectedCategoryText}>{item.name}</Text>
                     <Text style={styles.selectedCategoryRemove}>✕</Text>
                   </Pressable>
@@ -553,7 +553,7 @@ export const BudgetEditScreen = () => {
                       style={[styles.categoryPickerItem, selected ? styles.categoryPickerItemSelected : null]}
                     >
                       <View style={styles.categoryPickerIconWrap}>
-                        <Text style={styles.categoryPickerIcon}>{item.icon || '💸'}</Text>
+                        <MaterialCommunityIcons name={(item.icon as any) || 'cash'} size={20} color={(item as any).color || '#29bcc8'} />
                       </View>
                       <Text style={[styles.categoryPickerName, selected ? styles.categoryPickerNameSelected : null]}>
                         {item.name}

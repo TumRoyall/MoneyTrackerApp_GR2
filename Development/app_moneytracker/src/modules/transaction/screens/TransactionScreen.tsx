@@ -905,11 +905,12 @@ export const TransactionScreen = () => {
               {items.map((item) => {
                 const category: Category | undefined = categoryMap.get(item.categoryId);
                 const isIncome = resolveTransactionType(item, category) === 'INCOME';
+                const catColor = category?.color || '#29bcc8';
 
                 return (
                   <Pressable key={item.transactionId} style={styles.transactionCard} onPress={() => openEditTransactionModal(item)}>
-                    <View style={styles.transactionIconWrap}>
-                      <MaterialCommunityIcons name={(category?.icon as any) || (isIncome ? 'briefcase' : 'cart')} size={24} color="#29bcc8" />
+                    <View style={[styles.transactionIconWrap, { backgroundColor: catColor + '20' }]}>
+                      <MaterialCommunityIcons name={(category?.icon as any) || (isIncome ? 'briefcase' : 'cart')} size={24} color={catColor} />
                     </View>
 
                     <View style={styles.transactionInfo}>
@@ -1788,7 +1789,6 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#e6f7f9',
     alignItems: 'center',
     justifyContent: 'center',
   },

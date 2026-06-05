@@ -15,52 +15,6 @@ import { TransactionLocalDataSource } from '@/modules/transaction/local/transact
 
 const CURSOR_KEY = 'lastCursor';
 
-/**
- * Convert default_* string categoryId to actual UUID from local DB.
- * Mobile seeds categories with string IDs (e.g., "default_income_lương") but
- * backend expects UUIDs. This resolves the mapping before sync.
- */
-async function resolveCategoryIdToUuid(
-  categoryId: string,
-  categoryLocal: CategoryLocalDataSource,
-): Promise<string> {
-  // Skip if already a valid UUID (contains hyphens and is 36 chars)
-  if (categoryId.includes('-') && categoryId.length === 36) {
-    return categoryId;
-  }
-
-  // If categoryId starts with "default_", it's a legacy string ID
-  if (categoryId.startsWith('default_')) {
-    const parts = categoryId.split('_');
-    if (parts.length >= 3) {
-      const type = parts[1]?.toUpperCase();
-      // namePart giữ nguyên dấu tiếng Việt
-      const namePartRaw = parts.slice(2).join('_').toLowerCase();
-      const categories = await categoryLocal.getCategories();
-
-      console.log(`[resolveCategoryIdToUuid] Looking for: type=${type}, namePartRaw=${namePartRaw}`);
-      console.log(`[resolveCategoryIdToUuid] Available categories:`, categories.map(c => ({ name: c.name, type: c.type, id: c.categoryId })));
-
-      for (const cat of categories) {
-        if (!cat.name || !cat.type) continue;
-
-        const catNameNormalized = cat.name.toLowerCase().replace(/\s+/g, '_');
-        const catType = cat.type.toUpperCase();
-
-        // Match by type and name (case-insensitive, underscore = space)
-        if (catType === type && catNameNormalized === namePartRaw) {
-          console.log(`[resolveCategoryIdToUuid] MATCHED: ${cat.name} -> ${cat.categoryId}`);
-          return cat.categoryId; // Return the actual UUID
-        }
-      }
-      console.log(`[resolveCategoryIdToUuid] NO MATCH FOUND for: ${categoryId}`);
-    }
-  }
-
-  // Return original if no match found
-  return categoryId;
-}
-
 export class SyncService {
   private initialized = false;
 
@@ -123,15 +77,11 @@ export class SyncService {
 
     const deviceId = await deviceStorage.ensureDeviceId();
 
-    // Resolve categoryIds from default_* string IDs to actual UUIDs before sending
+    // Local categoryIds are now proper UUIDs (seeded with Crypto.randomUUID),
+    // so no resolution is needed before sending to the server.
     const operations: SyncOperation[] = await Promise.all(
       pending.map(async (item) => {
         const data = item.dataJson ? JSON.parse(item.dataJson) : undefined;
-
-        // Resolve categoryId if present and entity is a transaction
-        if (data && item.entity === 'transactions' && data.categoryId) {
-          data.categoryId = await resolveCategoryIdToUuid(data.categoryId, this.categoryLocal);
-        }
 
         return {
           outboxId: item.outboxId,

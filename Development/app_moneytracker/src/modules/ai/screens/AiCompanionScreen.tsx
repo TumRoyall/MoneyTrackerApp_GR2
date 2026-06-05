@@ -444,7 +444,7 @@ export const AiCompanionScreen = () => {
       return (
         <View style={styles.previewRow}>
           <View style={styles.previewIcon}>
-            <Text style={styles.previewIconText}>{category?.icon || '🍜'}</Text>
+            <MaterialCommunityIcons name={(category?.icon as any) || 'food'} size={20} color={(category as any)?.color || '#ff6b6b'} />
           </View>
           <View style={styles.previewInfo}>
             <Text style={styles.previewTitle}>{category?.name || 'Giao dịch mới'}</Text>
