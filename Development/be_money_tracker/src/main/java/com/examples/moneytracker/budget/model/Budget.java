@@ -20,7 +20,7 @@ public class Budget {
     @Column(nullable = false)
     private UUID userId;
 
-    @Column(nullable = false)
+    @Column
     private UUID walletId;
 
     @Column(nullable = false)
@@ -47,6 +47,16 @@ public class Budget {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source", length = 20)
+    private BudgetSource source;
+
+    @Column(name = "ai_reasoning", columnDefinition = "TEXT")
+    private String aiReasoning;
+
+    @Column(name = "draft_id")
+    private UUID draftId;
+
     @Column(nullable = false)
     private Long version = 1L;
 
@@ -61,6 +71,9 @@ public class Budget {
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (this.source == null) {
+            this.source = BudgetSource.MANUAL;
+        }
     }
 
     @PreUpdate

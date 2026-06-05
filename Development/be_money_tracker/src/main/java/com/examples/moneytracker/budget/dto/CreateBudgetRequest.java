@@ -13,7 +13,7 @@ import java.util.UUID;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class CreateBudgetRequest {
-    @NotNull
+    // Nullable: F2 AI Budget supports "all wallets" scope.
     private UUID walletId;
 
     private UUID categoryId;

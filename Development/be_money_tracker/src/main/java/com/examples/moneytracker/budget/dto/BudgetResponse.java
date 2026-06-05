@@ -2,6 +2,7 @@ package com.examples.moneytracker.budget.dto;
 
 import com.examples.moneytracker.budget.model.Budget;
 import com.examples.moneytracker.budget.model.BudgetPeriodType;
+import com.examples.moneytracker.budget.model.BudgetSource;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -25,6 +26,9 @@ public class BudgetResponse {
     private BigDecimal alertThreshold;
     private BigDecimal spentAmount;
     private BigDecimal remainingAmount;
+    private BudgetSource source;
+    private String aiReasoning;
+    private UUID draftId;
 
     public static BudgetResponse from(Budget budget, BigDecimal spentAmount, BigDecimal remainingAmount, List<UUID> categoryIds) {
         return new BudgetResponse(
@@ -39,7 +43,10 @@ public class BudgetResponse {
                 budget.getPeriodType(),
                 budget.getAlertThreshold(),
                 spentAmount,
-                remainingAmount
+                remainingAmount,
+                budget.getSource(),
+                budget.getAiReasoning(),
+                budget.getDraftId()
         );
     }
 }
