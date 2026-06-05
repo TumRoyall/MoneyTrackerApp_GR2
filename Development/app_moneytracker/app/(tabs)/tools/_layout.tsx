@@ -15,6 +15,8 @@ export default function ToolsStackLayout() {
       <Stack.Screen name="budgets/index" />
       <Stack.Screen name="budgets/[budgetId]" />
       <Stack.Screen name="budgets/[budgetId]/edit" />
+      <Stack.Screen name="budgets/ai-create" />
+      <Stack.Screen name="budgets/ai-preview" />
       <Stack.Screen name="savings/index" />
       <Stack.Screen name="savings/[savingId]" />
       <Stack.Screen name="savings/[savingId]/edit" />

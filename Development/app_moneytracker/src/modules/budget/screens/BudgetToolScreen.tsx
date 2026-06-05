@@ -467,7 +467,20 @@ export const BudgetToolScreen = () => {
         )}
       </ScrollView>
 
-      <FAB icon={<Ionicons name="add" size={24} color="#fff" />} label="Thêm ngân sách" onPress={() => setShowCreateModal(true)} />
+      <View style={styles.fabRow}>
+        <Pressable
+          style={styles.aiFab}
+          onPress={() => router.push('/(tabs)/tools/budgets/ai-create')}
+        >
+          <Ionicons name="sparkles" size={18} color="#0f8c95" />
+          <Text style={styles.aiFabText}>Tạo bằng AI</Text>
+        </Pressable>
+        <FAB
+          icon={<Ionicons name="add" size={24} color="#fff" />}
+          label="Thêm ngân sách"
+          onPress={() => setShowCreateModal(true)}
+        />
+      </View>
 
       <Modal visible={showCreateModal} transparent animationType="slide" onRequestClose={() => setShowCreateModal(false)}>
         <View style={styles.modalOverlay}>
@@ -910,6 +923,35 @@ const styles = StyleSheet.create({
   fabText: {
     color: '#fff',
     fontSize: 20,
+    fontWeight: '700',
+  },
+  fabRow: {
+    position: 'absolute',
+    right: 16,
+    bottom: 18,
+    left: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  aiFab: {
+    flex: 1,
+    minHeight: 54,
+    borderRadius: 999,
+    backgroundColor: '#e9fbfd',
+    borderWidth: 1,
+    borderColor: '#29bcc8',
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    elevation: 5,
+  },
+  aiFabText: {
+    color: '#0f8c95',
+    fontSize: 16,
     fontWeight: '700',
   },
   modalOverlay: {
