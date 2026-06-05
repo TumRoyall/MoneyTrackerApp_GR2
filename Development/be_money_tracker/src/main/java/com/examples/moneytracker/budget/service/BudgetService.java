@@ -1,10 +1,14 @@
 package com.examples.moneytracker.budget.service;
 
+import com.examples.moneytracker.budget.dto.BatchBudgetItemDto;
+import com.examples.moneytracker.budget.dto.BatchCreateBudgetRequest;
+import com.examples.moneytracker.budget.dto.BatchCreateBudgetResponse;
 import com.examples.moneytracker.budget.dto.BudgetResponse;
 import com.examples.moneytracker.budget.dto.CreateBudgetRequest;
 import com.examples.moneytracker.budget.dto.UpdateBudgetRequest;
 import com.examples.moneytracker.budget.model.Budget;
 import com.examples.moneytracker.budget.model.BudgetCategory;
+import com.examples.moneytracker.budget.model.BudgetSource;
 import com.examples.moneytracker.budget.repository.BudgetRepository;
 import com.examples.moneytracker.budget.repository.BudgetCategoryRepository;
 import com.examples.moneytracker.transaction.model.Transaction;
@@ -18,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -142,6 +147,50 @@ public class BudgetService {
                 .orElseThrow(() -> new IllegalArgumentException("Budget not found"));
         budget.setDeletedAt(Instant.now());
         budgetRepository.save(budget);
+    }
+
+    /**
+     * Create N Budget rows in one transaction (F2 AI Budget).
+     * Each row represents one category, sharing the same draftId and source=AI_CONFIRMED.
+     */
+    @Transactional
+    public BatchCreateBudgetResponse createBatch(BatchCreateBudgetRequest request, UUID userId) {
+        if (request.getWalletId() != null) {
+            walletRepository.findByWalletIdAndUserIdAndDeletedAtIsNull(request.getWalletId(), userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+        }
+
+        UUID draftId = request.getDraftId();
+        String generatedTitle = "AI Budget " + request.getPeriodStart().getMonthValue()
+                + "/" + request.getPeriodStart().getYear();
+
+        List<Budget> savedBudgets = new ArrayList<>();
+        for (BatchBudgetItemDto item : request.getItems()) {
+            Budget budget = new Budget();
+            budget.setUserId(userId);
+            budget.setWalletId(request.getWalletId());
+            budget.setCategoryId(item.getCategoryId());
+            budget.setTitle(generatedTitle);
+            budget.setAmountLimit(item.getAmount());
+            budget.setPeriodStart(request.getPeriodStart());
+            budget.setPeriodEnd(request.getPeriodEnd());
+            budget.setPeriodType(request.getPeriodType());
+            budget.setSource(BudgetSource.AI_CONFIRMED);
+            budget.setAiReasoning(item.getAiReasoning());
+            budget.setDraftId(draftId);
+            budgetRepository.save(budget);
+
+            // Join row: each batch item is one budget = one category
+            budgetCategoryRepository.saveAll(List.of(new BudgetCategory(budget.getBudgetId(), item.getCategoryId())));
+
+            savedBudgets.add(budget);
+        }
+
+        List<BudgetResponse> responses = savedBudgets.stream()
+                .map(b -> BudgetResponse.from(b, BigDecimal.ZERO, b.getAmountLimit(),
+                        List.of(b.getCategoryId())))
+                .toList();
+        return new BatchCreateBudgetResponse(responses);
     }
 
     private BudgetResponse buildResponse(Budget budget, UUID userId, List<UUID> categoryIds) {

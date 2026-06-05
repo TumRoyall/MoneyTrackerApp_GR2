@@ -1,6 +1,8 @@
 package com.examples.moneytracker.budget.controller;
 
 import com.examples.moneytracker.auth.security.CustomUserDetails;
+import com.examples.moneytracker.budget.dto.BatchCreateBudgetRequest;
+import com.examples.moneytracker.budget.dto.BatchCreateBudgetResponse;
 import com.examples.moneytracker.budget.dto.BudgetResponse;
 import com.examples.moneytracker.budget.dto.CreateBudgetRequest;
 import com.examples.moneytracker.budget.dto.UpdateBudgetRequest;
@@ -28,6 +30,16 @@ public class BudgetController {
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         return ResponseEntity.ok(ApiResponse.of(budgetService.createBudget(request, user.getId())));
+    }
+
+    @PostMapping("/batch")
+    public ResponseEntity<ApiResponse<BatchCreateBudgetResponse>> createBatch(
+            @RequestBody @Valid BatchCreateBudgetRequest request,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        return ResponseEntity.status(201).body(ApiResponse.of(
+                budgetService.createBatch(request, user.getId())
+        ));
     }
 
     @GetMapping
