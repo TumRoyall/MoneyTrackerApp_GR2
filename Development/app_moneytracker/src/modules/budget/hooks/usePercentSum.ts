@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export interface PercentItem {
   id: string;
@@ -19,6 +19,14 @@ const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
 
 export function usePercentSum(initial: PercentItem[], income: number = 0): UsePercentSumResult {
   const [items, setItems] = useState<PercentItem[]>(initial);
+
+ // Sync internal state when the initial data changes (e.g. async-loaded AI draft).
+ // Without this, the state freezes at whatever initial was on first mount
+ // (typically [] because the draft was not loaded yet), and user adjustments
+ // silently no-op because no id in items matches the new initial.
+ useEffect(() => {
+ setItems(initial);
+ }, [initial]);
 
   const updatePercent = useCallback((id: string, nextPercent: number) => {
     setItems((current) => {

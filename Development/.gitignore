@@ -1,0 +1,7 @@
+
+# --- Local Spring config (contains API keys) ---
+be_money_tracker/src/main/resources/application.properties
+**/application.properties
+**/application-local.properties
+**/application-*.properties
+!be_money_tracker/src/main/resources/application.properties.example

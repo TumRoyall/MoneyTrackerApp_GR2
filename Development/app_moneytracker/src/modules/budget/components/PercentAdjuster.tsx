@@ -103,7 +103,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f7f9',
   },
   input: {
-    minWidth: 56,
+    minWidth: 80,
+    width: 80,
     height: 36,
     paddingHorizontal: 8,
     borderRadius: 8,

@@ -81,14 +81,14 @@ export const AiBudgetPreviewScreen = () => {
         setDraft(fetched);
       } catch (err) {
         console.error('Failed to load draft', err);
-        setErrorMessage('Không tải được bản nháp. Vui lòng thử lại.');
+        setErrorMessage('KhÃ´ng táº£i Ä‘Æ°á»£c báº£n nhÃ¡p. Vui lÃ²ng thá»­ láº¡i.');
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  // Map categoryId → metadata for icons
+  // Map categoryId â†’ metadata for icons
   const categoryMap = useMemo(
     () => new Map(categories.map((c) => [c.categoryId, c])),
     [categories],
@@ -125,13 +125,13 @@ export const AiBudgetPreviewScreen = () => {
     }
     if (percentSum.sum !== 100) {
       Alert.alert(
-        'Tổng chưa đúng',
-        `Tổng percent hiện tại = ${percentSum.sum}%. Vui lòng chỉnh về 100.`,
+        'Tá»•ng chÆ°a Ä‘Ãºng',
+        `Tá»•ng percent hiá»‡n táº¡i = ${percentSum.sum}%. Vui lÃ²ng chá»‰nh vá» 100.`,
       );
       return;
     }
     if (income <= 0) {
-      Alert.alert('Thu nhập không hợp lệ', 'Vui lòng nhập thu nhập lớn hơn 0.');
+      Alert.alert('Thu nháº­p khÃ´ng há»£p lá»‡', 'Vui lÃ²ng nháº­p thu nháº­p lá»›n hÆ¡n 0.');
       return;
     }
 
@@ -144,22 +144,27 @@ export const AiBudgetPreviewScreen = () => {
         aiReasoning: it.aiReasoning,
       }));
 
+      const _startDate = new Date().toISOString().slice(0, 10);
+      const _endDate = new Date();
+      _endDate.setMonth(_endDate.getMonth() + 1);
+      _endDate.setDate(_endDate.getDate() - 1);
+      const _endDateStr = _endDate.toISOString().slice(0, 10);
       await aiBudgetApi.batchCreate({
         draftId: draft.draftId,
         walletId: showAllWallets ? null : selectedWalletId,
-        periodStart: draft.items[0] ? new Date().toISOString().slice(0, 10) : '',
-        periodEnd: '',
+        periodStart: _startDate,
+        periodEnd: _endDateStr,
         periodType: 'monthly',
         income,
         items: itemsWithAmount,
       });
 
-      Alert.alert('Thành công', 'Đã tạo ngân sách AI.', [
+      Alert.alert('ThÃ nh cÃ´ng', 'ÄÃ£ táº¡o ngÃ¢n sÃ¡ch AI.', [
         { text: 'OK', onPress: () => router.replace('/(tabs)/tools/budgets') },
       ]);
     } catch (err) {
       console.error('Batch create failed', err);
-      Alert.alert('Lỗi', 'Không thể lưu ngân sách. Vui lòng thử lại.');
+      Alert.alert('Lá»—i', 'KhÃ´ng thá»ƒ lÆ°u ngÃ¢n sÃ¡ch. Vui lÃ²ng thá»­ láº¡i.');
     } finally {
       setSaving(false);
     }
@@ -169,7 +174,7 @@ export const AiBudgetPreviewScreen = () => {
     return (
       <View style={styles.screen}>
         <Text style={styles.errorText}>{errorMessage}</Text>
-        <Button title="Quay lại" onPress={() => router.back()} />
+        <Button title="Quay láº¡i" onPress={() => router.back()} />
       </View>
     );
   }
@@ -178,7 +183,7 @@ export const AiBudgetPreviewScreen = () => {
     return (
       <View style={[styles.screen, styles.center]}>
         <ActivityIndicator color="#29bcc8" />
-        <Text style={styles.loadingText}>Đang tải bản nháp...</Text>
+        <Text style={styles.loadingText}>Äang táº£i báº£n nhÃ¡p...</Text>
       </View>
     );
   }
@@ -193,7 +198,7 @@ export const AiBudgetPreviewScreen = () => {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>💰 Tổng thu nhập</Text>
+          <Text style={styles.cardLabel}>ðŸ’° Tá»•ng thu nháº­p</Text>
           <TextInput
             style={styles.input}
             keyboardType="numeric"
@@ -205,7 +210,7 @@ export const AiBudgetPreviewScreen = () => {
 
         {draft.summary.strategy ? (
           <View style={styles.strategyCard}>
-            <Text style={styles.strategyLabel}>Chiến lược</Text>
+            <Text style={styles.strategyLabel}>Chiáº¿n lÆ°á»£c</Text>
             <Text style={styles.strategyText}>{draft.summary.strategy}</Text>
           </View>
         ) : null}
@@ -229,7 +234,7 @@ export const AiBudgetPreviewScreen = () => {
         </View>
 
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Tổng:</Text>
+          <Text style={styles.totalLabel}>Tá»•ng:</Text>
           <Text
             style={[
               styles.totalValue,
@@ -242,7 +247,7 @@ export const AiBudgetPreviewScreen = () => {
 
         <View style={styles.card}>
           <View style={styles.walletToggleRow}>
-            <Text style={styles.cardLabel}>Áp dụng cho tất cả ví</Text>
+            <Text style={styles.cardLabel}>Ãp dá»¥ng cho táº¥t cáº£ vÃ­</Text>
             <Switch
               value={showAllWallets}
               onValueChange={(v) => {
@@ -291,7 +296,7 @@ export const AiBudgetPreviewScreen = () => {
         </View>
 
         <Button
-          title={saving ? 'Đang lưu...' : 'Xác nhận & Tạo budget'}
+          title={saving ? 'Äang lÆ°u...' : 'XÃ¡c nháº­n & Táº¡o budget'}
           onPress={handleConfirm}
           disabled={saving}
         />

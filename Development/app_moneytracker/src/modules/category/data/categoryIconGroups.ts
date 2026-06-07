@@ -67,7 +67,7 @@ export const categoryGroups: CategoryGroup[] = [
       { icon: 'beach', label: 'Biển', color: '#00CED1' },
       { icon: 'passport', label: 'Passport', color: '#4169E1' },
       { icon: 'hiking', label: 'Leo núi', color: '#228B22' },
-      { icon: 'camp', label: 'Cắm trại', color: '#8B4513' },
+      { icon: 'campfire', label: 'Cắm trại', color: '#8B4513' },
       { icon: 'umbrella', label: 'Nghỉ mát', color: '#FF6B6B' },
       { icon: 'map-marker', label: 'Địa điểm', color: '#FF4500' },
       { icon: 'bus', label: 'Tour', color: '#4CAF50' },
@@ -177,7 +177,7 @@ export const categoryGroups: CategoryGroup[] = [
       { icon: 'hair-dryer', label: 'Làm tóc', color: '#DEB887' },
       { icon: 'nail', label: 'Nail', color: '#FF1493' },
       { icon: 'spa', label: 'Spa', color: '#F8BBD9' },
-      { icon: 'massage', label: 'Massage', color: '#E1BEE7' },
+      { icon: 'meditation', label: 'Massage', color: '#E1BEE7' },
       { icon: 'flower', label: 'Nước hoa', color: '#DDA0DD' },
     ],
   },
@@ -252,6 +252,35 @@ export const categoryGroups: CategoryGroup[] = [
       { icon: 'sofa', label: 'Nội thất', color: '#8B4513' },
       { icon: 'broom', label: 'Dọn dẹp', color: '#BC8F8F' },
       { icon: 'lamp', label: 'Điện', color: '#FFFACD' },
+    ],
+  },
+  {
+    id: 'savings',
+    name: 'Tiết kiệm',
+    emoji: '🐖',
+    icon: 'piggy-bank',
+    color: '#FF9800',
+    subIcons: [
+      { icon: 'piggy-bank', label: 'Tiết kiệm', color: '#FF9800' },
+      { icon: 'bank', label: 'Ngân hàng', color: '#1976D2' },
+      { icon: 'safe', label: 'Két sắt', color: '#616161' },
+      { icon: 'wallet-plus', label: 'Quỹ dự phòng', color: '#4CAF50' },
+      { icon: 'gold', label: 'Vàng', color: '#FFD700' },
+      { icon: 'cash-multiple', label: 'Tiền xu', color: '#FFC107' },
+    ],
+  },
+  {
+    // Added 2026-06-06 to replace the custom "Nợ" category that
+    // DebtDetailScreen used to create at runtime. Now hardcoded so we can
+    // drop createCategory entirely. groupId='debt' is the lookup key.
+    id: 'debt',
+    name: 'Nợ',
+    emoji: '💳',
+    icon: 'credit-card',
+    color: '#FBE8E6',
+    subIcons: [
+      { icon: 'credit-card', label: 'Nợ', color: '#FBE8E6' },
+      { icon: 'cash-refund', label: 'Trả nợ', color: '#D32F2F' },
     ],
   },
   {
@@ -330,21 +359,4 @@ export const incomeGroups = [
       ['gift', 'cash-refund', 'tag-sell'].includes(i.icon)
     ) || [],
   },
-];
-
-// Default categories for seeding (13 EXPENSE + 5 INCOME = 18 total)
-export const defaultCategories: { name: string; type: 'EXPENSE' | 'INCOME'; icon: string; color: string }[] = [
-  // 13 EXPENSE categories
-  ...categoryGroups.filter(g => g.id !== 'income').map(group => ({
-    name: group.name,
-    type: 'EXPENSE' as const,
-    icon: group.icon,
-    color: group.color,
-  })),
-  // 5 INCOME categories
-  { name: 'Lương', type: 'INCOME', icon: 'briefcase', color: '#1565C0' },
-  { name: 'Thưởng', type: 'INCOME', icon: 'trophy', color: '#FFD700' },
-  { name: 'Đầu tư', type: 'INCOME', icon: 'chart-timeline-variant', color: '#00BCD4' },
-  { name: 'Freelance', type: 'INCOME', icon: 'laptop', color: '#9C27B0' },
-  { name: 'Quà tặng', type: 'INCOME', icon: 'gift', color: '#E91E63' },
 ];

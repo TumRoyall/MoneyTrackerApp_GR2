@@ -69,6 +69,8 @@ export const aiBudgetApi = {
     const { data } = await httpClient.post<ApiResponse<AiBudgetDraftResponse>>(
       '/api/ai/budget/draft',
       req,
+      // 60s timeout â€” Gemini flash can take 20-40s on first call (cold start).
+      { timeout: 60_000 },
     );
     return data.data;
   },

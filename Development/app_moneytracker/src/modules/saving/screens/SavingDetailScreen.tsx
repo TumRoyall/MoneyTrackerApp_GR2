@@ -129,7 +129,7 @@ export const SavingDetailScreen = () => {
   const queryClient = useQueryClient();
 
   const { getSaving } = useSavingUsecases();
-  const { getCategories, createCategory } = useCategoryUsecases();
+  const { getCategories } = useCategoryUsecases();
   const { getTransactions, createTransaction, updateTransaction, deleteTransaction } = useTransactionUsecases();
   const { getWallets } = useWalletUsecases();
 
@@ -244,20 +244,22 @@ export const SavingDetailScreen = () => {
   };
 
   const ensureSavingCategoryId = async (type: 'INCOME' | 'EXPENSE') => {
+    // Categories are hardcoded in the local DB (migration v4). The "Tiết
+    // kiệm" row is in the `savings` group. Just look it up by name + type
+    // — no creation needed.
     const existing = categories.find(
       (item) => normalizeCategoryType(item.type) === type && isSavingCategoryName(item.name),
     );
     if (existing) {
       return existing.categoryId;
     }
-    const created = await createCategory({
-      name: 'Tiết kiệm',
-      type,
-      icon: '🏦',
-      color: '#BFEFF3',
-    });
-    await queryClient.invalidateQueries({ queryKey: ['categories'] });
-    return created.categoryId;
+    const byGroup = categories.find(
+      (item) => item.groupId === 'savings' && normalizeCategoryType(item.type) === type,
+    );
+    if (byGroup) {
+      return byGroup.categoryId;
+    }
+    throw new Error('Saving category not seeded — please reinstall the app');
   };
 
   const openCreateRecordModal = () => {

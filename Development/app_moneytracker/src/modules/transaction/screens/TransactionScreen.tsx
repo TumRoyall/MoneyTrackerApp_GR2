@@ -31,34 +31,6 @@ type CategoryType = 'EXPENSE' | 'INCOME';
 type TimeMode = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
 type CalendarTarget = 'day' | 'customStart' | 'customEnd' | 'formDate';
 
-const defaultCategoryTemplates: {
-  name: string;
-  type: CategoryType;
-  icon: string;
-  color: string;
-}[] = [
-    // 13 EXPENSE categories
-    { name: 'Thức ăn & Đồ uống', type: 'EXPENSE', icon: 'food-fork-drink', color: '#FF6B6B' },
-    { name: 'Mua sắm', type: 'EXPENSE', icon: 'cart', color: '#4ECDC4' },
-    { name: 'Du lịch', type: 'EXPENSE', icon: 'airplane', color: '#45B7D1' },
-    { name: 'Sức khỏe', type: 'EXPENSE', icon: 'pill', color: '#FF8A80' },
-    { name: 'Giải trí', type: 'EXPENSE', icon: 'movie', color: '#DDA0DD' },
-    { name: 'Thú cưng', type: 'EXPENSE', icon: 'dog', color: '#FFD54F' },
-    { name: 'Thực phẩm', type: 'EXPENSE', icon: 'food-apple', color: '#81C784' },
-    { name: 'Điện tử', type: 'EXPENSE', icon: 'cellphone', color: '#90CAF9' },
-    { name: 'Làm đẹp', type: 'EXPENSE', icon: 'lipstick', color: '#F48FB1' },
-    { name: 'Thể thao', type: 'EXPENSE', icon: 'dumbbell', color: '#FF7043' },
-    { name: 'Giáo dục', type: 'EXPENSE', icon: 'book', color: '#FFB74D' },
-    { name: 'Giao thông', type: 'EXPENSE', icon: 'car', color: '#80DEEA' },
-    { name: 'Nhà', type: 'EXPENSE', icon: 'home', color: '#A5D6A7' },
-    // 5 INCOME categories
-    { name: 'Lương', type: 'INCOME', icon: 'briefcase', color: '#1565C0' },
-    { name: 'Thưởng', type: 'INCOME', icon: 'trophy', color: '#FFD700' },
-    { name: 'Đầu tư', type: 'INCOME', icon: 'chart-timeline-variant', color: '#00BCD4' },
-    { name: 'Freelance', type: 'INCOME', icon: 'laptop', color: '#9C27B0' },
-    { name: 'Quà tặng', type: 'INCOME', icon: 'gift', color: '#E91E63' },
-  ];
-
 const defaultCategoryIconByType: Record<CategoryType, string> = {
   EXPENSE: 'food-fork-drink',
   INCOME: 'briefcase',
@@ -263,10 +235,8 @@ export const TransactionScreen = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { getWallets } = useWalletUsecases();
-  const { getCategories, createCategory } = useCategoryUsecases();
+  const { getCategories } = useCategoryUsecases();
   const { getTransactions, createTransaction, updateTransaction } = useTransactionUsecases();
-  const seededDefaultCategoriesRef = useRef(false);
-  const seedingInProgressRef = useRef(false);
   const openCreateRef = useRef(false);
   const params = useLocalSearchParams<{
     walletId?: string;
@@ -308,16 +278,15 @@ export const TransactionScreen = () => {
   const [transactionModalMode, setTransactionModalMode] = useState<'create' | 'edit'>('create');
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
   const [showCategoryPickerModal, setShowCategoryPickerModal] = useState(false);
-  const [showCreateCategoryComposer, setShowCreateCategoryComposer] = useState(false);
-  const [showIconOptions, setShowIconOptions] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // Local search for the category picker modal. Separate from `searchQuery`
+  // (which searches transactions). Reset when the modal opens so the user
+  // doesn't see a stale filter from the previous session.
+  const [categoryPickerQuery, setCategoryPickerQuery] = useState('');
 
   const [formCategoryId, setFormCategoryId] = useState('');
   const [formCategoryType, setFormCategoryType] = useState<CategoryType>('EXPENSE');
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryIcon, setNewCategoryIcon] = useState(defaultCategoryIconByType.EXPENSE);
-  const [newCategoryColor, setNewCategoryColor] = useState('#FF6B6B');
   const [formAmount, setFormAmount] = useState('');
   const [formNote, setFormNote] = useState('');
   const [formDate, setFormDate] = useState(formatIsoDate(new Date()));
@@ -340,10 +309,18 @@ export const TransactionScreen = () => {
   );
   const categories = categoriesQuery.data ?? [];
 
-  const createModalCategories = useMemo(
-    () => categories.filter((item) => normalizeCategoryType(item.type) === formCategoryType),
-    [categories, formCategoryType],
-  );
+  const createModalCategories = useMemo(() => {
+    const byType = categories.filter((item) => normalizeCategoryType(item.type) === formCategoryType);
+    const q = categoryPickerQuery.trim().toLowerCase();
+    if (!q) {
+      return byType;
+    }
+    return byType.filter((item) => {
+      const name = item.name.toLowerCase();
+      const group = (item.groupId ?? '').toLowerCase();
+      return name.includes(q) || group.includes(q);
+    });
+  }, [categories, formCategoryType, categoryPickerQuery]);
 
   const lastParamWalletIdRef = useRef(params.walletId);
 
@@ -366,48 +343,6 @@ export const TransactionScreen = () => {
       }
     }
   }, [regularWallets, selectedWalletId, params.walletId]);
-
-  useEffect(() => {
-    if (!categoriesQuery.isSuccess || seededDefaultCategoriesRef.current || seedingInProgressRef.current) {
-      return;
-    }
-
-    seedingInProgressRef.current = true;
-
-    const existingKeys = new Set(
-      categories.map((item) => `${normalizeCategoryType(item.type)}::${item.name.trim().toLowerCase()}`),
-    );
-
-    const missing = defaultCategoryTemplates.filter((item) => {
-      const key = `${item.type}::${item.name.trim().toLowerCase()}`;
-      return !existingKeys.has(key);
-    });
-
-    if (missing.length === 0) {
-      seededDefaultCategoriesRef.current = true;
-      seedingInProgressRef.current = false;
-      return;
-    }
-
-    (async () => {
-      try {
-        for (const item of missing) {
-          await createCategory({
-            name: item.name,
-            type: item.type,
-            icon: item.icon,
-            color: item.color,
-          });
-        }
-        await queryClient.invalidateQueries({ queryKey: ['categories'] });
-        seededDefaultCategoriesRef.current = true;
-      } catch {
-        seededDefaultCategoriesRef.current = false;
-      } finally {
-        seedingInProgressRef.current = false;
-      }
-    })();
-  }, [categories, categoriesQuery.isSuccess, createCategory, queryClient]);
 
   const currentWallet = regularWallets.find((wallet) => wallet.walletId === selectedWalletId) ?? null;
 
@@ -565,63 +500,32 @@ export const TransactionScreen = () => {
 
   const changeFormCategoryType = (nextType: CategoryType) => {
     setFormCategoryType(nextType);
-    const defaultIcon = defaultCategoryIconByType[nextType];
-    setNewCategoryIcon(defaultIcon);
-    // Get color for default icon
-    const group = (nextType === 'EXPENSE' ? expenseGroups : incomeGroups).find(g => g.subIcons.some(i => i.icon === defaultIcon));
-    if (group) {
-      const subIcon = group.subIcons.find(i => i.icon === defaultIcon);
-      setNewCategoryColor(subIcon?.color || group.color);
-    }
-    setShowIconOptions(false);
     const current = categories.find((item) => item.categoryId === formCategoryId);
     if (current && normalizeCategoryType(current.type) !== nextType) {
       setFormCategoryId('');
     }
   };
 
+  // Custom category creation was removed: the app ships with ~139 hardcoded
+  // system categories (migration v4). These handlers are kept as no-ops
+  // because some leftover code paths may still reference them; they all
+  // resolve to the same alert.
   const openCreateCategoryComposer = () => {
-    setNewCategoryName('');
-    const defaultIcon = defaultCategoryIconByType[formCategoryType];
-    setNewCategoryIcon(defaultIcon);
-    // Get color for default icon
-    const group = (formCategoryType === 'EXPENSE' ? expenseGroups : incomeGroups).find(g => g.subIcons.some(i => i.icon === defaultIcon));
-    if (group) {
-      const subIcon = group.subIcons.find(i => i.icon === defaultIcon);
-      setNewCategoryColor(subIcon?.color || group.color);
-    }
-    setShowIconOptions(false);
-    setShowCreateCategoryComposer(true);
+    Alert.alert(
+      'Không thể tạo danh mục',
+      'Danh mục được cố định trong ứng dụng. Vui lòng chọn từ danh sách có sẵn.',
+    );
   };
 
   const closeCreateCategoryComposer = () => {
-    setShowCreateCategoryComposer(false);
-    setShowIconOptions(false);
+    // No-op: the composer UI was removed.
   };
 
   const submitCreateCategory = async () => {
-    const trimmedName = newCategoryName.trim();
-    if (!trimmedName) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên danh mục.');
-      return;
-    }
-
-    try {
-      const created = await createCategory({
-        name: trimmedName,
-        type: formCategoryType,
-        icon: newCategoryIcon,
-        color: '#BFEFF3',
-      });
-      setNewCategoryName('');
-      setNewCategoryIcon(defaultCategoryIconByType[formCategoryType]);
-      setShowIconOptions(false);
-      setShowCreateCategoryComposer(false);
-      setFormCategoryId(created.categoryId);
-      await queryClient.invalidateQueries({ queryKey: ['categories'] });
-    } catch {
-      Alert.alert('Lỗi', 'Không thể tạo danh mục. Vui lòng thử lại.');
-    }
+    Alert.alert(
+      'Không thể tạo danh mục',
+      'Danh mục được cố định trong ứng dụng. Vui lòng chọn từ danh sách có sẵn.',
+    );
   };
 
   const openCalendarPicker = (target: CalendarTarget, valueIso?: string) => {
@@ -1021,6 +925,7 @@ export const TransactionScreen = () => {
         animationType="slide"
         onRequestClose={() => {
           setShowCategoryPickerModal(false);
+          setCategoryPickerQuery('');
           closeCreateCategoryComposer();
         }}
       >
@@ -1072,6 +977,16 @@ export const TransactionScreen = () => {
               </Pressable>
             </View>
 
+            <TextInput
+              style={styles.categoryPickerSearchInput}
+              placeholder="Tìm danh mục..."
+              placeholderTextColor="#999"
+              value={categoryPickerQuery}
+              onChangeText={setCategoryPickerQuery}
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+
             <ScrollView style={styles.categoryPickerScroll} contentContainerStyle={styles.categoryPickerContent}>
               {createModalCategories.length === 0 ? (
                 <View style={styles.emptyCategoryBox}>
@@ -1102,79 +1017,6 @@ export const TransactionScreen = () => {
                     );
                   })}
                 </View>
-              )}
-
-              {showCreateCategoryComposer ? (
-                <View style={styles.addCategoryRow}>
-                  <TextInput
-                    style={[styles.input, styles.addCategoryInput]}
-                    placeholder="Tên danh mục mới"
-                    value={newCategoryName}
-                    onChangeText={setNewCategoryName}
-                  />
-
-                  <Pressable style={styles.pickIconButton} onPress={() => setShowIconOptions((prev) => !prev)}>
-                    <View style={styles.pickIconValueWrap}>
-                      <View style={[styles.pickIconCircle, { backgroundColor: newCategoryColor + '25' }]}>
-                        <MaterialCommunityIcons name={(newCategoryIcon as any) || 'cart'} size={18} color={newCategoryColor} />
-                      </View>
-                      <Text style={[styles.pickIconLabel, { color: newCategoryColor }]}>Chọn icon</Text>
-                    </View>
-                    <Ionicons name={showIconOptions ? 'chevron-up' : 'chevron-down'} size={18} color="#4a5963" />
-                  </Pressable>
-
-                  {showIconOptions ? (
-                    <View style={styles.iconGroupContainer}>
-                      <ScrollView style={styles.iconGroupScroll} nestedScrollEnabled>
-                        {(formCategoryType === 'EXPENSE' ? expenseGroups : incomeGroups).map((group) => (
-                          <View key={group.id} style={styles.iconGroupSection}>
-                            <View style={styles.iconGroupHeader}>
-                              <Text style={styles.iconGroupEmoji}>{group.emoji}</Text>
-                              <Text style={[styles.iconGroupName, { color: group.color }]}>{group.name}</Text>
-                            </View>
-                            <View style={styles.iconSubGrid}>
-                              {group.subIcons.map((iconOption) => {
-                                const selected = newCategoryIcon === iconOption.icon;
-                                return (
-                                  <Pressable
-                                    key={iconOption.icon}
-                                    onPress={() => {
-                                      setNewCategoryIcon(iconOption.icon);
-                                      setNewCategoryColor(iconOption.color);
-                                    }}
-                                    style={[styles.iconSubItem, selected && { borderColor: iconOption.color }]}
-                                  >
-                                    <View style={[styles.iconSubCircle, { backgroundColor: iconOption.color + '25' }]}>
-                                      <MaterialCommunityIcons name={(iconOption.icon as any) || 'help'} size={20} color={iconOption.color} />
-                                    </View>
-                                    <Text style={[styles.iconSubLabel, selected && { color: iconOption.color, fontWeight: '600' }]} numberOfLines={1}>
-                                      {iconOption.label}
-                                    </Text>
-                                  </Pressable>
-                                );
-                              })}
-                            </View>
-                          </View>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  ) : null}
-
-                  <View style={styles.addCategoryActionRow}>
-                    <Pressable style={styles.addCategoryGhostButton} onPress={closeCreateCategoryComposer}>
-                      <Text style={styles.addCategoryGhostButtonText}>Hủy</Text>
-                    </Pressable>
-                    <Pressable style={styles.addCategoryButton} onPress={submitCreateCategory}>
-                      <Ionicons name="add" size={18} color="#fff" />
-                      <Text style={styles.addCategoryButtonText}>Lưu danh mục</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ) : (
-                <Pressable style={styles.openAddCategoryButton} onPress={openCreateCategoryComposer}>
-                  <Ionicons name="add-circle-outline" size={18} color="#179ea9" />
-                  <Text style={styles.openAddCategoryButtonText}>Thêm danh mục</Text>
-                </Pressable>
               )}
             </ScrollView>
           </View>
@@ -1887,6 +1729,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6a6f74',
     marginTop: -2,
+  },
+  categoryPickerSearchInput: {
+    backgroundColor: '#f2f4f6',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#1f242a',
+    marginTop: 10,
   },
   rangePickerCard: {
     backgroundColor: '#fff',

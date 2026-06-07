@@ -3,7 +3,11 @@ import { Category } from '@/modules/category/models/category.types';
 
 export class CategoryLocalDataSource {
   async getCategories(): Promise<Category[]> {
-    return queryAll<Category>("SELECT * FROM categories WHERE (deletedAt IS NULL OR deletedAt = '') ORDER BY createdAt DESC");
+    return queryAll<Category>(
+      `SELECT * FROM categories
+       WHERE (deletedAt IS NULL OR deletedAt = '')
+       ORDER BY groupId ASC, name ASC`,
+    );
   }
 
   async getCategoryById(categoryId: string): Promise<Category | null> {
@@ -13,10 +17,11 @@ export class CategoryLocalDataSource {
   async upsert(category: Category) {
     await executeSql(
       `INSERT OR REPLACE INTO categories
-        (categoryId, name, type, icon, color, isDefault, isHidden, createdAt, updatedAt, deletedAt, version)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (categoryId, groupId, name, type, icon, color, isDefault, isHidden, createdAt, updatedAt, deletedAt, version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         category.categoryId,
+        category.groupId ?? '',
         category.name,
         category.type,
         category.icon ?? null,

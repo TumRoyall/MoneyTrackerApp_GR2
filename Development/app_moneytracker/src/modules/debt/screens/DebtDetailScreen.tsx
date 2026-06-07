@@ -116,7 +116,7 @@ export const DebtDetailScreen = () => {
   const queryClient = useQueryClient();
 
   const { getDebt } = useDebtUsecases();
-  const { getCategories, createCategory } = useCategoryUsecases();
+  const { getCategories } = useCategoryUsecases();
   const { getTransactions, createTransaction, updateTransaction, deleteTransaction } = useTransactionUsecases();
   const { getWallets } = useWalletUsecases();
 
@@ -207,20 +207,23 @@ export const DebtDetailScreen = () => {
   };
 
   const ensureDebtCategoryId = async (type: 'INCOME' | 'EXPENSE') => {
-    const existing = categories.find(
+    // Categories are hardcoded in the local DB (migration v4) and seeded
+    // on the server. Just look up the "Nợ" row by name + type — no creation
+    // needed. If somehow it is missing (e.g. partial migration), fall back
+    // to any category from the `debt` group.
+    const byName = categories.find(
       (item) => normalizeCategoryType(item.type) === type && isDebtCategoryName(item.name),
     );
-    if (existing) {
-      return existing.categoryId;
+    if (byName) {
+      return byName.categoryId;
     }
-    const created = await createCategory({
-      name: 'Nợ',
-      type,
-      icon: '💳',
-      color: '#FBE8E6',
-    });
-    await queryClient.invalidateQueries({ queryKey: ['categories'] });
-    return created.categoryId;
+    const byGroup = categories.find(
+      (item) => item.groupId === 'debt' && normalizeCategoryType(item.type) === type,
+    );
+    if (byGroup) {
+      return byGroup.categoryId;
+    }
+    throw new Error('Debt category not seeded — please reinstall the app');
   };
 
   const openCreateRecordModal = () => {

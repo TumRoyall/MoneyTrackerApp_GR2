@@ -1,6 +1,5 @@
 package com.examples.moneytracker.sync.service;
 
-import com.examples.moneytracker.category.dto.CategoryResponse;
 import com.examples.moneytracker.sync.dto.*;
 import com.examples.moneytracker.sync.model.SyncChangeLog;
 import com.examples.moneytracker.sync.model.SyncPushDedup;
@@ -31,7 +30,12 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class SyncService {
 
-    private static final Set<String> SUPPORTED_ENTITIES = Set.of("wallets", "categories", "transactions", "budgets");
+    // Categories are no longer synced — they are static system data that
+    // ships with the app (seeded on the client and on the server at boot).
+    // Budgets are also not yet supported; keep the name in the set so any
+    // legacy client that still sends "categories" gets a clear error rather
+    // than a generic "Unknown entity".
+    private static final Set<String> SUPPORTED_ENTITIES = Set.of("wallets", "transactions", "budgets");
 
     private final SyncChangeLogRepository syncChangeLogRepository;
     private final SyncPushDedupRepository syncPushDedupRepository;
@@ -52,11 +56,6 @@ public class SyncService {
                 .map(WalletResponse::from)
                 .toList();
 
-                List<CategoryResponse> categoryChanges = categoryRepository.findSyncCategories(userId)
-                .stream()
-                .map(this::toCategoryResponse)
-                .toList();
-
             List<TransactionResponse> transactionChanges = transactionRepository.findByCreatedByAndDeletedAtIsNull(userId)
                 .stream()
                 .map(this::toTransactionResponse)
@@ -64,7 +63,6 @@ public class SyncService {
 
             Map<String, List<?>> changes = new LinkedHashMap<>();
             changes.put("wallets", walletChanges);
-            changes.put("categories", categoryChanges);
             changes.put("budgets", List.of());
             changes.put("transactions", transactionChanges);
 
@@ -72,10 +70,6 @@ public class SyncService {
             deletes.put("wallets", walletRepository.findByUserIdAndDeletedAtIsNotNull(userId)
                 .stream()
                 .map(Wallet::getWalletId)
-                .toList());
-            deletes.put("categories", categoryRepository.findByUserIdAndDeletedAtIsNotNull(userId)
-                .stream()
-                .map(Category::getCategoryId)
                 .toList());
             deletes.put("budgets", List.of());
             deletes.put("transactions", transactionRepository.findByCreatedByAndDeletedAtIsNotNull(userId)
@@ -114,11 +108,9 @@ public class SyncService {
         }
 
         Set<UUID> walletUpserts = new LinkedHashSet<>();
-        Set<UUID> categoryUpserts = new LinkedHashSet<>();
         Set<UUID> transactionUpserts = new LinkedHashSet<>();
 
         Set<UUID> walletDeletes = new LinkedHashSet<>();
-        Set<UUID> categoryDeletes = new LinkedHashSet<>();
         Set<UUID> transactionDeletes = new LinkedHashSet<>();
         Set<UUID> budgetDeletes = new LinkedHashSet<>();
 
@@ -131,10 +123,6 @@ public class SyncService {
                     if (isDelete) walletDeletes.add(id);
                     else walletUpserts.add(id);
                 }
-                case "categories" -> {
-                    if (isDelete) categoryDeletes.add(id);
-                    else categoryUpserts.add(id);
-                }
                 case "transactions" -> {
                     if (isDelete) transactionDeletes.add(id);
                     else transactionUpserts.add(id);
@@ -143,6 +131,7 @@ public class SyncService {
                     if (isDelete) budgetDeletes.add(id);
                 }
                 default -> {
+                    // Categories sync is no longer supported — skip silently.
                 }
             }
         }
@@ -154,14 +143,6 @@ public class SyncService {
             .map(WalletResponse::from)
             .toList();
 
-        List<CategoryResponse> categoryChanges = categoryUpserts.isEmpty()
-            ? List.of()
-            : categoryRepository.findByCategoryIdInRaw(categoryUpserts)
-            .stream()
-            .filter(c -> Boolean.TRUE.equals(c.getIsDefault()) || userId.equals(c.getUserId()))
-            .map(this::toCategoryResponse)
-            .toList();
-
         List<TransactionResponse> transactionChanges = transactionUpserts.isEmpty()
                 ? List.of()
                 : transactionRepository.findByCreatedByAndTransactionIdInAndDeletedAtIsNull(userId, transactionUpserts)
@@ -171,13 +152,11 @@ public class SyncService {
 
         Map<String, List<?>> changes = new LinkedHashMap<>();
         changes.put("wallets", walletChanges);
-        changes.put("categories", categoryChanges);
         changes.put("budgets", List.of());
         changes.put("transactions", transactionChanges);
 
         Map<String, List<UUID>> deletes = new LinkedHashMap<>();
         deletes.put("wallets", List.copyOf(walletDeletes));
-        deletes.put("categories", List.copyOf(categoryDeletes));
         deletes.put("budgets", List.copyOf(budgetDeletes));
         deletes.put("transactions", List.copyOf(transactionDeletes));
 
@@ -186,22 +165,6 @@ public class SyncService {
                 .hasMore(hasMore)
                 .changes(changes)
                 .deletes(deletes)
-                .build();
-    }
-
-    private CategoryResponse toCategoryResponse(Category c) {
-        return CategoryResponse.builder()
-                .categoryId(c.getCategoryId())
-                .name(c.getName())
-                .icon(c.getIcon())
-                .color(c.getColor())
-                .type(c.getType())
-                .isDefault(c.getIsDefault())
-                .isHidden(c.getIsHidden())
-                .createdAt(c.getCreatedAt())
-                .updatedAt(c.getUpdatedAt())
-                .deletedAt(c.getDeletedAt())
-                .version(c.getVersion())
                 .build();
     }
 
@@ -258,10 +221,11 @@ public class SyncService {
         switch (op.getEntity()) {
             case "wallets":
                 return processWalletOperation(userId, op);
-            case "categories":
-                return processCategoryOperation(userId, op);
             case "transactions":
                 return processTransactionOperation(userId, op);
+            case "categories":
+                // Categories are static system data — clients no longer push them.
+                return buildErrorResult(op, "Categories are not synced; managed by app and server seed");
             case "budgets":
                 // Skip budgets - not implemented yet
                 return buildErrorResult(op, "Budgets not supported yet");
@@ -321,60 +285,6 @@ public class SyncService {
             walletRepository.save(wallet);
             walletBalanceService.rebuildWalletBalance(wallet);
             return buildOkResult(op, wallet.getVersion());
-        }
-    }
-
-    @Transactional
-    protected SyncOperationResult processCategoryOperation(UUID userId, SyncOperation op) {
-        UUID entityId = UUID.fromString(op.getEntityId());
-        Optional<Category> existingOpt = categoryRepository.findById(entityId);
-
-        // Check conflict
-        if (existingOpt.isPresent()) {
-            Category existing = existingOpt.get();
-            if (existing.getUserId() != null && !existing.getUserId().equals(userId)) {
-                return buildErrorResult(op, "Access denied: not your category");
-            }
-            if (Boolean.TRUE.equals(existing.getIsDefault())) {
-                return buildErrorResult(op, "Default category cannot be modified");
-            }
-            if (existingOpt.isPresent()) {
-                if (op.getBaseVersion() == null) {
-                    return buildErrorResult(op, "baseVersion is required for update/delete");
-                }
-                if (!op.getBaseVersion().equals(existing.getVersion())) {
-                    return buildConflictResult(op, existing.getVersion(), categoryToMap(existing));
-                }
-            }
-        }
-
-        if ("DELETE".equalsIgnoreCase(op.getOp())) {
-            if (existingOpt.isEmpty()) {
-                return buildOkResult(op, null);
-            }
-            Category category = existingOpt.get();
-            category.setDeletedAt(Instant.now());
-            categoryRepository.save(category);
-            syncChangeLogService.recordChange(userId, "categories", category.getCategoryId(), "DELETE");
-            return buildOkResult(op, category.getVersion());
-        } else {
-            // UPSERT
-            CategoryPushData data = objectMapper.convertValue(op.getData(), CategoryPushData.class);
-            Category category = existingOpt.orElse(new Category());
-            category.setCategoryId(entityId);
-            category.setUserId(userId);
-            category.setName(data.getName());
-            category.setType(data.getType());
-            category.setIcon(data.getIcon());
-            category.setColor(data.getColor());
-            category.setIsDefault(data.getIsDefault() != null ? data.getIsDefault() : false);
-            category.setIsHidden(data.getIsHidden() != null ? data.getIsHidden() : false);
-            if (data.getDeletedAt() != null) {
-                category.setDeletedAt(Instant.ofEpochMilli(data.getDeletedAt()));
-            }
-            categoryRepository.save(category);
-            syncChangeLogService.recordChange(userId, "categories", category.getCategoryId(), "UPSERT");
-            return buildOkResult(op, category.getVersion());
         }
     }
 
@@ -537,22 +447,6 @@ public class SyncService {
         map.put("createdAt", wallet.getCreatedAt().toEpochMilli());
         map.put("updatedAt", wallet.getUpdatedAt().toEpochMilli());
         map.put("deletedAt", wallet.getDeletedAt() != null ? wallet.getDeletedAt().toEpochMilli() : null);
-        return map;
-    }
-
-    private Map<String, Object> categoryToMap(Category cat) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("categoryId", cat.getCategoryId().toString());
-        map.put("name", cat.getName());
-        map.put("type", cat.getType());
-        map.put("icon", cat.getIcon());
-        map.put("color", cat.getColor());
-        map.put("isDefault", cat.getIsDefault());
-        map.put("isHidden", cat.getIsHidden());
-        map.put("version", cat.getVersion());
-        map.put("createdAt", cat.getCreatedAt().toEpochMilli());
-        map.put("updatedAt", cat.getUpdatedAt().toEpochMilli());
-        map.put("deletedAt", cat.getDeletedAt() != null ? cat.getDeletedAt().toEpochMilli() : null);
         return map;
     }
 

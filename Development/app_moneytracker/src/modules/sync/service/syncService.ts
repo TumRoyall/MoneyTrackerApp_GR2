@@ -10,7 +10,6 @@ import {
   SyncPushRequest,
 } from '@/modules/sync/models/sync.types';
 import { WalletLocalDataSource } from '@/modules/wallet/local/walletLocalDataSource';
-import { CategoryLocalDataSource } from '@/modules/category/local/categoryLocalDataSource';
 import { TransactionLocalDataSource } from '@/modules/transaction/local/transactionLocalDataSource';
 
 const CURSOR_KEY = 'lastCursor';
@@ -23,7 +22,6 @@ export class SyncService {
     private readonly outboxStore: OutboxStore,
     private readonly syncStateStore: SyncStateStore,
     private readonly walletLocal: WalletLocalDataSource,
-    private readonly categoryLocal: CategoryLocalDataSource,
     private readonly transactionLocal: TransactionLocalDataSource,
   ) {}
 
@@ -77,10 +75,13 @@ export class SyncService {
 
     const deviceId = await deviceStorage.ensureDeviceId();
 
-    // Local categoryIds are now proper UUIDs (seeded with Crypto.randomUUID),
-    // so no resolution is needed before sending to the server.
+    // Outbox may still contain rows for the now-removed `categories` entity
+    // (queued by older builds). Filter them out so we don't send rejected
+    // operations to the server. Wallets and transactions still go through.
+    const pushable = pending.filter((item) => item.entity !== 'categories');
+
     const operations: SyncOperation[] = await Promise.all(
-      pending.map(async (item) => {
+      pushable.map(async (item) => {
         const data = item.dataJson ? JSON.parse(item.dataJson) : undefined;
 
         return {
@@ -94,6 +95,12 @@ export class SyncService {
         };
       })
     );
+
+    // Drop filtered-out outbox rows so they don't accumulate.
+    const dropped = pending.filter((item) => item.entity === 'categories');
+    for (const row of dropped) {
+      await this.outboxStore.markOk(row.outboxId);
+    }
 
     const request: SyncPushRequest = {
       deviceId,
@@ -148,14 +155,12 @@ export class SyncService {
   private async applyDeletes(deletes: Record<string, string[]>) {
     const now = new Date().toISOString();
     const walletDeletes = deletes.wallets ?? [];
-    const categoryDeletes = deletes.categories ?? [];
+    // categories deletes are ignored — categories are static system data
+    // that the client seeds locally and never receives over sync.
     const transactionDeletes = deletes.transactions ?? [];
 
     for (const walletId of walletDeletes) {
       await this.walletLocal.markDeleted(walletId, now);
-    }
-    for (const categoryId of categoryDeletes) {
-      await this.categoryLocal.markDeleted(categoryId, now);
     }
     for (const transactionId of transactionDeletes) {
       await this.transactionLocal.markDeleted(transactionId, now);
@@ -164,7 +169,7 @@ export class SyncService {
 
   private async applyChanges(changes: Record<string, unknown[]>) {
     const walletChanges = (changes.wallets ?? []) as Array<Record<string, unknown>>;
-    const categoryChanges = (changes.categories ?? []) as Array<Record<string, unknown>>;
+    // categories changes are ignored — see applyDeletes comment above.
     const transactionChanges = (changes.transactions ?? []) as Array<Record<string, unknown>>;
 
     for (const wallet of walletChanges) {
@@ -180,22 +185,6 @@ export class SyncService {
         updatedAt: wallet.updatedAt ? String(wallet.updatedAt) : null,
         deletedAt: wallet.deletedAt ? String(wallet.deletedAt) : null,
         version: wallet.version != null ? Number(wallet.version) : 1,
-      });
-    }
-
-    for (const category of categoryChanges) {
-      await this.categoryLocal.upsert({
-        categoryId: String(category.categoryId),
-        name: String(category.name ?? ''),
-        type: String(category.type ?? 'EXPENSE'),
-        icon: category.icon ? String(category.icon) : null,
-        color: category.color ? String(category.color) : null,
-        isDefault: Boolean(category.isDefault),
-        isHidden: Boolean(category.isHidden),
-        createdAt: String(category.createdAt ?? new Date().toISOString()),
-        updatedAt: category.updatedAt ? String(category.updatedAt) : null,
-        deletedAt: category.deletedAt ? String(category.deletedAt) : null,
-        version: category.version != null ? Number(category.version) : 1,
       });
     }
 
