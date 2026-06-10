@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -14,12 +14,14 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useState, useEffect } from 'react';
+import * as SecureStore from 'expo-secure-store';
+import { ENV } from '@/core/config/env';
 import { useEventUsecases } from '@/modules/event/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
-import { Button, BackButton, FAB, colors, spacing } from '@/components/common';
-import type { EventDetail, EventMember, EventTransaction, Settlement, CreateEventTransactionInput } from '@/modules/event/models/event.types';
-import { formatCurrency, parseMoneyInput } from '@/shared/utils/money';
+import { Button, BackButton, FAB, colors, spacing, CategoryPickerModal } from '@/components/common';
+import type { EventDetail, EventMember, EventTransaction, Settlement, CreateEventTransactionInput, UpdateEventTransactionInput } from '@/modules/event/models/event.types';
+import { formatCurrency, parseMoneyInput, formatMoneyInput } from '@/shared/utils/money';
 
 export default function EventDetailScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
@@ -31,7 +33,9 @@ export default function EventDetailScreen() {
     getEventTransactions,
     getSettlement,
     settleEvent,
-    addEventTransaction
+    addEventTransaction,
+    updateEventTransaction,
+    deleteEventTransaction
   } = useEventUsecases();
   const { getCategories } = useCategoryUsecases();
   const { getWallets } = useWalletUsecases();
@@ -47,10 +51,22 @@ export default function EventDetailScreen() {
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [selectedCategoryName, setSelectedCategoryName] = useState('');
   const [selectedCategoryIcon, setSelectedCategoryIcon] = useState('');
+  const [selectedCategoryColor, setSelectedCategoryColor] = useState('');
   const [note, setNote] = useState('');
   const [isTransferFromPersonal, setIsTransferFromPersonal] = useState(false);
   const [selectedWalletId, setSelectedWalletId] = useState('');
   const [selectedWalletName, setSelectedWalletName] = useState('');
+
+  const [currentUsername, setCurrentUsername] = useState('');
+  const [editingTxId, setEditingTxId] = useState<string | null>(null);
+  const [showTxOptionsModal, setShowTxOptionsModal] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<EventTransaction | null>(null);
+
+  useEffect(() => {
+    SecureStore.getItemAsync('display_username').then(name => {
+      if (name) setCurrentUsername(name);
+    });
+  }, []);
 
   const { data: event, isLoading: eventLoading } = useQuery({
     queryKey: ['event', eventId],
@@ -111,15 +127,7 @@ export default function EventDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ['event-transactions', eventId] });
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
       queryClient.invalidateQueries({ queryKey: ['event-members', eventId] });
-      setShowAddTxModal(false);
-      setAmount('');
-      setNote('');
-      setSelectedCategoryId('');
-      setSelectedCategoryName('');
-      setSelectedCategoryIcon('');
-      setIsTransferFromPersonal(false);
-      setSelectedWalletId('');
-      setSelectedWalletName('');
+      resetForm();
       Alert.alert('Thành công', 'Đã thêm chi tiêu!');
     },
     onError: () => {
@@ -127,20 +135,103 @@ export default function EventDetailScreen() {
     },
   });
 
+  const updateTransactionMutation = useMutation({
+    mutationFn: (input: UpdateEventTransactionInput) => updateEventTransaction(eventId!, editingTxId!, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-transactions', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event-members', eventId] });
+      resetForm();
+      Alert.alert('Thành công', 'Đã cập nhật chi tiêu!');
+    },
+    onError: () => {
+      Alert.alert('Lỗi', 'Không thể cập nhật giao dịch. Vui lòng thử lại.');
+    },
+  });
+
+  const deleteTransactionMutation = useMutation({
+    mutationFn: (transactionId: string) => deleteEventTransaction(eventId!, transactionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-transactions', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event-members', eventId] });
+      Alert.alert('Thành công', 'Đã xoá giao dịch!');
+    },
+    onError: () => {
+      Alert.alert('Lỗi', 'Không thể xoá giao dịch. Vui lòng thử lại.');
+    },
+  });
+
+  const resetForm = () => {
+    setShowAddTxModal(false);
+    setEditingTxId(null);
+    setAmount('');
+    setNote('');
+    setSelectedCategoryId('');
+    setSelectedCategoryName('');
+    setSelectedCategoryIcon('');
+    setSelectedCategoryColor('');
+    setIsTransferFromPersonal(false);
+    setSelectedWalletId('');
+    setSelectedWalletName('');
+  };
+
   const handleAddTransaction = async () => {
     if (!amount || !selectedCategoryId) {
       Alert.alert('Lỗi', 'Vui lòng nhập số tiền và chọn danh mục');
       return;
     }
 
-    addTransactionMutation.mutate({
-      amount: parseMoneyInput(amount),
-      categoryId: selectedCategoryId,
-      note: note.trim() || undefined,
-      date: new Date().toISOString().split('T')[0],
-      isTransferFromPersonal: isTransferFromPersonal || undefined,
-      personalWalletId: isTransferFromPersonal ? selectedWalletId || undefined : undefined,
-    });
+    if (editingTxId) {
+      updateTransactionMutation.mutate({
+        amount: parseMoneyInput(amount),
+        categoryId: selectedCategoryId,
+        note: note.trim() || undefined,
+      });
+    } else {
+      addTransactionMutation.mutate({
+        amount: parseMoneyInput(amount),
+        categoryId: selectedCategoryId,
+        note: note.trim() || undefined,
+        date: new Date().toISOString().split('T')[0],
+        isTransferFromPersonal: isTransferFromPersonal || undefined,
+        personalWalletId: isTransferFromPersonal ? selectedWalletId || undefined : undefined,
+      });
+    }
+  };
+
+  const handleEditTx = () => {
+    if (!selectedTx) return;
+    setEditingTxId(selectedTx.id);
+    setAmount(formatMoneyInput(selectedTx.amount.toString()));
+    setSelectedCategoryId(selectedTx.categoryId);
+    setSelectedCategoryName(selectedTx.categoryName);
+    setSelectedCategoryIcon(selectedTx.categoryIcon);
+    
+    // Find category color from categories list
+    const cat = categories?.find(c => c.categoryId === selectedTx.categoryId);
+    setSelectedCategoryColor(cat?.color || '#29bcc8');
+    
+    setNote(selectedTx.note || '');
+    setShowTxOptionsModal(false);
+    setShowAddTxModal(true);
+  };
+
+  const handleDeleteTx = () => {
+    if (!selectedTx) return;
+    setShowTxOptionsModal(false);
+    Alert.alert(
+      'Xoá giao dịch',
+      'Bạn có chắc chắn muốn xoá giao dịch này?',
+      [
+        { text: 'Huỷ', style: 'cancel' },
+        { 
+          text: 'Xoá', 
+          style: 'destructive',
+          onPress: () => deleteTransactionMutation.mutate(selectedTx.id)
+        }
+      ]
+    );
   };
 
   const copyShareCode = async () => {
@@ -150,11 +241,36 @@ export default function EventDetailScreen() {
     }
   };
 
-  const copyShareLink = async () => {
+  const handleCopyShareLink = async () => {
     if (event?.shareLink) {
       await Clipboard.setStringAsync(event.shareLink);
-      Alert.alert('Đã copy', 'Link tham gia đã được copy!');
+      Alert.alert('Đã copy', 'Link tham gia App đã được copy!');
     }
+  };
+
+  const handleCopyGuestLink = async () => {
+    if (event?.eventId) {
+      const guestLink = `${ENV.webAppUrl}/guest/${event.eventId}`;
+      await Clipboard.setStringAsync(guestLink);
+      Alert.alert('Đã copy', 'Link dành cho Khách đã được copy!');
+    }
+  };
+
+  const handleCopyReport = async () => {
+    if (!event || !transactions) return;
+    
+    let report = `BÁO CÁO KẾT TOÁN: ${event.name}\n`;
+    report += `Tổng chi tiêu: ${formatCurrency(event.totalSpent || 0, 'VND')}\n`;
+    report += `Số lượng giao dịch: ${event.transactionCount}\n\n`;
+    report += `CHI TIẾT GIAO DỊCH:\n`;
+    
+    transactions.forEach((tx, index) => {
+      const note = tx.note || tx.categoryName;
+      report += `${index + 1}. [${tx.date}] ${tx.creatorName}: ${formatCurrency(tx.amount, 'VND')} - ${note}\n`;
+    });
+    
+    await Clipboard.setStringAsync(report);
+    Alert.alert('Đã copy', 'Báo cáo chi tiết đã được copy vào khay nhớ tạm!');
   };
 
   const handleSettle = async () => {
@@ -261,23 +377,12 @@ export default function EventDetailScreen() {
                     </View>
                   )}
                 </View>
-                <Text style={styles.memberContribution}>
-                  Chi: {formatCurrency(member.contribution || 0, 'VND')} • {member.transactionCount} giao dịch
-                </Text>
-              </View>
-              {member.balance !== 0 && (
-                <View style={[
-                  styles.balanceBadge,
-                  { backgroundColor: member.balance > 0 ? '#dff7f5' : '#fef0f0' }
-                ]}>
-                  <Text style={[
-                    styles.balanceText,
-                    { color: member.balance > 0 ? '#34a795' : '#f36e79' }
-                  ]}>
-                    {member.balance > 0 ? '+' : ''}{formatCurrency(member.balance, 'VND')}
-                  </Text>
+                <View style={styles.memberContributionRow}>
+                  <Text style={styles.memberContributionLabel}>Đã chi: </Text>
+                  <Text style={styles.memberContributionValue}>{formatCurrency(member.contribution || 0, 'VND')}</Text>
+                  <Text style={styles.memberContributionLabel}> • {member.transactionCount} giao dịch</Text>
                 </View>
-              )}
+              </View>
             </View>
           ))}
         </View>
@@ -287,40 +392,70 @@ export default function EventDetailScreen() {
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Giao dịch gần đây</Text>
           </View>
-          {transactions?.length === 0 ? (
+          {(!transactions || transactions.length === 0) ? (
             <Text style={styles.emptyText}>Chưa có giao dịch nào</Text>
           ) : (
-            transactions?.slice(0, 5).map((tx) => (
-              <View key={tx.id} style={styles.txRow}>
-                <View style={styles.txIcon}>
-                  <Text>{tx.categoryIcon || '📝'}</Text>
+            transactions.slice(0, 5).map((tx) => {
+              const cat = categories?.find(c => c.categoryId === tx.categoryId);
+              const displayIcon = tx.categoryIcon || cat?.icon || 'help';
+              const catColor = cat?.color || '#29bcc8';
+              const isOwner = members?.find(m => m.role === 'OWNER')?.displayName === currentUsername;
+              const isCreator = tx.creatorName === currentUsername;
+              const canEdit = isOwner || isCreator;
+              
+              return (
+              <Pressable 
+                key={tx.id} 
+                style={({ pressed }) => [
+                  styles.txRow,
+                  pressed && canEdit && { opacity: 0.7 }
+                ]}
+                onPress={() => {
+                  if (canEdit) {
+                    setSelectedTx(tx);
+                    setShowTxOptionsModal(true);
+                  }
+                }}
+              >
+                <View style={[styles.txIcon, { backgroundColor: catColor + '20' }]}>
+                  <MaterialCommunityIcons name={displayIcon as any} size={20} color={catColor} />
                 </View>
                 <View style={styles.txInfo}>
-                  <Text style={styles.txNote}>{tx.note || tx.categoryName}</Text>
+                  <Text style={[styles.txNote, canEdit && { color: colors.textPrimary, fontWeight: '600' }]}>
+                    {tx.note || tx.categoryName}
+                  </Text>
                   <Text style={styles.txMeta}>
                     {tx.creatorName} • {tx.date}
                   </Text>
                 </View>
-                <Text style={styles.txAmount}>-{formatCurrency(tx.amount, 'VND')}</Text>
-              </View>
-            ))
+                <View style={styles.txAmountContainer}>
+                  <Text style={[styles.txAmount, canEdit && { fontWeight: '700' }]}>-{formatCurrency(tx.amount, 'VND')}</Text>
+                  {canEdit && (
+                    <Ionicons name="chevron-forward" size={16} color="#6c737a" style={{ marginLeft: 4 }} />
+                  )}
+                </View>
+              </Pressable>
+              );
+            })
           )}
         </View>
       </ScrollView>
 
-      {/* Add Transaction FAB */}
-      {event.status === 'ACTIVE' && (
-        <FAB icon="add" onPress={() => setShowAddTxModal(true)} />
+      {/* Action FAB */}
+      {event.status === 'ACTIVE' ? (
+        <FAB icon={<Ionicons name="add" size={24} color="#fff" />} onPress={() => setShowAddTxModal(true)} />
+      ) : (
+        <FAB icon={<Ionicons name="document-text-outline" size={24} color="#fff" />} onPress={handleCopyReport} />
       )}
 
-      {/* Add Transaction Modal */}
-      <Modal visible={showAddTxModal} animationType="slide" onRequestClose={() => setShowAddTxModal(false)}>
+      {/* Add/Edit Transaction Modal */}
+      <Modal visible={showAddTxModal} animationType="slide" onRequestClose={resetForm}>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Pressable onPress={() => setShowAddTxModal(false)}>
+            <Pressable onPress={resetForm}>
               <Ionicons name="close" size={24} color="#333" />
             </Pressable>
-            <Text style={styles.modalTitle}>Thêm chi tiêu</Text>
+            <Text style={styles.modalTitle}>{editingTxId ? 'Sửa chi tiêu' : 'Thêm chi tiêu'}</Text>
             <View style={{ width: 24 }} />
           </View>
 
@@ -331,15 +466,20 @@ export default function EventDetailScreen() {
               placeholder="0"
               placeholderTextColor="#8b8b8b"
               value={amount}
-              onChangeText={(text) => setAmount(text.replace(/[^0-9]/g, ''))}
+              onChangeText={(text) => setAmount(formatMoneyInput(text))}
               keyboardType="numeric"
             />
 
             <Text style={styles.label}>Danh mục</Text>
             <Pressable style={styles.selectBtn} onPress={() => setShowCategoryModal(true)}>
-              <Text style={styles.selectBtnText}>
-                {selectedCategoryIcon ? `${selectedCategoryIcon} ${selectedCategoryName}` : 'Chọn danh mục'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {selectedCategoryIcon ? (
+                  <MaterialCommunityIcons name={selectedCategoryIcon as any} size={20} color={selectedCategoryColor || '#1f1f1f'} />
+                ) : null}
+                <Text style={styles.selectBtnText}>
+                  {selectedCategoryName || 'Chọn danh mục'}
+                </Text>
+              </View>
               <Ionicons name="chevron-down" size={20} color="#6c737a" />
             </Pressable>
 
@@ -353,21 +493,23 @@ export default function EventDetailScreen() {
               multiline
             />
 
-            <View style={styles.checkboxRow}>
-              <Pressable
-                style={styles.checkbox}
-                onPress={() => setIsTransferFromPersonal(!isTransferFromPersonal)}
-              >
-                <Ionicons
-                  name={isTransferFromPersonal ? 'checkbox' : 'square-outline'}
-                  size={24}
-                  color={isTransferFromPersonal ? '#29bcc8' : '#6c737a'}
-                />
-                <Text style={styles.checkboxLabel}>Chuyển tiền từ ví cá nhân</Text>
-              </Pressable>
-            </View>
+            {!editingTxId && (
+              <View style={styles.checkboxRow}>
+                <Pressable
+                  style={styles.checkbox}
+                  onPress={() => setIsTransferFromPersonal(!isTransferFromPersonal)}
+                >
+                  <Ionicons
+                    name={isTransferFromPersonal ? 'checkbox' : 'square-outline'}
+                    size={24}
+                    color={isTransferFromPersonal ? '#29bcc8' : '#6c737a'}
+                  />
+                  <Text style={styles.checkboxLabel}>Chuyển tiền từ ví cá nhân</Text>
+                </Pressable>
+              </View>
+            )}
 
-            {isTransferFromPersonal && (
+            {!editingTxId && isTransferFromPersonal && (
               <>
                 <Text style={styles.label}>Chọn ví</Text>
                 <Pressable style={styles.selectBtn} onPress={() => setShowWalletModal(true)}>
@@ -380,48 +522,30 @@ export default function EventDetailScreen() {
             )}
 
             <Button
-              title="Thêm chi tiêu"
+              title={editingTxId ? "Cập nhật" : "Thêm chi tiêu"}
               onPress={handleAddTransaction}
               variant="primary"
-              loading={addTransactionMutation.isPending}
+              loading={addTransactionMutation.isPending || updateTransactionMutation.isPending}
             />
           </ScrollView>
         </View>
       </Modal>
 
       {/* Category Picker Modal */}
-      <Modal visible={showCategoryModal} animationType="slide" transparent onRequestClose={() => setShowCategoryModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.pickerSheet}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>Chọn danh mục</Text>
-              <Pressable onPress={() => setShowCategoryModal(false)}>
-                <Ionicons name="close" size={24} color="#333" />
-              </Pressable>
-            </View>
-            <ScrollView>
-              {categories?.filter(c => c.type === 'EXPENSE').map((cat) => (
-                <Pressable
-                  key={cat.categoryId}
-                  style={styles.pickerItem}
-                  onPress={() => {
-                    setSelectedCategoryId(cat.categoryId);
-                    setSelectedCategoryName(cat.name);
-                    setSelectedCategoryIcon(cat.icon || '📝');
-                    setShowCategoryModal(false);
-                  }}
-                >
-                  <Text style={styles.pickerItemIcon}>{cat.icon || '📝'}</Text>
-                  <Text style={styles.pickerItemText}>{cat.name}</Text>
-                  {selectedCategoryId === cat.categoryId && (
-                    <Ionicons name="checkmark" size={20} color="#29bcc8" />
-                  )}
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <CategoryPickerModal
+        visible={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        selectedCategoryId={selectedCategoryId}
+        allowedTypes={['EXPENSE']}
+        onSelectCategory={(category) => {
+          setSelectedCategoryId(category.categoryId);
+          setSelectedCategoryName(category.name);
+          setSelectedCategoryIcon(category.icon || 'help');
+          setSelectedCategoryColor(category.color || '#29bcc8');
+          setShowCategoryModal(false);
+        }}
+      />
+
 
       {/* Wallet Picker Modal */}
       <Modal visible={showWalletModal} animationType="slide" transparent onRequestClose={() => setShowWalletModal(false)}>
@@ -474,20 +598,7 @@ export default function EventDetailScreen() {
                     <Text style={styles.settlementLabel}>Tổng chi</Text>
                     <Text style={styles.settlementValue}>{formatCurrency(settlement.totalSpent, 'VND')}</Text>
                   </View>
-                  <View style={styles.settlementRow}>
-                    <Text style={styles.settlementLabel}>Mỗi người</Text>
-                    <Text style={styles.settlementValue}>{formatCurrency(settlement.perPersonShare, 'VND')}</Text>
-                  </View>
                 </View>
-
-                <Text style={styles.label}>Gợi ý kết toán</Text>
-                {settlement.settlements.map((item, index) => (
-                  <View key={index} style={styles.settlementItem}>
-                    <Text style={styles.settlementItemText}>
-                      {item.fromUserName} → {item.toUserName}: {formatCurrency(item.amount, 'VND')}
-                    </Text>
-                  </View>
-                ))}
 
                 {event.status === 'ACTIVE' && (
                   <Button
@@ -523,13 +634,45 @@ export default function EventDetailScreen() {
               </Pressable>
             </View>
 
-            <Text style={styles.label}>Link tham gia</Text>
-            <Pressable style={styles.shareCodeBox} onPress={copyShareLink}>
+            <Text style={styles.label}>Link tham gia App (Dành cho thành viên)</Text>
+            <Pressable style={styles.shareCodeBox} onPress={handleCopyShareLink}>
               <Text style={styles.shareLinkText} numberOfLines={1}>{event.shareLink}</Text>
+              <Ionicons name="copy-outline" size={24} color="#29bcc8" />
+            </Pressable>
+
+            <Text style={[styles.label, { marginTop: 16 }]}>Link Web Khách (Cho người ngoài)</Text>
+            <Pressable style={styles.shareCodeBox} onPress={handleCopyGuestLink}>
+              <Text style={styles.shareLinkText} numberOfLines={1}>
+                {ENV.webAppUrl}/guest/{event?.eventId}
+              </Text>
               <Ionicons name="copy-outline" size={24} color="#29bcc8" />
             </Pressable>
           </View>
         </View>
+      </Modal>
+
+      {/* Transaction Options Modal */}
+      <Modal visible={showTxOptionsModal} animationType="fade" transparent onRequestClose={() => setShowTxOptionsModal(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowTxOptionsModal(false)}>
+          <View style={styles.txOptionsSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Tuỳ chọn giao dịch</Text>
+              <Pressable onPress={() => setShowTxOptionsModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            <Pressable style={styles.txOptionBtn} onPress={handleEditTx}>
+              <Ionicons name="pencil-outline" size={24} color="#29bcc8" />
+              <Text style={[styles.txOptionText, { color: '#29bcc8' }]}>Sửa giao dịch</Text>
+            </Pressable>
+
+            <Pressable style={styles.txOptionBtn} onPress={handleDeleteTx}>
+              <Ionicons name="trash-outline" size={24} color="#f36e79" />
+              <Text style={[styles.txOptionText, { color: '#f36e79' }]}>Xoá giao dịch</Text>
+            </Pressable>
+          </View>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -699,24 +842,35 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   memberName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
   },
   ownerBadge: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#fffbe6',
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 4,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffe58f',
   },
   ownerBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#b45309',
+    color: '#d48806',
   },
-  memberContribution: {
-    fontSize: 12,
+  memberContributionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  memberContributionLabel: {
+    fontSize: 14,
     color: colors.textSecondary,
+  },
+  memberContributionValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#34a795',
   },
   balanceBadge: {
     paddingHorizontal: 10,
@@ -748,18 +902,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   txNote: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
     color: colors.textPrimary,
   },
   txMeta: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textSecondary,
   },
+  txAmountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   txAmount: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.error,
+    fontSize: 16,
+    color: colors.textPrimary,
   },
   emptyText: {
     fontSize: 14,
@@ -938,5 +1094,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
     flex: 1,
+  },
+  txOptionsSheet: {
+    backgroundColor: colors.backgroundPrimary,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    marginTop: 'auto',
+  },
+  txOptionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f3f5',
+    gap: 12,
+  },
+  txOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

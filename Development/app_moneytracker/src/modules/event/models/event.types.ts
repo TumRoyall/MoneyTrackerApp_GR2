@@ -90,6 +90,20 @@ export interface CreateEventInput {
   endDate?: string;
 }
 
+export interface JoinEventInput {
+  shareCode: string;
+}
+
+export interface CreateGuestTransactionInput {
+  creatorName: string;
+  amount: number;
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
+  note?: string;
+  date: string;
+}
+
 export interface UpdateEventInput {
   name?: string;
   icon?: string;

@@ -37,7 +37,11 @@ export const useEventUsecases = () => {
   // ==================== JOIN / LEAVE ====================
 
   const joinEvent = async (shareCode: string): Promise<Event> => {
-    return eventRemoteDataSource.joinEvent(shareCode);
+    return await eventRemoteDataSource.joinEvent(shareCode);
+  };
+
+  const getGuestEventInfo = async (eventId: string) => {
+    return await eventRemoteDataSource.getGuestEventInfo(eventId);
   };
 
   const leaveEvent = async (eventId: string): Promise<void> => {
@@ -61,6 +65,10 @@ export const useEventUsecases = () => {
     input: CreateEventTransactionInput
   ): Promise<EventTransaction[]> => {
     return eventRemoteDataSource.addEventTransaction(eventId, input);
+  };
+
+  const addGuestTransaction = async (eventId: string, payload: any): Promise<void> => {
+    return eventRemoteDataSource.addGuestTransaction(eventId, payload);
   };
 
   const updateEventTransaction = async (
@@ -95,11 +103,13 @@ export const useEventUsecases = () => {
     // Join/Leave
     joinEvent,
     leaveEvent,
+    getGuestEventInfo,
     // Members
     getEventMembers,
     // Transactions
     getEventTransactions,
     addEventTransaction,
+    addGuestTransaction,
     updateEventTransaction,
     deleteEventTransaction,
     // Settlement

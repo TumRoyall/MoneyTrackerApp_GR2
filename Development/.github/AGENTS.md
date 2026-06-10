@@ -29,3 +29,4 @@ description: "Agent instructions for MoneyTracker app (Expo frontend + Spring Bo
 - API base path: /api
 - Response format: success { data, meta }, error { error: { code, message, details } }
 - Paging: page, size, sort and meta { page, size, totalItems, totalPages }
+ 

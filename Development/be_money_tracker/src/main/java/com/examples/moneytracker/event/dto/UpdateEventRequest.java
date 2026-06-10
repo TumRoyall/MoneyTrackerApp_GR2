@@ -1,8 +1,8 @@
 package com.examples.moneytracker.event.dto;
 
-import com.examples.moneytracker.event.model.EventStatus;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import java.time.Instant;
 
 @Data
 public class UpdateEventRequest {
@@ -14,7 +14,7 @@ public class UpdateEventRequest {
 
     private String description;
 
-    private java.time.Instant startDate;
+    private Instant startDate;
 
-    private java.time.Instant endDate;
+    private Instant endDate;
 }

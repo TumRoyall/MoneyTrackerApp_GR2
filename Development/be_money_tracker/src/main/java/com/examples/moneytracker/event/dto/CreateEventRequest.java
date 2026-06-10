@@ -1,6 +1,5 @@
 package com.examples.moneytracker.event.dto;
 
-import com.examples.moneytracker.event.model.EventStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;

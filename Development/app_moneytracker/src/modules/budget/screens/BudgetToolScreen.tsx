@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing, typography } from '@/components/common';
+import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing, typography, CategoryPickerModal } from '@/components/common';
 
 import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
@@ -27,16 +27,29 @@ type CategoryType = 'EXPENSE' | 'INCOME';
 
 type CalendarTarget = 'day';
 
-const formatDateVi = (isoDate: string) => {
-  const [year, month, day] = isoDate.split('-').map(Number);
+const formatDateVi = (isoDate: any) => {
+  if (!isoDate) return '';
+  const parts = Array.isArray(isoDate) ? isoDate : String(isoDate).split('-');
+  const [year, month, day] = parts.map(Number);
   if (!year || !month || !day) {
-    return isoDate;
+    return Array.isArray(isoDate) ? isoDate.join('-') : String(isoDate);
   }
   return `${day} thg ${month}, ${year}`;
 };
 
-const parseIsoDate = (value: string) => {
-  const [year, month, day] = value.split('-').map((item) => Number(item));
+const normalizeApiDate = (dateInfo: any) => {
+  if (!dateInfo) return undefined;
+  if (Array.isArray(dateInfo)) {
+    const [year, month, day] = dateInfo.map(Number);
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+  return String(dateInfo);
+};
+
+const parseIsoDate = (value: any) => {
+  if (!value) return null;
+  const parts = Array.isArray(value) ? value : String(value).split('-');
+  const [year, month, day] = parts.map((item) => Number(item));
   if (!year || !month || !day) {
     return null;
   }
@@ -69,10 +82,12 @@ const buildCalendarMatrix = (monthDate: Date) => {
   });
 };
 
-const getPeriodEndDate = (startDateIso: string, periodType: PeriodType) => {
-  const [year, month, day] = startDateIso.split('-').map(Number);
+const getPeriodEndDate = (startDateIso: any, periodType: PeriodType) => {
+  if (!startDateIso) return startDateIso;
+  const parts = Array.isArray(startDateIso) ? startDateIso : String(startDateIso).split('-');
+  const [year, month, day] = parts.map(Number);
   if (!year || !month || !day) {
-    return startDateIso;
+    return Array.isArray(startDateIso) ? startDateIso.join('-') : String(startDateIso);
   }
 
   const start = new Date(year, month - 1, day);
@@ -134,6 +149,8 @@ export const BudgetToolScreen = () => {
   const [showCategoryPickerModal, setShowCategoryPickerModal] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const [amountLimitInput, setAmountLimitInput] = useState('');
+  const [alertThresholdInput, setAlertThresholdInput] = useState('80');
+  const [enableAlert, setEnableAlert] = useState(true);
   const [periodType, setPeriodType] = useState<PeriodType>('monthly');
   const [periodStart, setPeriodStart] = useState(toIsoDate(new Date()));
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
@@ -213,8 +230,8 @@ export const BudgetToolScreen = () => {
           queryFn: () =>
             getTransactions({
               walletId: budget.walletId ?? undefined,
-              fromDate: budget.periodStart,
-              toDate: budget.periodEnd,
+              fromDate: normalizeApiDate(budget.periodStart),
+              toDate: normalizeApiDate(budget.periodEnd),
               page: 0,
               size: 1000,
               sort: 'date,desc',
@@ -298,11 +315,15 @@ export const BudgetToolScreen = () => {
         periodStart,
         periodEnd,
         periodType,
+        alertThreshold: enableAlert ? parseInt(alertThresholdInput, 10) : null,
       });
       await queryClient.invalidateQueries({ queryKey: ['budgets'] });
       setShowCreateModal(false);
       setAmountLimitInput('');
       setTitleInput('');
+      setAmountLimitInput('');
+      setAlertThresholdInput('80');
+      setEnableAlert(true);
       setPeriodType('monthly');
       setPeriodStart(toIsoDate(new Date()));
       setSelectedCategoryIds([]);
@@ -378,7 +399,10 @@ export const BudgetToolScreen = () => {
               if (!categoryIdSet.has(item.categoryId)) {
                 return sum;
               }
-              if (item.date < budget.periodStart || item.date > budget.periodEnd) {
+              const startIso = normalizeApiDate(budget.periodStart) || '';
+              const endIso = normalizeApiDate(budget.periodEnd) || '';
+              const itemDate = normalizeApiDate(item.date) || '';
+              if (itemDate < startIso || itemDate > endIso) {
                 return sum;
               }
               return sum + Number(item.amount || 0);
@@ -453,13 +477,38 @@ export const BudgetToolScreen = () => {
                   ) : null}
                 </View>
 
-                <Text style={styles.budgetSummary}>
-                  {isIncome
-                    ? `cần thêm ${formatVndAmount(neededAmount)} để đạt mục tiêu`
-                    : `${formatVndAmount(remainingAmount)} còn lại`}
-                </Text>
+                {(() => {
+                  const alertThreshold = budget.alertThreshold ?? 100;
+                  let pbVariant: 'default' | 'success' | 'warning' | 'danger' = 'default';
+                  if (percent >= 100 && !isIncome) {
+                    pbVariant = 'danger';
+                  } else if (percent >= alertThreshold && !isIncome) {
+                    pbVariant = 'warning';
+                  } else if (percent > 0) {
+                    pbVariant = 'success';
+                  }
 
-                <ProgressBar value={percent} showLabel />
+                  return (
+                    <>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={[styles.budgetSummary, pbVariant === 'danger' && { color: '#f44336' }]}>
+                          {isIncome
+                            ? `cần thêm ${formatVndAmount(neededAmount)} để đạt mục tiêu`
+                            : percent >= 100 
+                              ? `Vượt mức ${formatVndAmount(Math.abs(remainingAmount))}` 
+                              : `${formatVndAmount(remainingAmount)} còn lại`}
+                        </Text>
+                        {pbVariant === 'warning' && (
+                          <Ionicons name="warning" size={16} color="#ff9800" />
+                        )}
+                        {pbVariant === 'danger' && (
+                          <Ionicons name="alert-circle" size={16} color="#f44336" />
+                        )}
+                      </View>
+                      <ProgressBar value={percent} showLabel variant={pbVariant} />
+                    </>
+                  );
+                })()}
                 </Pressable>
               </Card>
             );
@@ -575,6 +624,39 @@ export const BudgetToolScreen = () => {
             <View style={styles.endDateRow}>
               <Text style={styles.endDateLabel}>Ngày kết thúc</Text>
               <Text style={styles.endDateText}>{formatDateVi(periodEnd)}</Text>
+            </View>
+
+            <View style={styles.alertThresholdSection}>
+              <View style={styles.alertThresholdHeader}>
+                <View style={styles.alertThresholdTitleRow}>
+                  <Ionicons name="notifications-outline" size={20} color="#5d6972" />
+                  <Text style={styles.sectionLabel}>Cảnh báo khi vượt mức (%)</Text>
+                </View>
+                <Switch 
+                  value={enableAlert} 
+                  onValueChange={setEnableAlert} 
+                  trackColor={{ false: '#d5dde3', true: '#29bcc8' }}
+                  thumbColor="#fff"
+                />
+              </View>
+              {enableAlert && (
+                <View style={styles.alertThresholdControl}>
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    keyboardType="numeric"
+                    value={alertThresholdInput}
+                    onChangeText={(val) => {
+                       const num = parseInt(val, 10);
+                       if (!val) setAlertThresholdInput('');
+                       else if (!isNaN(num) && num >= 1 && num <= 100) setAlertThresholdInput(num.toString());
+                    }}
+                    placeholder="VD: 80"
+                  />
+                  <View style={styles.alertPercentBadge}>
+                    <Text style={styles.alertPercentText}>%</Text>
+                  </View>
+                </View>
+              )}
             </View>
 
             <Text style={styles.sectionLabel}>Danh mục ngân sách</Text>
@@ -699,50 +781,15 @@ export const BudgetToolScreen = () => {
         </View>
       </Modal>
 
-      <Modal
+      <CategoryPickerModal
         visible={showCategoryPickerModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCategoryPickerModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.categoryPickerSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chọn danh mục</Text>
-              <Pressable onPress={() => setShowCategoryPickerModal(false)}>
-                <Ionicons name="close" size={24} color="#333" />
-              </Pressable>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.categoryPickerContent} showsVerticalScrollIndicator={false}>
-              {budgetTypeCategories.length === 0 ? (
-                <Text style={styles.selectedCategoryEmpty}>Chưa có danh mục phù hợp.</Text>
-              ) : (
-                budgetTypeCategories.map((item) => {
-                  const selected = selectedCategoryIds.includes(item.categoryId);
-                  return (
-                    <Pressable
-                      key={item.categoryId}
-                      onPress={() => toggleCategoryId(item.categoryId)}
-                      style={[styles.categoryPickerItem, selected ? styles.categoryPickerItemSelected : null]}
-                    >
-                      <View style={styles.categoryPickerIconWrap}>
-                        <MaterialCommunityIcons name={(item.icon as any) || 'cash'} size={20} color={(item as any).color || '#29bcc8'} />
-                      </View>
-                      <Text style={[styles.categoryPickerName, selected ? styles.categoryPickerNameSelected : null]}>
-                        {item.name}
-                      </Text>
-                      {selected ? <Text style={styles.categoryPickerSelectedMark}>✓</Text> : null}
-                    </Pressable>
-                  );
-                })
-              )}
-            </ScrollView>
-
-            <Button title="Xong" onPress={() => setShowCategoryPickerModal(false)} />
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowCategoryPickerModal(false)}
+        selectedCategoryIds={selectedCategoryIds}
+        multiSelect={true}
+        allowedTypes={[budgetType]}
+        initialType={budgetType}
+        onSelectCategory={(category) => toggleCategoryId(category.categoryId)}
+      />
     </View>
   );
 };
@@ -1421,5 +1468,43 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  alertThresholdSection: {
+    marginTop: 4,
+    marginBottom: 4,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e6ecef',
+  },
+  alertThresholdHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  alertThresholdTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  alertThresholdControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 12,
+  },
+  alertPercentBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#e9fbfd',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertPercentText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f8c95',
   },
 });

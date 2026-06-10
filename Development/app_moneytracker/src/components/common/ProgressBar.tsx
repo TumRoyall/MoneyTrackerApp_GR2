@@ -4,7 +4,7 @@ import { colors, spacing, borderRadius, typography } from './theme';
 interface ProgressBarProps {
   value: number; // 0-100
   showLabel?: boolean;
-  variant?: 'default' | 'success' | 'warning';
+  variant?: 'default' | 'success' | 'warning' | 'danger';
 }
 
 export const ProgressBar = ({
@@ -18,6 +18,7 @@ export const ProgressBar = ({
     default: colors.primary,
     success: colors.success,
     warning: colors.warning,
+    danger: colors.error || '#f44336',
   };
 
   return (

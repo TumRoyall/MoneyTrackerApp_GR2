@@ -33,6 +33,8 @@ Neu dung emulator Android, co the can doi `localhost` thanh `10.0.2.2`.
 ```bash
 npm run start
 
+eas build --profile development --platform android
+y
 npx expo start --dev-client
 ```
 

@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
 export type SqlResult = {
   insertId?: number;
@@ -10,9 +11,17 @@ export type SqlStatement = {
   params?: Array<string | number | null>;
 };
 
-const db = SQLite.openDatabaseSync('moneytracker.db');
+let db: SQLite.SQLiteDatabase | null = null;
+if (Platform.OS !== 'web') {
+  db = SQLite.openDatabaseSync('moneytracker.db');
+}
 
 export const executeSql = async (sql: string, params: Array<string | number | null> = []): Promise<SqlResult> => {
+  if (!db) {
+    console.warn('[SQLite] executeSql ignored on Web');
+    return { rowsAffected: 0 };
+  }
+
   const safeParams = params.map(p => {
     if (p === null || typeof p === 'undefined') return '';
     if (typeof p === 'object') {
@@ -40,6 +49,11 @@ export const executeSql = async (sql: string, params: Array<string | number | nu
 };
 
 export const executeBatch = async (statements: SqlStatement[]) => {
+  if (!db) {
+    console.warn('[SQLite] executeBatch ignored on Web');
+    return;
+  }
+
   await db.withTransactionAsync(async () => {
     for (const statement of statements) {
       const safeParams = (statement.params ?? []).map(p => {
@@ -66,6 +80,11 @@ export const executeBatch = async (statements: SqlStatement[]) => {
 };
 
 export const queryAll = async <T>(sql: string, params: Array<string | number | null> = []) => {
+  if (!db) {
+    console.warn('[SQLite] queryAll ignored on Web');
+    return [];
+  }
+
   const safeParams = params.map(p => {
     if (p === null || typeof p === 'undefined') return '';
     if (typeof p === 'object') {
@@ -82,6 +101,11 @@ export const queryAll = async <T>(sql: string, params: Array<string | number | n
 };
 
 export const queryOne = async <T>(sql: string, params: Array<string | number | null> = []) => {
+  if (!db) {
+    console.warn('[SQLite] queryOne ignored on Web');
+    return null;
+  }
+
   const safeParams = params.map(p => {
     if (p === null || typeof p === 'undefined') return '';
     if (typeof p === 'object') {

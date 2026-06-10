@@ -146,8 +146,8 @@ public class EventService {
     // ==================== JOIN / LEAVE ====================
 
     @Transactional
-    public EventResponse joinEvent(String shareCode, UUID userId) {
-        Event event = eventRepository.findByShareCodeAndDeletedAtIsNull(shareCode.toUpperCase())
+    public EventResponse joinEvent(JoinEventRequest request, UUID userId) {
+        Event event = eventRepository.findByShareCodeAndDeletedAtIsNull(request.getShareCode().toUpperCase())
                 .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
         if (event.getStatus() != EventStatus.ACTIVE) {
@@ -242,6 +242,69 @@ public class EventService {
         }
 
         return responses;
+    }
+
+    // ==================== GUEST TRANSACTIONS ====================
+
+    public GuestEventInfoResponse getGuestEventInfo(UUID eventId) {
+        Event event = findEventById(eventId);
+        return new GuestEventInfoResponse(
+            event.getEventId(),
+            event.getName(),
+            event.getIcon(),
+            event.getStatus().name()
+        );
+    }
+
+    @Transactional
+    public void addGuestTransaction(UUID eventId, CreateGuestTransactionRequest request) {
+        Event event = findEventById(eventId);
+
+        if (!event.isActive()) {
+            throw new IllegalArgumentException("Event is not active");
+        }
+
+        UUID ownerId = event.getCreatedBy();
+
+        // Guest doesn't have real category ID from DB.
+        // We will try to find an existing expense category of the owner, or create one.
+        // For simplicity, find the first expense category of the owner.
+        List<Category> ownerCategories = categoryRepository.findAccessibleCategories(ownerId).stream()
+                .filter(c -> "EXPENSE".equals(c.getType()))
+                .toList();
+        Category category = null;
+        
+        // Try to find matching icon
+        if (request.getCategoryIcon() != null && !ownerCategories.isEmpty()) {
+            category = ownerCategories.stream()
+                .filter(c -> request.getCategoryIcon().equals(c.getIcon()))
+                .findFirst()
+                .orElse(ownerCategories.get(0));
+        } else if (!ownerCategories.isEmpty()) {
+            category = ownerCategories.get(0);
+        } else {
+            // Create a default category if owner has none (unlikely but safe)
+            category = new Category();
+            category.setUserId(ownerId);
+            category.setName(request.getCategoryName() != null ? request.getCategoryName() : "Khác");
+            category.setType("EXPENSE");
+            category.setIcon(request.getCategoryIcon() != null ? request.getCategoryIcon() : "help");
+            category.setColor("#29bcc8");
+            category.setIsDefault(true);
+            category = categoryRepository.save(category);
+        }
+
+        EventTransaction tx = new EventTransaction();
+        tx.setEventId(eventId);
+        tx.setCreatorId(ownerId);
+        tx.setPayerId(ownerId);
+        tx.setAmount(request.getAmount());
+        tx.setCategory(category);
+        tx.setNote("[Khách: " + request.getCreatorName() + "] " + (request.getNote() != null ? request.getNote() : ""));
+        tx.setDate(request.getDate() != null ? request.getDate().atZone(java.time.ZoneId.systemDefault()).toLocalDate() : LocalDate.now());
+        tx.setIsTransferFromPersonal(false);
+
+        eventTransactionRepository.save(tx);
     }
 
     // ==================== TRANSACTIONS ====================

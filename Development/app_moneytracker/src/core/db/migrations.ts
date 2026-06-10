@@ -246,23 +246,21 @@ export const runMigrations = async () => {
   const currentVersion = await getUserVersion();
   const pending = migrations.filter((m) => m.version > currentVersion).sort((a, b) => a.version - b.version);
 
+  let shouldSeedCategories = false;
+
   for (const migration of pending) {
     if (migration.statements.length > 0) {
       await executeBatch(migration.statements);
     }
     await setUserVersion(migration.version);
 
-    // v1: seed the 19 default categories (legacy). Kept for installs that
-    // bootstrap from user_version=0 — but on first boot v4 will rebuild
-    // the table with the full 139 rows anyway.
-    if (migration.version === 1) {
-      await seedAllCategories();
+    // If any migration touches categories, we flag it to re-seed once at the end.
+    if (migration.version === 1 || migration.version === 4) {
+      shouldSeedCategories = true;
     }
-    // v4: rebuild categories table with the full 139-row hardcoded set
-    // and drop all local transactions (sync categoryId references are now
-    // aligned with the server seed).
-    if (migration.version === 4) {
-      await seedAllCategories();
-    }
+  }
+
+  if (shouldSeedCategories) {
+    await seedAllCategories();
   }
 };

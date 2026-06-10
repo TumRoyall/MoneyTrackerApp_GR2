@@ -38,7 +38,14 @@ export class EventRemoteDataSource {
   }
 
   async joinEvent(shareCode: string): Promise<Event> {
-    const response = await httpClient.post<ApiResponse<Event>>('/api/events/join', { shareCode });
+    const response = await httpClient.post<ApiResponse<Event>>(`/api/events/join`, {
+      shareCode
+    });
+    return response.data.data;
+  }
+
+  async getGuestEventInfo(eventId: string): Promise<{ eventId: string, name: string, icon: string, status: string }> {
+    const response = await httpClient.get<ApiResponse<{ eventId: string, name: string, icon: string, status: string }>>(`/api/events/${eventId}/guest-info`);
     return response.data.data;
   }
 
@@ -62,6 +69,11 @@ export class EventRemoteDataSource {
       payload
     );
     return response.data.data;
+  }
+
+  async addGuestTransaction(eventId: string, payload: any): Promise<void> {
+    // API endpoint dành cho khách (không yêu cầu Auth Header)
+    await httpClient.post(`/api/events/${eventId}/guest-transactions`, payload);
   }
 
   async updateEventTransaction(

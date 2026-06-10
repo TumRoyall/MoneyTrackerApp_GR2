@@ -11,12 +11,23 @@ import { useTransactionUsecases } from '@/modules/transaction/usecases';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { formatVndAmount } from '@/shared/utils/money';
 
-const formatDateVi = (isoDate: string) => {
-  const [year, month, day] = isoDate.split('-').map(Number);
+const formatDateVi = (isoDate: any) => {
+  if (!isoDate) return '';
+  const parts = Array.isArray(isoDate) ? isoDate : String(isoDate).split('-');
+  const [year, month, day] = parts.map(Number);
   if (!year || !month || !day) {
-    return isoDate;
+    return Array.isArray(isoDate) ? isoDate.join('-') : String(isoDate);
   }
   return `${day} thg ${month}, ${year}`;
+};
+
+const normalizeApiDate = (dateInfo: any) => {
+  if (!dateInfo) return undefined;
+  if (Array.isArray(dateInfo)) {
+    const [year, month, day] = dateInfo.map(Number);
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+  return String(dateInfo);
 };
 
 export const BudgetDetailScreen = () => {
@@ -77,8 +88,8 @@ export const BudgetDetailScreen = () => {
     queryFn: () =>
       getTransactions({
         walletId: budget?.walletId ?? undefined,
-        fromDate: budget?.periodStart,
-        toDate: budget?.periodEnd,
+        fromDate: normalizeApiDate(budget?.periodStart),
+        toDate: normalizeApiDate(budget?.periodEnd),
         page: 0,
         size: 500,
         sort: 'date,desc',
@@ -99,7 +110,10 @@ export const BudgetDetailScreen = () => {
       if (!categorySet.has(item.categoryId)) {
         return false;
       }
-      return item.date >= budget.periodStart && item.date <= budget.periodEnd;
+      const startIso = normalizeApiDate(budget.periodStart) || '';
+      const endIso = normalizeApiDate(budget.periodEnd) || '';
+      const itemDate = normalizeApiDate(item.date) || '';
+      return itemDate >= startIso && itemDate <= endIso;
     });
   }, [transactionsQuery.data, budget, budgetCategoryIds]);
 
@@ -168,12 +182,23 @@ export const BudgetDetailScreen = () => {
             </ScrollView>
 
             <View style={styles.amountRow}>
-              <Text style={styles.amountSpent}>{formatVndAmount(spentAmount)}</Text>
+              <Text style={[styles.amountSpent, percent >= 100 && !isIncome && { color: '#f44336' }]}>{formatVndAmount(spentAmount)}</Text>
               <Text style={styles.amountDivider}>/</Text>
               <Text style={styles.amountLimit}>{formatVndAmount(budget.amountLimit)}</Text>
             </View>
 
-            <ProgressBar value={percent} showLabel />
+            {(() => {
+              const alertThreshold = budget.alertThreshold ?? 100;
+              let pbVariant: 'default' | 'success' | 'warning' | 'danger' = 'default';
+              if (percent >= 100 && !isIncome) {
+                pbVariant = 'danger';
+              } else if (percent >= alertThreshold && !isIncome) {
+                pbVariant = 'warning';
+              } else if (percent > 0) {
+                pbVariant = 'success';
+              }
+              return <ProgressBar value={percent} showLabel variant={pbVariant} />;
+            })()}
 
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>

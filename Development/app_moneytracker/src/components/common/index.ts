@@ -8,4 +8,5 @@ export { EmptyState } from './EmptyState';
 export { ProgressBar } from './ProgressBar';
 export { StatusBadge } from './StatusBadge';
 export { BackButton } from './BackButton';
+export { CategoryPickerModal } from './CategoryPickerModal';
 export { colors, spacing, borderRadius, typography, shadows } from './theme';

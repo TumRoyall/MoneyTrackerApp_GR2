@@ -35,7 +35,8 @@ export default function EventListScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [eventName, setEventName] = useState('');
-  const [eventIcon, setEventIcon] = useState('🎉');
+  const [eventIcon, setEventIcon] = useState('');
+  const [showIconPicker, setShowIconPicker] = useState(false);
   const [eventDescription, setEventDescription] = useState('');
   const [joinCode, setJoinCode] = useState('');
 
@@ -69,12 +70,13 @@ export default function EventListScreen() {
     try {
       const newEvent = await createEvent({
         name: eventName.trim(),
-        icon: eventIcon,
+        icon: eventIcon || '🎉',
         description: eventDescription.trim() || undefined,
       });
       setShowCreateModal(false);
       setEventName('');
-      setEventIcon('🎉');
+      setEventIcon('');
+      setShowIconPicker(false);
       setEventDescription('');
       router.push(`/tools/events/${newEvent.eventId}`);
     } catch (error) {
@@ -194,21 +196,35 @@ export default function EventListScreen() {
               onChangeText={setEventName}
             />
 
-            <Text style={styles.label}>Icon</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.iconPicker}>
-              {['🎉', '🏸', '🎾', '⚽', '🏀', '🎮', '🎤', '🍺', '🍔', '☕', '🎁', '🎂', '🏕️', '🎄', '🎯'].map((icon) => (
-                <Pressable
-                  key={icon}
-                  style={[styles.iconOption, eventIcon === icon && styles.iconOptionSelected]}
-                  onPress={() => setEventIcon(icon)}
-                >
-                  <Text style={styles.iconOptionText}>{icon}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+            <Text style={styles.label}>Biểu tượng (Icon)</Text>
+            <View style={{ alignItems: 'center' }}>
+              <Pressable 
+                style={styles.avatarPickerBtn} 
+                onPress={() => setShowIconPicker(!showIconPicker)}
+              >
+                <Text style={styles.avatarPickerText}>{eventIcon || '❓'}</Text>
+                <View style={styles.avatarEditIconWrap}>
+                   <Ionicons name="pencil" size={12} color="#fff" />
+                </View>
+              </Pressable>
+            </View>
+
+            {showIconPicker && (
+              <View style={styles.iconGrid}>
+                {['🎉', '🏸', '🎾', '⚽', '🏀', '🎮', '🎤', '🍺', '🍔', '☕', '🎁', '🎂', '🏕️', '🎄', '🎯'].map((icon) => (
+                  <Pressable
+                    key={icon}
+                    style={[styles.iconOption, eventIcon === icon && styles.iconOptionSelected]}
+                    onPress={() => { setEventIcon(icon); setShowIconPicker(false); }}
+                  >
+                    <Text style={styles.iconOptionText}>{icon}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
 
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, { marginBottom: 24 }]}
               placeholder="Mô tả (tùy chọn)"
               placeholderTextColor="#8b8b8b"
               value={eventDescription}
@@ -238,7 +254,7 @@ export default function EventListScreen() {
 
             <Text style={styles.label}>Mã tham gia</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { marginBottom: 24 }]}
               placeholder="Nhập mã (VD: ABC123)"
               placeholderTextColor="#8b8b8b"
               value={joinCode}
@@ -385,22 +401,53 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  iconPicker: {
+  iconGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
   iconOption: {
-    width: spacing['2xl'],
-    height: spacing['2xl'],
+    width: 44,
+    height: 44,
     borderRadius: borderRadius.full,
     backgroundColor: colors.bgTertiary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.sm,
   },
   iconOptionText: {
     fontSize: 20,
   },
   iconOptionSelected: {
     backgroundColor: colors.primary,
+  },
+  avatarPickerBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    backgroundColor: colors.bgTertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+    position: 'relative',
+  },
+  avatarPickerText: {
+    fontSize: 40,
+  },
+  avatarEditIconWrap: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.surface,
   },
 });

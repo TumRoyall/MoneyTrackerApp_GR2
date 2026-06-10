@@ -74,7 +74,7 @@ public class EventController {
             @RequestBody @Valid JoinEventRequest request,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        EventResponse response = eventService.joinEvent(request.getShareCode(), user.getId());
+        EventResponse response = eventService.joinEvent(request, user.getId());
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -138,6 +138,25 @@ public class EventController {
     ) {
         eventService.deleteTransaction(eventId, transactionId, user.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    // ==================== GUEST TRANSACTIONS ====================
+
+    @GetMapping("/{eventId}/guest-info")
+    public ResponseEntity<ApiResponse<GuestEventInfoResponse>> getGuestEventInfo(
+            @PathVariable UUID eventId
+    ) {
+        GuestEventInfoResponse response = eventService.getGuestEventInfo(eventId);
+        return ResponseEntity.ok(ApiResponse.of(response));
+    }
+
+    @PostMapping("/{eventId}/guest-transactions")
+    public ResponseEntity<ApiResponse<Void>> addGuestTransaction(
+            @PathVariable UUID eventId,
+            @RequestBody @Valid CreateGuestTransactionRequest request
+    ) {
+        eventService.addGuestTransaction(eventId, request);
+        return ResponseEntity.ok(ApiResponse.of(null));
     }
 
     // ==================== SETTLEMENT ====================

@@ -23,8 +23,9 @@ import {
   TransactionFilters,
 } from '@/modules/transaction/models/transaction.types';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
+import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { formatMoneyInput, parseMoneyInput, formatVndAmount } from '@/shared/utils/money';
-import { Button, EmptyState, FAB, colors } from '@/components/common';
+import { Button, EmptyState, FAB, colors, CategoryPickerModal } from '@/components/common';
 
 type CategoryType = 'EXPENSE' | 'INCOME';
 
@@ -237,6 +238,7 @@ export const TransactionScreen = () => {
   const { getWallets } = useWalletUsecases();
   const { getCategories } = useCategoryUsecases();
   const { getTransactions, createTransaction, updateTransaction } = useTransactionUsecases();
+  const { getBudgets } = useBudgetUsecases();
   const openCreateRef = useRef(false);
   const params = useLocalSearchParams<{
     walletId?: string;
@@ -280,10 +282,7 @@ export const TransactionScreen = () => {
   const [showCategoryPickerModal, setShowCategoryPickerModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  // Local search for the category picker modal. Separate from `searchQuery`
-  // (which searches transactions). Reset when the modal opens so the user
-  // doesn't see a stale filter from the previous session.
-  const [categoryPickerQuery, setCategoryPickerQuery] = useState('');
+
 
   const [formCategoryId, setFormCategoryId] = useState('');
   const [formCategoryType, setFormCategoryType] = useState<CategoryType>('EXPENSE');
@@ -309,18 +308,7 @@ export const TransactionScreen = () => {
   );
   const categories = categoriesQuery.data ?? [];
 
-  const createModalCategories = useMemo(() => {
-    const byType = categories.filter((item) => normalizeCategoryType(item.type) === formCategoryType);
-    const q = categoryPickerQuery.trim().toLowerCase();
-    if (!q) {
-      return byType;
-    }
-    return byType.filter((item) => {
-      const name = item.name.toLowerCase();
-      const group = (item.groupId ?? '').toLowerCase();
-      return name.includes(q) || group.includes(q);
-    });
-  }, [categories, formCategoryType, categoryPickerQuery]);
+
 
   const lastParamWalletIdRef = useRef(params.walletId);
 
@@ -399,12 +387,17 @@ export const TransactionScreen = () => {
   const groupedByDate = useMemo(() => {
     const grouped = new Map<string, Transaction[]>();
     transactions.forEach((item) => {
-      const key = item.date;
+      let key = item.date as any;
+      if (Array.isArray(key)) {
+        key = `${key[0]}-${String(key[1]).padStart(2, '0')}-${String(key[2]).padStart(2, '0')}`;
+      } else {
+        key = String(key);
+      }
       const list = grouped.get(key) ?? [];
       list.push(item);
       grouped.set(key, list);
     });
-    return Array.from(grouped.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+    return Array.from(grouped.entries()).sort((a, b) => String(b[0]).localeCompare(String(a[0])));
   }, [transactions]);
 
   const shiftTimeRange = (direction: -1 | 1) => {
@@ -678,51 +671,108 @@ export const TransactionScreen = () => {
       }
     }
 
-    try {
-      const baseNote = formNote.trim();
-      const noteValue = formNoteMetaToken
-        ? `${baseNote} ${formNoteMetaToken}`.trim()
-        : baseNote || null;
+    const baseNote = formNote.trim();
+    const noteValue = formNoteMetaToken
+      ? `${baseNote} ${formNoteMetaToken}`.trim()
+      : baseNote || null;
 
-      if (transactionModalMode === 'edit') {
-        if (!editingTransactionId) {
-          Alert.alert('Lỗi', 'Không xác định được giao dịch cần chỉnh sửa.');
-          return;
+    const executeSaveTransaction = async () => {
+      try {
+        if (transactionModalMode === 'edit') {
+          if (!editingTransactionId) {
+            Alert.alert('Lỗi', 'Không xác định được giao dịch cần chỉnh sửa.');
+            return;
+          }
+          await updateTransaction(editingTransactionId, {
+            categoryId: formCategoryId,
+            amount: amountNumber,
+            type: formCategoryType,
+            note: noteValue,
+            date: formDate,
+          });
+        } else {
+          const payload: TransactionCreateInput = {
+            walletId: selectedWalletId,
+            categoryId: formCategoryId,
+            amount: amountNumber,
+            type: formCategoryType,
+            note: noteValue,
+            date: formDate,
+          };
+          await createTransaction(payload);
         }
-        await updateTransaction(editingTransactionId, {
-          categoryId: formCategoryId,
-          amount: amountNumber,
-          type: formCategoryType,
-          note: noteValue,
-          date: formDate,
-        });
-      } else {
-        const payload: TransactionCreateInput = {
-          walletId: selectedWalletId,
-          categoryId: formCategoryId,
-          amount: amountNumber,
-          type: formCategoryType,
-          note: noteValue,
-          date: formDate,
-        };
-        await createTransaction(payload);
-      }
 
-      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      await queryClient.invalidateQueries({ queryKey: ['wallets'] });
-      await queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      await queryClient.invalidateQueries({ queryKey: ['budget'] });
-      await queryClient.invalidateQueries({ queryKey: ['budget-transactions'] });
-      await queryClient.invalidateQueries({ queryKey: ['transactions-for-budgets'] });
-      setFormAmount('');
-      setFormNote('');
-      setFormDate(formatIsoDate(new Date()));
-      setEditingTransactionId(null);
-      setShowTransactionModal(false);
-      Alert.alert('Thành công', transactionModalMode === 'edit' ? 'Đã cập nhật giao dịch.' : 'Đã tạo giao dịch mới.');
-    } catch {
-      Alert.alert('Lỗi', transactionModalMode === 'edit' ? 'Không thể cập nhật giao dịch.' : 'Không thể tạo giao dịch.');
+        await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+        await queryClient.invalidateQueries({ queryKey: ['wallets'] });
+        await queryClient.invalidateQueries({ queryKey: ['budgets'] });
+        await queryClient.invalidateQueries({ queryKey: ['budget'] });
+        await queryClient.invalidateQueries({ queryKey: ['budget-transactions'] });
+        await queryClient.invalidateQueries({ queryKey: ['transactions-for-budgets'] });
+        setFormAmount('');
+        setFormNote('');
+        setFormDate(formatIsoDate(new Date()));
+        setEditingTransactionId(null);
+        setShowTransactionModal(false);
+        Alert.alert('Thành công', transactionModalMode === 'edit' ? 'Đã cập nhật giao dịch.' : 'Đã tạo giao dịch mới.');
+      } catch {
+        Alert.alert('Lỗi', transactionModalMode === 'edit' ? 'Không thể cập nhật giao dịch.' : 'Không thể tạo giao dịch.');
+      }
+    };
+
+    if (transactionModalMode === 'create' && formCategoryType === 'EXPENSE') {
+      try {
+        const budgets = await getBudgets();
+        const matchingBudget = budgets?.find(b => 
+          b.walletId === selectedWalletId &&
+          b.categoryIds?.includes(formCategoryId) && 
+          b.periodStart <= formDate && 
+          b.periodEnd >= formDate
+        );
+        
+        if (matchingBudget) {
+          const txList = await getTransactions({ 
+            walletId: selectedWalletId, 
+            fromDate: matchingBudget.periodStart, 
+            toDate: matchingBudget.periodEnd, 
+            size: 500 
+          });
+          const oldSpent = txList
+            .filter(t => matchingBudget.categoryIds?.includes(t.categoryId))
+            .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+          
+          const newSpent = oldSpent + amountNumber;
+          const percent = (newSpent / matchingBudget.amountLimit) * 100;
+          const threshold = matchingBudget.alertThreshold ?? 100;
+          
+          if (percent >= 100) {
+            Alert.alert(
+              '🚨 Cảnh báo vượt ngân sách', 
+              `Giao dịch này sẽ làm bạn tiêu quá 100% ngân sách "${matchingBudget.title}"!\n(Dự kiến: ${formatVndAmount(newSpent)} / ${formatVndAmount(matchingBudget.amountLimit)})\n\nBạn có chắc chắn muốn lưu?`,
+              [
+                { text: 'Hủy', style: 'cancel' },
+                { text: 'Vẫn lưu', onPress: executeSaveTransaction, style: 'destructive' }
+              ]
+            );
+            return;
+          } else if (percent >= threshold) {
+            Alert.alert(
+              '⚠️ Cảnh báo ngân sách', 
+              `Giao dịch này sẽ làm bạn chạm mức ${Math.round(percent)}% ngân sách "${matchingBudget.title}".\n(Dự kiến: ${formatVndAmount(newSpent)} / ${formatVndAmount(matchingBudget.amountLimit)})\n\nBạn có muốn tiếp tục lưu?`,
+              [
+                { text: 'Hủy', style: 'cancel' },
+                { text: 'Tiếp tục', onPress: executeSaveTransaction }
+              ]
+            );
+            return;
+          }
+        }
+      } catch (err) {
+        console.log('Error checking budget alert', err);
+      }
     }
+
+    // Default save if no threshold hit or not applicable
+    executeSaveTransaction();
   };
 
   return (
@@ -919,109 +969,18 @@ export const TransactionScreen = () => {
         </View>
       </Modal>
 
-      <Modal
+      <CategoryPickerModal
         visible={showCategoryPickerModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
+        onClose={() => setShowCategoryPickerModal(false)}
+        selectedCategoryId={formCategoryId}
+        initialType={formCategoryType}
+        allowedTypes={['EXPENSE', 'INCOME']}
+        onSelectCategory={(category) => {
+          setFormCategoryType(normalizeCategoryType(category.type));
+          setFormCategoryId(category.categoryId);
           setShowCategoryPickerModal(false);
-          setCategoryPickerQuery('');
-          closeCreateCategoryComposer();
         }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.categoryPickerSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chọn danh mục</Text>
-              <Pressable
-                onPress={() => {
-                  setShowCategoryPickerModal(false);
-                  closeCreateCategoryComposer();
-                }}
-              >
-                <Ionicons name="close" size={24} color="#333" />
-              </Pressable>
-            </View>
-
-            <Text style={styles.categoryPickerHint}>
-              Chọn danh mục mặc định bên dưới hoặc thêm danh mục mới.
-            </Text>
-
-            <View style={styles.typeToggleRow}>
-              <Pressable
-                style={[styles.typeToggleBtn, formCategoryType === 'EXPENSE' ? styles.typeToggleBtnActive : null]}
-                onPress={() => changeFormCategoryType('EXPENSE')}
-              >
-                <Text
-                  style={[
-                    styles.typeToggleBtnText,
-                    formCategoryType === 'EXPENSE' ? styles.typeToggleBtnTextActive : null,
-                  ]}
-                >
-                  Chi phí
-                </Text>
-              </Pressable>
-
-              <Pressable
-                style={[styles.typeToggleBtn, formCategoryType === 'INCOME' ? styles.typeToggleBtnActive : null]}
-                onPress={() => changeFormCategoryType('INCOME')}
-              >
-                <Text
-                  style={[
-                    styles.typeToggleBtnText,
-                    formCategoryType === 'INCOME' ? styles.typeToggleBtnTextActive : null,
-                  ]}
-                >
-                  Thu nhập
-                </Text>
-              </Pressable>
-            </View>
-
-            <TextInput
-              style={styles.categoryPickerSearchInput}
-              placeholder="Tìm danh mục..."
-              placeholderTextColor="#999"
-              value={categoryPickerQuery}
-              onChangeText={setCategoryPickerQuery}
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
-
-            <ScrollView style={styles.categoryPickerScroll} contentContainerStyle={styles.categoryPickerContent}>
-              {createModalCategories.length === 0 ? (
-                <View style={styles.emptyCategoryBox}>
-                  <Text style={styles.emptyText}>Chưa có danh mục cho loại này.</Text>
-                </View>
-              ) : (
-                <View style={styles.categoryGrid}>
-                  {createModalCategories.map((category) => {
-                    const selected = formCategoryId === category.categoryId;
-                    const catColor = category.color || '#29bcc8';
-                    return (
-                      <Pressable
-                        key={category.categoryId}
-                        onPress={() => {
-                          setFormCategoryId(category.categoryId);
-                          setShowCategoryPickerModal(false);
-                          closeCreateCategoryComposer();
-                        }}
-                        style={[styles.categoryGridItem, selected && { borderColor: catColor, backgroundColor: catColor + '15' }]}
-                      >
-                        <View style={[styles.categoryGridIconWrap, { backgroundColor: catColor + '20' }]}>
-                          <MaterialCommunityIcons name={(category.icon as any) || 'help'} size={22} color={catColor} />
-                        </View>
-                        <Text style={[styles.categoryGridLabel, selected && { color: catColor }]} numberOfLines={2}>
-                          {category.name}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      />
 
       <Modal visible={showTimeModal} transparent animationType="fade" onRequestClose={() => setShowTimeModal(false)}>
         <View style={styles.modalOverlay}>

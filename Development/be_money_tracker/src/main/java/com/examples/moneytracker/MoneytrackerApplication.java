@@ -34,8 +34,8 @@ public class MoneytrackerApplication {
      * Ensure JSON responses declare charset=utf-8 in their Content-Type header.
      */
     @Bean
-    public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter() {
-        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+    public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter(com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(objectMapper);
         converter.setDefaultCharset(StandardCharsets.UTF_8);
         converter.setSupportedMediaTypes(java.util.List.of(
                 MediaType.APPLICATION_JSON,
