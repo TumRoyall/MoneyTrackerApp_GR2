@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { StyleSheet, StyleProp, View, Text, ViewStyle } from 'react-native';
+import { StyleSheet, StyleProp, View, Text, ViewStyle, Pressable } from 'react-native';
 import { colors, borderRadius, spacing } from './theme';
 
 // =====================
@@ -9,15 +9,24 @@ import { colors, borderRadius, spacing } from './theme';
 interface CardProps {
   variant?: 'elevated' | 'flat' | 'outlined';
   style?: StyleProp<ViewStyle>;
+  onPress?: () => void;
   children: ReactNode;
 }
 
-export const Card = ({ variant = 'elevated', style, children }: CardProps) => {
+export const Card = ({ variant = 'elevated', style, onPress, children }: CardProps) => {
   const variantStyles = {
     elevated: [styles.elevated],
     flat: styles.flat,
     outlined: styles.outlined,
   };
+
+  if (onPress) {
+    return (
+      <Pressable style={[variantStyles[variant], style]} onPress={onPress}>
+        {children}
+      </Pressable>
+    );
+  }
 
   return <View style={[variantStyles[variant], style]}>{children}</View>;
 };
