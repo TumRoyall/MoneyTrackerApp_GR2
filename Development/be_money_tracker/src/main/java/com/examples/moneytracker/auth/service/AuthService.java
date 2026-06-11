@@ -48,7 +48,7 @@ public class AuthService {
 
         // send mail kèm token để xác thực
         String verifyLink = appUrl + "/api/auth/verify-email?token=" + token;
-        String logoUrl = appUrl + "/api/auth/logo_money_tracker.png";
+        String logoUrl = appUrl + "/logo_money_tracker.png";
 
         String html = emailService.buildVerifyEmail(user.getFullName(), verifyLink, logoUrl);
 
@@ -110,7 +110,7 @@ public class AuthService {
 
         // send mail kèm token để xác thực
         String verifyLink = appUrl + "/api/auth/verify-email?token=" + token;
-        String logoUrl = appUrl + "/api/auth/logo_money_tracker.png";
+        String logoUrl = appUrl + "/logo_money_tracker.png";
 
         String html = emailService.buildVerifyEmail(user.getFullName(), verifyLink, logoUrl);
 
