@@ -15,9 +15,9 @@ public class WebConfig {
     /**
      * Comma-separated list of allowed CORS origins.
      * Override with env var: CORS_ALLOWED_ORIGINS=https://admin.example.com,https://web.example.com
-     * If unset, allow the Expo dev origin (localhost:8081) so the in-app web view still works.
+     * The literal "null" string also accepts native mobile apps that don't send an Origin header.
      */
-    @Value("${cors.allowed-origins:http://localhost:8081,http://localhost:19006}")
+    @Value("${cors.allowed-origins:http://localhost:8081,http://localhost:19006,null}")
     private String allowedOrigins;
 
     @Bean
@@ -30,8 +30,10 @@ public class WebConfig {
                         .filter(s -> !s.isEmpty())
                         .toList();
 
+                // `allowedOriginPatterns` accepts "null" as a literal pattern, which is what
+                // native mobile clients (React Native, Expo) send when they have no Origin header.
                 registry.addMapping("/**")
-                        .allowedOrigins(origins.toArray(new String[0]))
+                        .allowedOriginPatterns(origins.toArray(new String[0]))
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true)
