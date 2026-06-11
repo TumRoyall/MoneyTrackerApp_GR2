@@ -1,7 +1,7 @@
 
 # --- Local Spring config (contains API keys) ---
+# The local application.properties contains MySQL credentials and API keys.
+# It is gitignored so devs create their own from .example.
 be_money_tracker/src/main/resources/application.properties
 **/application.properties
 **/application-local.properties
-**/application-*.properties
-!be_money_tracker/src/main/resources/application.properties.example
