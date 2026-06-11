@@ -1,0 +1,2477 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Chương này trình bày chi tiết quá trình phân tích yêu cầu và thiết kế hệ thống
+cho ứng dụng quản lý chi tiêu cá nhân.
+
+\section{Tổng quan chức năng}
+\label{section:2.2}
+
+Phần \ref{section:2.2} này trình bày tổng quan các chức năng chính của hệ thống \textbf{Ứng dụng quản lý chi tiêu cá nhân}.  
+Mục tiêu là cung cấp cái nhìn khái quát về phạm vi nghiệp vụ của phần mềm, bao gồm các nhóm chức năng mà người dùng có thể thực hiện. Nội dung trong phần này chỉ mô tả ở mức tổng quát; 
+
+Các chức năng được mô tả ở mức khái quát (mức cao), phần đặc tả chi tiết cho từng chức năng sẽ được trình bày ở mục \ref{section:2.3}.
+
+Một số khái niệm cơ bản được sử dụng xuyên suốt trong hệ thống bao gồm:
+
+\textbf{Tài khoản người dùng} là thực thể đại diện cho một cá nhân sử dụng hệ thống, chứa các thông tin định danh và thiết lập cá nhân. Mỗi tài khoản là trung tâm quản lý toàn bộ dữ liệu tài chính phát sinh trong hệ thống.
+
+\textbf{Ví} là đơn vị lưu trữ tài chính thuộc về người dùng, đại diện cho một nguồn tiền cụ thể như tiền mặt, tài khoản ngân hàng hoặc ví điện tử. Một người dùng có thể sở hữu nhiều ví, mỗi ví có số dư và lịch sử giao dịch riêng.
+
+\textbf{Danh mục} là cơ chế phân loại các khoản thu và chi thành các nhóm có ý nghĩa (ví dụ: ăn uống, di chuyển, giải trí). Danh mục giúp tổ chức dữ liệu giao dịch một cách có hệ thống và hỗ trợ việc phân tích sau này.
+
+\textbf{Giao dịch} là đơn vị dữ liệu cơ bản phản ánh một hoạt động tài chính cụ thể, bao gồm thu hoặc chi, gắn với một ví và một danh mục nhất định. Mỗi giao dịch làm thay đổi số dư của ví tương ứng.
+
+\textbf{Ngân sách} là giới hạn chi tiêu được thiết lập cho một danh mục hoặc một khoảng thời gian nhất định. Ngân sách cho phép người dùng kiểm soát mức chi và đánh giá tình hình tài chính so với kế hoạch đề ra.
+
+\textbf{Sự kiện} là một hoạt động bao gồm nhiều người cùng tham gia để chi tiêu ví dụ như 1 buổi cầu lông hay 1 bữa tiệc tổ chức sinh nhật.
+
+Các khái niệm trên có mối quan hệ chặt chẽ với nhau: người dùng quản lý nhiều ví; mỗi ví phát sinh nhiều giao dịch; mỗi giao dịch được phân loại theo danh mục; và các danh mục có thể được áp dụng ngân sách để kiểm soát chi tiêu. Toàn bộ dữ liệu này là đầu vào cho các chức năng thống kê và phân tích của hệ thống.
+
+\subsection{Biểu đồ chức năng tổng quát}
+\label{subsection:2.2.1}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/UC Tổng quát.png}
+    \caption{Biểu đồ usecase tổng quát}
+    \label{fig:uctongquat}
+\end{figure}
+
+Biểu đồ use case tổng quát trong Hình \ref{fig:uctongquat} mô tả các nhóm chức năng cốt lõi của hệ thống quản lý chi tiêu. Tác nhân duy nhất tương tác trực tiếp với hệ thống ở mức này là Người dùng, thực hiện các thao tác nhằm kiểm soát và tối ưu hóa tài chính cá nhân cũng như tập thể. Cụ thể, các nhóm chức năng được phân rã như sau:
+
+\textbf{Quản lý tài khoản cá nhân:} Hỗ trợ người dùng thiết lập, cập nhật thông tin định danh và quản lý các tùy chọn bảo mật. Chức năng này đảm bảo việc truy cập hệ thống luôn được an toàn, xuyên suốt và mang tính cá nhân hóa cao.
+
+\textbf{Quản lý ví:} Cho phép người dùng tạo lập và quản lý nhiều nguồn tài chính khác nhau (tiền mặt, tài khoản ngân hàng, ví điện tử,...), đồng thời theo dõi trạng thái số dư làm nền tảng cho việc kiểm soát dòng tiền tổng thể.
+
+\textbf{Quản lý giao dịch:} Đóng vai trò ghi nhận, chỉnh sửa và theo dõi toàn bộ các hoạt động thu, chi hoặc chuyển tiền phát sinh hằng ngày. Đảm bảo mọi biến động tài chính đều được lưu trữ đầy đủ, minh bạch và chính xác.
+
+\textbf{Quản lý danh mục:} Hỗ trợ người dùng tự định nghĩa, tổ chức và phân loại các khoản thu, chi theo từng nhóm đặc thù. Điều này giúp hệ thống hóa dữ liệu giao dịch một cách khoa học để dễ dàng tra cứu.
+
+\textbf{Quản lý ngân sách chi tiêu:} Cung cấp công cụ để người dùng thiết lập các giới hạn chi tiêu tối đa cho từng danh mục cụ thể trong một chu kỳ thời gian nhất định, qua đó đưa ra cảnh báo kịp thời nhằm ngăn chặn tình trạng chi tiêu quá tay.
+
+\textbf{Thống kê và báo cáo:} Thực hiện tổng hợp, xử lý dữ liệu giao dịch và trực quan hóa dưới dạng các biểu đồ. Chức năng này cung cấp cái nhìn toàn cảnh về xu hướng dòng tiền, hỗ trợ người dùng tự đánh giá và đưa ra các quyết định điều chỉnh hành vi tiêu dùng phù hợp.
+
+\textbf{Quản lý mục tiêu tài chính:} Hỗ trợ người dùng hoạch định các kế hoạch dài hạn thông qua việc thiết lập, theo dõi tiến độ của các quỹ tiết kiệm hoặc quản lý lộ trình thanh toán các khoản nợ.
+
+\textbf{Quản lý chi tiêu nhóm:} Là tính năng mở rộng cho phép người dùng quản lý các khoản thu chi phát sinh của một tập thể trong một sự kiện nào đó. Hệ thống hỗ trợ ghi nhận đóng góp, tính toán nợ chéo và đề xuất phương án chia tiền một cách minh bạch, công bằng.
+
+\textbf{Quản lý dữ liệu cá nhân:} Cung cấp các công cụ sao lưu và đồng bộ hóa 
+dữ liệu. Chức năng này bảo vệ tính toàn vẹn của dữ liệu và đảm bảo 
+trải nghiệm sử dụng đồng nhất trên nhiều thiết bị.
+
+Nhìn chung, biểu đồ use case tổng quát đã bao quát toàn diện các khía cạnh trong quy trình quản lý tài chính từ cá nhân đến tập thể. Đây là cơ sở vững chắc cho việc phân tích và thiết kế chi tiết các luồng xử lý của hệ thống trong những phần tiếp theo.
+
+\subsection{Biểu đồ use case phân rã “Quản lý tài khoản cá nhân”}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/Usecase quản lý tài khoản.png}
+    \caption{Biểu đồ usecase phân rã quản lý tài khoản}
+    \label{fig:placeholder2}
+\end{figure}
+
+Biểu đồ use case phân rã trong Hình \ref{fig:placeholder2} thể hiện các chức năng thành phần của use case “Quản lý tài khoản cá nhân”, cho phép người dùng thực hiện các thao tác liên quan đến truy cập và bảo mật tài khoản.
+
+\textbf{Tạo tài khoản:} Cho phép người dùng khởi tạo tài khoản mới để bắt đầu sử dụng hệ thống.
+
+\textbf{Đăng nhập:} Hỗ trợ người dùng truy cập vào hệ thống thông qua thông tin xác thực hợp lệ.
+
+\textbf{Đăng xuất:} Cho phép người dùng kết thúc phiên làm việc, đảm bảo an toàn thông tin khi không tiếp tục sử dụng.
+
+\textbf{Đổi mật khẩu:} Hỗ trợ cập nhật thông tin bảo mật nhằm tăng cường an toàn tài khoản.
+
+\textbf{Thay đổi thông tin cá nhân:} Hỗ trợ cập nhật các thông tin hồ sơ nhằm đảm bảo dữ liệu luôn chính xác và phù hợp.
+
+\subsection{Biểu đồ use case phân rã “Quản lý ví”}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/UseCase quản lý ví.png}
+    \caption{Biểu đồ usecase phân rã Quản lý ví}
+    \label{fig:placeholder3}
+\end{figure}
+
+Biểu đồ use case phân rã trong Hình \ref{fig:placeholder3} mô tả các chức năng thành phần của use case “Quản lý ví”, cho phép người dùng quản lý các nguồn tài chính và theo dõi trạng thái số dư trong hệ thống.
+
+\textbf{Xem danh sách ví sở hữu:} Cho phép người dùng theo dõi toàn bộ các ví hiện có, từ đó nắm được tổng quan về các nguồn tài chính đang quản lý.
+
+\textbf{Tạo ví chi tiêu:} Hỗ trợ người dùng khởi tạo các ví mới nhằm phục vụ cho các mục đích quản lý tài chính khác nhau.
+
+\textbf{Xem số dư ví:} Cung cấp thông tin về số dư hiện tại của từng ví, giúp người dùng kiểm soát tình trạng tài chính một cách kịp thời.
+
+\textbf{Cập nhật thông tin ví:} Cho phép người dùng điều chỉnh các thông tin liên quan đến ví nhằm đảm bảo dữ liệu luôn chính xác và phù hợp với nhu cầu sử dụng.
+
+\textbf{Xóa ví chi tiêu:} Hỗ trợ loại bỏ các ví không còn sử dụng, giúp hệ thống quản lý dữ liệu gọn gàng và hiệu quả hơn.
+
+\subsection{Biểu đồ use case phân rã “Quản lý giao dịch”}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/Usecase quản lý giao dịch.png}
+    \caption{Biểu đồ use case phân rã Quản lý giao dịch}
+    \label{fig:placeholder6}
+\end{figure}
+
+Biểu đồ use case phân rã trong Hình \ref{fig:placeholder6} mô tả các chức năng thành phần của use case “Quản lý giao dịch”, cho phép người dùng ghi nhận, theo dõi và kiểm soát các khoản thu, chi trong hệ thống.
+
+\textbf{Xem danh sách giao dịch:} Cho phép người dùng theo dõi toàn bộ các giao dịch đã phát sinh tương ứng với ví đã chọn, cung cấp cái nhìn tổng quan về hoạt động tài chính.
+
+\textbf{Xem chi tiết giao dịch:} Hỗ trợ người dùng xem đầy đủ thông tin của một giao dịch cụ thể, giúp hiểu rõ nội dung và mục đích của khoản thu hoặc chi.
+
+\textbf{Thêm giao dịch:} Cho phép người dùng ghi nhận các khoản thu, chi phát sinh, đảm bảo dữ liệu tài chính được cập nhật kịp thời và chính xác.
+
+\textbf{Cập nhật giao dịch:} Hỗ trợ chỉnh sửa thông tin giao dịch khi có thay đổi hoặc sai sót, giúp duy trì tính chính xác của dữ liệu.
+
+\textbf{Xóa giao dịch:} Cho phép loại bỏ các giao dịch không còn cần thiết hoặc nhập sai, giúp dữ liệu luôn gọn gàng và hợp lệ.
+
+\textbf{Lọc giao dịch:} Hỗ trợ người dùng phân loại và hiển thị giao dịch theo các tiêu chí nhất định, giúp việc theo dõi trở nên thuận tiện hơn.
+
+\textbf{Tìm kiếm giao dịch:} Cho phép người dùng nhanh chóng tìm kiếm các giao dịch cụ thể dựa trên thông tin liên quan, nâng cao hiệu quả sử dụng hệ thống.
+
+\subsection{Biểu đồ use case phân rã “Quản lý danh mục chi tiêu”}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Hinhve/UseCase quản lý danh mục chi tiêu.png}
+    \caption{Biểu đồ use case phân rã Quản lý danh mục chi tiêu}
+    \label{fig:placeholder4}
+\end{figure}
+
+Biểu đồ use case phân rã trong Hình \ref{fig:placeholder4} mô tả các chức năng thành phần của use case “Quản lý danh mục chi tiêu”, cho phép người dùng tổ chức và phân loại các khoản thu, chi trong hệ thống.
+
+\textbf{Xem các danh mục có sẵn:} Cho phép người dùng theo dõi các danh mục hiện có, từ đó lựa chọn và sử dụng phù hợp trong quá trình ghi nhận giao dịch.
+
+\textbf{Thêm danh mục mới:} Hỗ trợ người dùng tạo thêm các danh mục mới nhằm đáp ứng nhu cầu phân loại chi tiêu đa dạng.
+
+\textbf{Sửa thông tin danh mục:} Cho phép điều chỉnh các thông tin liên quan đến danh mục để đảm bảo tính chính xác và phù hợp với mục đích sử dụng.
+
+\textbf{Ẩn danh mục:} Hỗ trợ người dùng tạm thời loại bỏ các danh mục không còn sử dụng khỏi danh sách hiển thị mà vẫn giữ nguyên dữ liệu liên quan.
+
+\subsection{Biểu đồ use case phân rã “Quản lý ngân sách chi tiêu”}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{Hinhve/Quản lý ngân sách chi tiêu.png}
+    \caption{Biểu đồ use case phân rã Quản lý ngân sách chi tiêu}
+    \label{fig:placeholder5}
+\end{figure}
+
+Biểu đồ use case phân rã ở Hình~\ref{fig:placeholder5} mô tả các chức năng thành phần của nhóm \textbf{Quản lý ngân sách chi tiêu}. Nhóm chức năng này hỗ trợ người dùng tạo lập, theo dõi và điều chỉnh ngân sách nhằm kiểm soát hiệu quả chi tiêu. Các use case chi tiết gồm:
+
+\textbf{Tạo ngân sách mới}: Người dùng khởi tạo ngân sách theo chu kỳ (tuần, tháng, năm), đặt hạn mức tiền và áp dụng cho toàn bộ ví hoặc cho từng danh mục. Đây là thao tác nền tảng để hệ thống bắt đầu theo dõi tiến độ tiêu dùng.
+
+\textbf{Gợi ý ngân sách bằng AI}: Hệ thống phân tích lịch sử chi tiêu và đề xuất mức ngân sách phù hợp, giúp người dùng lập kế hoạch nhanh chóng và cá nhân hóa hơn.
+
+\textbf{Xem danh sách và tiến độ ngân sách}: Giao diện tổng hợp hiển thị các ngân sách đang hoạt động cùng tiến độ tiêu hao (thanh tiến độ, phần trăm), được cập nhật liên tục để người dùng nắm rõ tình trạng sử dụng so với hạn mức đã đặt.
+
+\textbf{Sửa thông tin ngân sách}: Người dùng điều chỉnh hạn mức, thời gian hoặc phạm vi áp dụng của ngân sách. Hệ thống cập nhật lại tiến độ và bảo đảm tính nhất quán của dữ liệu.
+
+\textbf{Xóa ngân sách}: Cho phép hủy hoặc vô hiệu hóa các ngân sách không còn sử dụng. Trước khi xóa, hệ thống kiểm tra các ràng buộc liên quan nhằm tránh làm sai lệch dữ liệu báo cáo lịch sử.
+
+Tổng kết, nhóm chức năng này tạo thành một quy trình quản lý ngân sách khép kín, kết hợp giữa thao tác thiết lập thủ công và các gợi ý thông minh từ AI, qua đó hỗ trợ người dùng kiểm soát chi tiêu một cách chủ động và hiệu quả.
+
+\subsection{Biểu đồ use case phân rã ``Thống kê và báo cáo''}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Hinhve/UseCase Thống kê và phân tích chi tiêu.png}
+    \caption{Biểu đồ use case phân rã Thống kê và phân tích chi tiêu}
+    \label{fig:usecase-thongke-phantich}
+\end{figure}
+
+
+Biểu đồ trong Hình \ref{fig:usecase-thongke-phantich} mô tả các chức năng chi tiết thuộc nhóm thống kê và báo cáo, cho phép người dùng theo dõi và đánh giá tình hình tài chính cá nhân dưới nhiều góc độ khác nhau.
+
+
+\textbf{Xem tổng quan thu chi:} Cho phép người dùng theo dõi tình hình tài chính qua các thông tin tổng hợp như tổng thu, tổng chi và số dư hiện tại, kết hợp với biểu đồ trực quan về thu – chi. Chức năng này cung cấp cái nhìn tổng thể, giúp người dùng nhanh chóng nắm bắt trạng thái tài chính trong một khoảng thời gian nhất định.
+
+
+\textbf{Thống kê theo danh mục:} Phân tích dữ liệu giao dịch theo từng danh mục chi tiêu, hiển thị tỷ trọng và số tiền chi cho mỗi danh mục qua biểu đồ. Chức năng này giúp người dùng hiểu rõ khoản chi chính của mình nằm ở đâu.
+
+
+\textbf{Xuất báo cáo:} Cho phép trích xuất dữ liệu thống kê theo từng khoảng thời gian dưới dạng báo cáo, phục vụ cho việc lưu trữ, theo dõi và tổng hợp thông tin.
+
+\subsection{Biểu đồ use case phân rã “Quản lý mục tiêu tài chính”}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{Hinhve/UseCase Quản lý mục tiêu tài chính.png}
+    \caption{Biểu đồ use case phân rã Quản lý mục tiêu tài chính}
+    \label{fig:usecase-quanly-muctieu-taichinh}
+\end{figure}
+
+Biểu đồ trong Hình \ref{fig:usecase-quanly-muctieu-taichinh} mô tả các chức năng thuộc nhóm quản lý mục tiêu tài chính, bao gồm hai hướng quản lý là tiết kiệm có mục đích và hoàn trả các khoản nợ. Nhóm chức năng này giúp người dùng theo dõi tiến độ tích lũy cũng như tiến độ trả nợ, từ đó xây dựng kế hoạch tài chính cá nhân một cách rõ ràng và có kiểm soát.
+
+\textbf{Tạo khoản tiết kiệm:} Chức năng này cho phép người dùng thiết lập một mục tiêu tiết kiệm mới với các thông tin cơ bản như tên khoản tiết kiệm, số tiền mục tiêu, loại tiết kiệm (một lần hoặc định kỳ theo tháng hoặc theo năm) và đơn vị tiền tệ. Hệ thống tự động tạo ví tiết kiệm tương ứng để ghi nhận các khoản nạp sau này, giúp người dùng dễ dàng quản lý dòng tiền tiết kiệm tách biệt với chi tiêu hằng ngày.
+
+\textbf{Thêm tiết kiệm:} Cho phép người dùng ghi nhận các khoản tiền đã nạp vào mục tiêu tiết kiệm. Mỗi lần thêm, người dùng có thể lựa chọn nạp trực tiếp vào ví tiết kiệm hoặc chuyển từ một ví cá nhân khác, hệ thống sẽ tự động cập nhật số dư ví và tính toán lại tiến độ hoàn thành mục tiêu.
+
+\textbf{Xóa tiết kiệm:} Hỗ trợ người dùng xóa bỏ một mục tiêu tiết kiệm khi không còn nhu cầu sử dụng. Khi xóa, hệ thống thực hiện xóa mềm đối với cả khoản tiết kiệm và ví tiết kiệm liên kết, đảm bảo dữ liệu lịch sử vẫn được bảo toàn phục vụ cho việc thống kê và tra cứu sau này.
+
+\textbf{Tạo khoản nợ:} Chức năng này cho phép người dùng ghi nhận một khoản nợ cần thanh toán với các thông tin như tên khoản nợ, tổng số tiền, ngày bắt đầu và ngày mục tiêu hoàn thành. Hệ thống tự động tạo ví nợ tương ứng, giúp tách biệt việc theo dõi tiến độ trả nợ với các giao dịch chi tiêu thông thường.
+
+\textbf{Thanh toán nợ:} Cho phép người dùng ghi nhận các khoản đã trả cho món nợ, có thể kèm theo việc lựa chọn trừ tiền từ một ví cá nhân cụ thể. Hệ thống tự động cập nhật số dư nợ còn lại, tính toán phần trăm tiến độ hoàn thành và số ngày còn lại đến hạn thanh toán cuối cùng.
+
+\textbf{Xóa khoản nợ:} Hỗ trợ người dùng xóa bỏ một mục tiêu nợ đã hoàn thành hoặc không còn cần theo dõi. Khi xóa, hệ thống thực hiện xóa mềm đối với cả khoản nợ và ví nợ liên kết, đảm bảo dữ liệu liên quan được xử lý nhất quán và không ảnh hưởng đến các giao dịch khác của người dùng.
+
+Nhìn chung, nhóm chức năng này đóng vai trò trung tâm trong việc giúp người dùng quản lý tài chính cá nhân theo mục tiêu, đảm bảo khả năng theo dõi tiến độ, kiểm soát dòng tiền và duy trì kỷ luật tài chính trong cả hai hướng tích lũy tài sản lẫn giảm thiểu nợ.
+
+\subsection{Biểu đồ use case phân rã “Quản lý chi tiêu nhóm”}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{Hinhve/UseCase Quản lý chi tiêu nhóm.png}
+    \caption{Biểu đồ use case phân rã Quản lý chi tiêu nhóm}
+    \label{fig:usecase-quanly-chitieunhom}
+\end{figure} 
+
+Biểu đồ trong Hình \ref{fig:usecase-quanly-chitieunhom} mô tả các chức năng thuộc nhóm quản lý chi tiêu nhóm, nhằm hỗ trợ người dùng ghi chép, chia sẻ và quyết toán các khoản chi chung giữa nhiều thành viên trong một hoạt động cụ thể.
+
+\textbf{Tạo sự kiện nhóm:} Chức năng này cho phép người dùng khởi tạo một sự kiện chi tiêu chung với các thông tin cơ bản như tên sự kiện, mô tả, ngày bắt đầu và ngày kết thúc. Hệ thống tự động sinh mã chia sẻ (\textit{share code}) và liên kết mời, giúp các thành viên dễ dàng tham gia vào sự kiện.
+
+\textbf{Tham gia sự kiện:} Cho phép người dùng khác gia nhập sự kiện hiện có thông qua mã chia sẻ được cung cấp bởi người tổ chức. Khi tham gia, người dùng trở thành thành viên của sự kiện với quyền ghi nhận các khoản chi của cá nhân và xem thông tin tổng quan của cả nhóm.
+
+\textbf{Thêm giao dịch cho sự kiện:} Cho phép thành viên ghi nhận các khoản chi phát sinh trong sự kiện, bao gồm số tiền, danh mục, người trả và ghi chú. Hệ thống hỗ trợ gắn kèm ví cá nhân nhằm tự động đồng bộ chi tiêu giữa sự kiện và ví riêng của người dùng, đồng thời lưu trữ lịch sử giao dịch phục vụ cho việc quyết toán sau này.
+
+\textbf{Xuất báo cáo chi tiêu nhóm:} Cung cấp bảng tổng kết chi tiêu cho sự kiện, bao gồm tổng số tiền đã chi, phần đóng góp của từng thành viên, số dư còn lại và danh sách các giao dịch chuyển tiền cần thực hiện để cân bằng quỹ chung. Báo cáo này giúp người dùng nhanh chóng nắm bắt tình hình chi tiêu và thực hiện quyết toán minh bạch giữa các thành viên.
+
+Nhìn chung, nhóm chức năng này đóng vai trò quan trọng trong việc hỗ trợ người dùng quản lý chi tiêu chung một cách hiệu quả, đảm bảo tính minh bạch, công bằng và khả năng kiểm tra lại các khoản chi phát sinh trong suốt quá trình diễn ra sự kiện.
+
+\subsection{Biểu đồ use case phân rã “Quản lý dữ liệu cá nhân”}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{Hinhve/Biểu đồ use case phân rã Quản lý dữ liệu cá nhân.png}
+    \caption{Biểu đồ use case phân rã Quản lý dữ liệu cá nhân}
+    \label{fig:usecase-quanly-dulieu}
+\end{figure}
+
+Biểu đồ trong Hình \ref{fig:usecase-quanly-du-lieu} mô tả các chức năng thuộc nhóm quản lý dữ liệu cá nhân, nhằm đảm bảo dữ liệu tài chính của người dùng được lưu trữ an toàn, đồng bộ và có khả năng phục hồi khi cần thiết.
+
+\textbf{Đồng bộ dữ liệu:} Chức năng này đảm bảo dữ liệu của người dùng được cập nhật nhất quán giữa thiết bị và hệ thống lưu trữ trung tâm. Quá trình đồng bộ có thể diễn ra tự động hoặc theo yêu cầu, giúp người dùng truy cập dữ liệu chính xác trên nhiều thiết bị khác nhau.
+
+\textbf{Sao lưu dữ liệu:} Cho phép người dùng tạo bản sao dữ liệu tài chính tại một thời điểm nhất định nhằm phòng tránh mất mát thông tin do sự cố hệ thống hoặc thay đổi thiết bị.
+
+\textbf{Khôi phục dữ liệu:} Cho phép người dùng khôi phục lại dữ liệu từ các bản sao lưu đã được tạo trước đó, đảm bảo khả năng phục hồi thông tin và duy trì tính liên tục của dữ liệu trong quá trình sử dụng.
+
+Nhìn chung, nhóm chức năng này đóng vai trò quan trọng trong việc bảo vệ dữ liệu cá nhân, đảm bảo tính toàn vẹn, an toàn và khả năng truy cập dữ liệu trong mọi tình huống sử dụng hệ thống.
+
+\section{Đặc tả chức năng}
+\label{section:2.3}
+
+\subsection{Đặc tả use case UC01 -- Đăng ký tài khoản}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC01 -- Đăng ký tài khoản \\ \hline
+Tác nhân & Người dùng \\ \hline
+Kích hoạt & Người dùng chọn chức năng tạo tài khoản mới \\ \hline
+Mô tả & Use case mô tả quy trình đăng ký tài khoản bằng email, mật khẩu, họ tên và xác thực email qua liên kết chứa token. \\ \hline
+Điều kiện tiên quyết & Người dùng chưa có tài khoản với email đã nhập. \\ \hline
+
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng nhập email, password, fullname và gửi yêu cầu đăng ký. \newline
+2) Hệ thống kiểm tra dữ liệu đầu vào hợp lệ. \newline
+3) Hệ thống kiểm tra email chưa tồn tại trong hệ thống. \newline
+4) Hệ thống tạo tài khoản mới với trạng thái chưa xác thực email (isVerified = false). \newline
+5) Hệ thống sinh verification token, lưu thời điểm gửi và gửi email xác thực chứa liên kết xác thực. \newline
+6) Hệ thống trả thông báo đăng ký thành công (đã gửi yêu cầu xác thực email). \newline
+7) Người dùng mở liên kết xác thực trong email. \newline
+8) Hệ thống xác thực token, cập nhật tài khoản đã xác thực email (isVerified = true), xóa token xác thực. 
+\end{tabular}
+\\ \hline
+
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: Email đã tồn tại $\rightarrow$ hệ thống trả lỗi, không tạo tài khoản mới. \newline
+A2: Token xác thực không hợp lệ hoặc đã hết hiệu lực $\rightarrow$ hệ thống trả lỗi xác thực email thất bại. \newline
+A3: Gửi email xác thực thất bại $\rightarrow$ hệ thống trả lỗi, người dùng thực hiện lại hoặc dùng chức năng gửi lại email xác thực. 
+\end{tabular}
+\\ \hline
+
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- Sau bước đăng ký thành công: tài khoản được tạo, trạng thái chưa xác thực email. \newline
+- Sau khi người dùng xác thực qua liên kết thành công: tài khoản ở trạng thái đã xác thực email. \newline
+\end{tabular}
+\\ \hline
+
+Điều kiện thoát & Người dùng hoàn tất đăng ký và xác thực email, hoặc hủy thao tác. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC02 -- Thêm giao dịch}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC02 -- Thêm giao dịch \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Ghi nhận một giao dịch thu hoặc chi vào hệ thống và cập nhật số dư của ví liên quan. \\ \hline
+Kích hoạt & Người dùng chọn chức năng thêm giao dịch mới. \\ \hline
+Mô tả & Use case mô tả việc người dùng nhập thông tin giao dịch, hệ thống kiểm tra dữ liệu hợp lệ, lưu giao dịch và cập nhật số dư ví tương ứng. \\ \hline
+Điều kiện tiên quyết &
+(1) Người dùng đã đăng nhập thành công. \newline
+(2) Ví được chọn thuộc quyền quản lý của người dùng. \newline
+(3) Danh mục giao dịch phù hợp và được phép sử dụng.
+\\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng nhập thông tin giao dịch gồm ví, danh mục, số tiền, ghi chú và ngày giao dịch. \newline
+2) Hệ thống kiểm tra dữ liệu đầu vào hợp lệ. \newline
+3) Hệ thống kiểm tra ví thuộc quyền của người dùng. \newline
+4) Hệ thống kiểm tra danh mục giao dịch có thể sử dụng. \newline
+5) Hệ thống xác định giao dịch là thu hay chi theo loại danh mục. \newline
+6) Hệ thống cập nhật số dư hiện tại của ví. \newline
+7) Hệ thống lưu giao dịch mới vào cơ sở dữ liệu. \newline
+8) Hệ thống trả kết quả giao dịch vừa tạo cho người dùng.
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: Ví không tồn tại hoặc không thuộc người dùng hiện tại $\rightarrow$ hệ thống từ chối tạo giao dịch. \newline
+A2: Danh mục không hợp lệ hoặc không được phép sử dụng $\rightarrow$ hệ thống từ chối tạo giao dịch. \newline
+A3: Số tiền không hợp lệ $\rightarrow$ hệ thống yêu cầu nhập lại dữ liệu. \newline
+A4: Dữ liệu giao dịch thiếu trường bắt buộc $\rightarrow$ hệ thống thông báo lỗi nhập liệu.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- Giao dịch mới được lưu thành công. \newline
+- Số dư của ví được cập nhật theo loại giao dịch. \newline
+- Người dùng xem được thông tin giao dịch vừa tạo.
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng hoàn tất thêm giao dịch hoặc hủy thao tác. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC03 -- Thiết lập ngân sách}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC03 -- Thiết lập ngân sách \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Thiết lập hạn mức chi tiêu cho một danh mục trong một khoảng thời gian xác định. \\ \hline
+Kích hoạt & Người dùng chọn chức năng tạo ngân sách mới. \\ \hline
+Mô tả & Use case mô tả việc người dùng nhập thông tin ngân sách, hệ thống kiểm tra dữ liệu hợp lệ và lưu ngân sách để theo dõi mức chi tiêu sau này. \\ \hline
+Điều kiện tiên quyết &
+(1) Người dùng đã đăng nhập thành công. \newline
+(2) Người dùng đã chọn được danh mục cần thiết lập ngân sách. \newline
+(3) Khoảng thời gian ngân sách được xác định rõ.
+\\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng nhập thông tin ngân sách gồm danh mục, hạn mức chi tiêu, ngày bắt đầu, ngày kết thúc, loại kỳ và ngưỡng cảnh báo. \newline
+2) Hệ thống kiểm tra dữ liệu đầu vào hợp lệ. \newline
+3) Hệ thống tạo mới ngân sách theo thông tin người dùng cung cấp. \newline
+4) Hệ thống lưu ngân sách vào cơ sở dữ liệu. \newline
+5) Hệ thống trả thông tin ngân sách vừa tạo cho người dùng.
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: Thiếu thông tin bắt buộc $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A2: Dữ liệu hạn mức hoặc thời gian không hợp lệ $\rightarrow$ hệ thống từ chối tạo ngân sách. \newline
+A3: Không thể lưu ngân sách $\rightarrow$ hệ thống trả lỗi và không tạo mới.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- Ngân sách mới được tạo thành công. \newline
+- Hệ thống lưu lại hạn mức, khoảng thời gian và ngưỡng cảnh báo để phục vụ báo cáo sau này.
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng hoàn tất thiết lập ngân sách hoặc hủy thao tác. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC04 -- Thiết lập cảnh báo}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC04 -- Thiết lập cảnh báo \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Cho phép người dùng chọn ngưỡng cảnh báo để hệ thống thông báo khi chi tiêu tiệm cận hoặc vượt quá mức ngân sách đã đặt. \\ \hline
+Kích hoạt & Người dùng chọn chức năng tạo hoặc cập nhật ngân sách và nhập ngưỡng cảnh báo. \\ \hline
+Mô tả & Use case mô tả việc người dùng thiết lập một ngưỡng cảnh báo cho ngân sách của từng danh mục. Khi mức chi tiêu đạt đến ngưỡng này, hệ thống có thể hiển thị cảnh báo để người dùng chủ động kiểm soát chi tiêu. \\ \hline
+Điều kiện tiên quyết &
+(1) Người dùng đã đăng nhập thành công. \newline
+(2) Người dùng đã chọn được danh mục cần theo dõi. \newline
+(3) Người dùng đã xác định được hạn mức chi tiêu mong muốn.
+\\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng chọn chức năng thiết lập ngân sách hoặc cập nhật ngân sách hiện có. \newline
+2) Người dùng nhập hạn mức chi tiêu và ngưỡng cảnh báo mong muốn. \newline
+3) Hệ thống kiểm tra dữ liệu nhập vào hợp lệ. \newline
+4) Hệ thống lưu thông tin ngưỡng cảnh báo cùng ngân sách của danh mục đó. \newline
+5) Khi có giao dịch phát sinh, hệ thống đối chiếu số tiền đã chi với ngưỡng cảnh báo đã thiết lập. \newline
+6) Nếu mức chi tiêu đạt đến ngưỡng cảnh báo, hệ thống hiển thị cảnh báo cho người dùng. \newline
+7) Người dùng xem cảnh báo và có thể điều chỉnh hành vi chi tiêu hoặc cập nhật lại ngân sách.
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: Người dùng không nhập ngưỡng cảnh báo $\rightarrow$ hệ thống lưu ngân sách nhưng không bật cảnh báo. \newline
+A2: Ngưỡng cảnh báo không hợp lệ $\rightarrow$ hệ thống yêu cầu nhập lại dữ liệu. \newline
+A3: Không thể lưu ngân sách $\rightarrow$ hệ thống thông báo thiết lập thất bại. \newline
+A4: Chưa phát sinh giao dịch nào trong kỳ $\rightarrow$ hệ thống chưa hiển thị cảnh báo.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}{p{9.5cm}}
+- Ngân sách được lưu kèm ngưỡng cảnh báo. \newline
+- Hệ thống có cơ sở để cảnh báo khi chi tiêu đạt mức người dùng đã thiết lập.
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng hoàn tất thiết lập cảnh báo hoặc hủy thao tác. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC05 -- Phân tích xu hướng chi tiêu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC05 -- Phân tích xu hướng chi tiêu \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Phân tích dữ liệu giao dịch theo thời gian và theo danh mục để nhận diện xu hướng chi tiêu của người dùng. \\ \hline
+Kích hoạt & Người dùng chọn chức năng xem phân tích chi tiêu theo thời gian. \\ \hline
+Mô tả & Use case mô tả việc hệ thống tổng hợp dữ liệu giao dịch trong một khoảng thời gian để hiển thị xu hướng chi tiêu, mức tăng giảm và giai đoạn chi tiêu cao điểm. \\ \hline
+Điều kiện tiên quyết &
+(1) Người dùng đã đăng nhập thành công. \newline
+(2) Hệ thống có dữ liệu giao dịch trong khoảng thời gian cần phân tích. \newline
+(3) Người dùng chọn được khoảng thời gian phù hợp.
+\\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng chọn khoảng thời gian cần xem phân tích. \newline
+2) Người dùng chọn cách xem theo ngày, tuần hoặc tháng. \newline
+3) Hệ thống tổng hợp dữ liệu thu và chi trong khoảng thời gian đã chọn. \newline
+4) Hệ thống so sánh dữ liệu giữa các giai đoạn để xác định xu hướng tăng, giảm hoặc ổn định. \newline
+5) Hệ thống xác định giai đoạn có mức chi tiêu cao nhất. \newline
+6) Hệ thống trả kết quả để người dùng xem biểu đồ và nhận biết xu hướng chi tiêu.
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: Không có dữ liệu trong khoảng thời gian chọn $\rightarrow$ hệ thống trả về kết quả rỗng hoặc giá trị bằng 0. \newline
+A2: Khoảng thời gian không hợp lệ $\rightarrow$ hệ thống yêu cầu người dùng chọn lại. \newline
+A3: Người dùng không có quyền truy cập dữ liệu $\rightarrow$ hệ thống không cho xem báo cáo.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- Người dùng xem được xu hướng chi tiêu theo thời gian. \newline
+- Người dùng nhận biết được giai đoạn chi tiêu cao điểm và mức biến động chi tiêu.
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng hoàn tất xem báo cáo hoặc rời khỏi màn hình phân tích. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC06 -- Gợi ý mô hình chi tiêu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC06 -- Gợi ý mô hình chi tiêu \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Dựa trên dữ liệu giao dịch và ngân sách hiện có để đưa ra các gợi ý giúp người dùng chi tiêu hợp lý hơn. \\ \hline
+Kích hoạt & Người dùng chọn chức năng xem gợi ý hoặc cảnh báo chi tiêu. \\ \hline
+Mô tả & Use case mô tả việc hệ thống phân tích tỷ trọng chi tiêu theo danh mục, mức độ biến động theo thời gian và mức độ sử dụng ngân sách để đưa ra gợi ý phù hợp cho người dùng. \\ \hline
+Điều kiện tiên quyết &
+(1) Người dùng đã đăng nhập thành công. \newline
+(2) Hệ thống có dữ liệu giao dịch và/hoặc ngân sách để phân tích. \newline
+(3) Người dùng có dữ liệu đủ để hệ thống đưa ra gợi ý.
+\\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng mở chức năng gợi ý hoặc cảnh báo chi tiêu. \newline
+2) Hệ thống tổng hợp dữ liệu chi tiêu hiện có của người dùng. \newline
+3) Hệ thống xem xét mức chi tiêu theo danh mục và tình trạng sử dụng ngân sách. \newline
+4) Hệ thống xác định các danh mục có xu hướng chi nhiều, chi tăng đều hoặc có nguy cơ vượt mức. \newline
+5) Hệ thống tạo ra một số gợi ý ngắn gọn, dễ hiểu, ví dụ: danh mục cần kiểm soát, nhóm chi chưa cần thiết, hoặc hướng điều chỉnh ngân sách. \newline
+6) Hệ thống trả danh sách gợi ý để người dùng xem và áp dụng.
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: Chưa có ngân sách $\rightarrow$ hệ thống chỉ đưa gợi ý dựa trên xu hướng chi tiêu, không so sánh với ngân sách. \newline
+A2: Không có đủ dữ liệu giao dịch $\rightarrow$ hệ thống không đưa ra gợi ý hoặc chỉ trả thông báo chưa đủ dữ liệu. \newline
+A3: Dữ liệu không hợp lệ hoặc không thể đọc $\rightarrow$ hệ thống trả lỗi phù hợp.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- Người dùng nhận được danh sách gợi ý hoặc cảnh báo chi tiêu. \newline
+- Người dùng có cơ sở để điều chỉnh cách chi tiêu hoặc phân bổ ngân sách.
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng xem xong gợi ý hoặc thoát khỏi màn hình tư vấn chi tiêu. \\ \hline
+\end{tabular}
+\end{table}
+
+
+\subsection{Đặc tả use case UC07 -- Đồng bộ dữ liệu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC07 -- Đồng bộ dữ liệu \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Dữ liệu trên thiết bị và trên hệ thống được cập nhật đồng nhất. \\ \hline
+Kích hoạt & Người dùng mở chức năng đồng bộ hoặc ứng dụng tự đồng bộ khi có thay đổi dữ liệu. \\ \hline
+Mô tả & Use case mô tả việc lấy dữ liệu mới từ hệ thống về thiết bị và gửi dữ liệu thay đổi từ thiết bị lên hệ thống. \\ \hline
+Điều kiện tiên quyết &
+(1) Người dùng đã đăng nhập thành công. \newline
+(2) Thiết bị có kết nối mạng. \newline
+(3) Dữ liệu cần đồng bộ thuộc tài khoản hiện tại. \\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng hoặc hệ thống kích hoạt đồng bộ dữ liệu. \newline
+2) Hệ thống kiểm tra trạng thái đăng nhập và quyền truy cập dữ liệu. \newline
+3) Hệ thống lấy các thay đổi mới nhất từ máy chủ. \newline
+4) Hệ thống trả dữ liệu cập nhật về cho thiết bị. \newline
+5) Thiết bị gửi các thay đổi cục bộ lên máy chủ. \newline
+6) Hệ thống kiểm tra dữ liệu gửi lên có hợp lệ hay không. \newline
+7) Nếu không có xung đột, hệ thống cập nhật dữ liệu và xác nhận đồng bộ thành công. \newline
+8) Nếu có xung đột, hệ thống thông báo để thiết bị xử lý theo dữ liệu mới nhất.
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: Người dùng chưa đăng nhập hoặc phiên đăng nhập hết hạn $\rightarrow$ không cho đồng bộ. \newline
+A2: Không có kết nối mạng $\rightarrow$ hoãn đồng bộ và cho thử lại sau. \newline
+A3: Dữ liệu hai phía bị xung đột $\rightarrow$ hệ thống trả kết quả xung đột để thiết bị xử lý. \newline
+A4: Dữ liệu gửi lên không hợp lệ $\rightarrow$ hệ thống từ chối cập nhật và trả lỗi phù hợp.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- Dữ liệu trên thiết bị được cập nhật theo dữ liệu mới nhất từ hệ thống. \newline
+- Các thay đổi hợp lệ từ thiết bị được ghi nhận lên máy chủ. \newline
+- Nếu có lỗi, hệ thống trả thông báo để người dùng hoặc ứng dụng xử lý tiếp.
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng hoàn tất đồng bộ hoặc dừng thao tác. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC08 -- Sao lưu dữ liệu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC08 -- Sao lưu dữ liệu \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Tạo một bản sao lưu dữ liệu cá nhân để phục vụ khôi phục khi cần. \\ \hline
+Kích hoạt & Người dùng chọn chức năng sao lưu dữ liệu. \\ \hline
+Mô tả & Use case mô tả việc hệ thống tạo một bản sao lưu của dữ liệu người dùng và lưu lại để sử dụng về sau. \\ \hline
+Điều kiện tiên quyết &
+(1) Người dùng đã đăng nhập thành công. \newline
+(2) Người dùng có quyền sao lưu dữ liệu của chính mình. \\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng chọn chức năng sao lưu dữ liệu. \newline
+2) Hệ thống kiểm tra người dùng có hợp lệ và có quyền thao tác hay không. \newline
+3) Hệ thống tạo một bản sao lưu dữ liệu hiện tại của người dùng. \newline
+4) Hệ thống lưu bản sao lưu vào nơi lưu trữ đã cấu hình. \newline
+5) Hệ thống ghi nhận mã sao lưu và trạng thái sao lưu. \newline
+6) Hệ thống thông báo sao lưu thành công cho người dùng.
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: Người dùng chưa đăng nhập $\rightarrow$ không cho sao lưu. \newline
+A2: Không lưu được bản sao lưu $\rightarrow$ hệ thống trả lỗi và thông báo sao lưu thất bại. \newline
+A3: Dữ liệu của người dùng không sẵn sàng để sao lưu $\rightarrow$ hệ thống trả lỗi phù hợp.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- Hệ thống tạo được bản sao lưu hợp lệ cho người dùng. \newline
+- Người dùng có thể dùng bản sao lưu này để khôi phục dữ liệu về sau.
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng hoàn tất sao lưu hoặc hủy thao tác. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC09 -- Khôi phục dữ liệu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC09 -- Khôi phục dữ liệu \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Khôi phục dữ liệu cá nhân từ một bản sao lưu đã có. \\ \hline
+Kích hoạt & Người dùng chọn một bản sao lưu và yêu cầu khôi phục. \\ \hline
+Mô tả & Use case mô tả việc hệ thống lấy dữ liệu từ bản sao lưu và phục hồi lại dữ liệu cho người dùng. \\ \hline
+Điều kiện tiên quyết &
+(1) Người dùng đã đăng nhập thành công. \newline
+(2) Bản sao lưu tồn tại và thuộc về người dùng hiện tại. \\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng chọn bản sao lưu cần khôi phục. \newline
+2) Hệ thống kiểm tra bản sao lưu có hợp lệ và đúng chủ sở hữu hay không. \newline
+3) Hệ thống tải dữ liệu từ bản sao lưu. \newline
+4) Hệ thống phục hồi dữ liệu vào hệ thống. \newline
+5) Hệ thống ghi nhận trạng thái khôi phục thành công. \newline
+6) Hệ thống thông báo kết quả khôi phục cho người dùng.
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: Bản sao lưu không tồn tại $\rightarrow$ hệ thống trả lỗi không tìm thấy. \newline
+A2: Bản sao lưu không thuộc người dùng hiện tại $\rightarrow$ hệ thống từ chối khôi phục. \newline
+A3: Không đọc được dữ liệu sao lưu $\rightarrow$ hệ thống trả lỗi khôi phục thất bại. \newline
+A4: Khôi phục dữ liệu không thành công $\rightarrow$ hệ thống hoàn tác và trả lỗi phù hợp.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- Dữ liệu người dùng được phục hồi theo bản sao lưu hợp lệ. \newline
+- Hệ thống ghi nhận kết quả khôi phục để theo dõi.
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng hoàn tất khôi phục hoặc hủy thao tác. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC10 -- Ghi nhận giao dịch bằng ngôn ngữ tự nhiên (AI)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC10 -- Ghi nhận giao dịch bằng ngôn ngữ tự nhiên (AI) \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Cho phép người dùng nhập giao dịch nhanh bằng câu văn tự nhiên tiếng Việt, hệ thống tự phân tích số tiền, danh mục, ví, ngày và ghi nhận giao dịch. \\ \hline
+Kích hoạt & Người dùng mở màn hình AI companion và nhập câu mô tả giao dịch. \\ \hline
+Mô tả & Use case mô tả việc frontend gửi yêu cầu tới backend POST /api/ai/action kèm text; backend tổng hợp ngữ cảnh (danh sách ví, ngân sách, tín hiệu hành vi, insights), gọi AI provider (Gemini hoặc rule-based), phát hiện intent và xử lý: nếu intent = transaction hoặc tìm thấy số tiền kèm đơn vị (k, nghìn, triệu, m) thì gọi TransactionParsingService.parse để tạo giao dịch; trả về AiActionResponse với intent = LOG\_TRANSACTION, structuredResult (amount, categoryId, walletId, note, date) và message ngắn gọn. \\ \hline
+Điều kiện tiên quyết &
+(1) Người dùng đã đăng nhập thành công. \newline
+(2) Người dùng đã có ít nhất một ví và có danh mục khả dụng. \newline
+(3) Hệ thống có đủ dữ liệu chi tiêu lịch sử và khả năng phân tích.
+\\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng nhập câu tiếng Việt, ví dụ ``ăn phở 45k''. \newline
+2) Frontend gọi POST /api/ai/action với body \{text, history?\}. \newline
+3) Backend tổng hợp context: monthlySummary, listBudgets, listWallets, behaviorSignals (30 ngày gần nhất), insights. \newline
+4) Backend build prompt kèm lịch sử hội thoại (tối đa 6 tin gần nhất) và gọi AiProviderGateway. \newline
+5) Hệ thống trích meta (intent, suggestions) từ khối ---JSON--- trong phản hồi AI. \newline
+6) Nếu intent = transaction hoặc regex bắt được số tiền $\rightarrow$ gọi TransactionParsingService.parse(text, userId) để tạo giao dịch mới, cập nhật currentBalance của ví tương ứng. \newline
+7) Hệ thống trả AiActionResponse với intent = LOG\_TRANSACTION, structuredResult chứa transactionId, amount, categoryId, message ngắn gọn, AiActionMeta (confidence, provider, fallbackUsed, suggestions). \newline
+8) Frontend hiển thị xác nhận kèm gợi ý tiếp theo (ví dụ: ``Xác nhận'', ``Chỉnh sửa'').
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: AI provider không khả dụng hoặc phản hồi rỗng $\rightarrow$ hệ thống dùng fallback: nếu tìm thấy số tiền thì vẫn tạo giao dịch (aiFallbackUsed = true), ngược lại trả UNKNOWN với thông điệp hướng dẫn. \newline
+A2: Không tìm thấy danh mục/ví phù hợp $\rightarrow$ TransactionParsingService ném lỗi, hệ thống chuyển sang UNKNOWN. \newline
+A3: Câu nhập không chứa số tiền $\rightarrow$ hệ thống trả UNKNOWN kèm gợi ý (``Ghi chi tiêu'', ``Cho tôi lời khuyên''). \newline
+A4: Ví hoặc danh mục thuộc user khác $\rightarrow$ từ chối parse, trả lỗi phù hợp.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- Giao dịch được tạo thành công với categoryId/walletId suy ra từ câu nhập. \newline
+- Số dư ví được cập nhật tương ứng. \newline
+- Lịch sử hội thoại được dùng cho ngữ cảnh các lượt sau.
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng xác nhận giao dịch, chỉnh sửa, hoặc thoát khỏi AI companion. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC11 -- Hỏi đáp thông tin chi tiêu bằng AI (AI companion)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC11 -- Hỏi đáp thông tin chi tiêu bằng AI (AI companion) \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Cho phép người dùng truy vấn thông tin chi tiêu, ngân sách, insights hoặc xin lời khuyên tài chính thông qua hội thoại tự nhiên tiếng Việt. \\ \hline
+Kích hoạt & Người dùng mở AI companion và gửi câu hỏi. \\ \hline
+Mô tả & Use case mô tả việc backend nhận text, tổng hợp ngữ cảnh tài chính của user (summary, budgets, wallets, insights), gọi AI provider và phát hiện intent theo IntentType (SPENDING\_QUERY, BUDGET\_QUERY, INSIGHT\_REQUEST, COACHING, UNKNOWN). Hệ thống trả message ngắn gọn kèm structuredResult phù hợp và danh sách suggestions cho lượt hỏi tiếp theo. \\ \hline
+Điều kiện tiên quyết &
+(1) Người dùng đã đăng nhập thành công. \newline
+(2) Có dữ liệu giao dịch/ngân sách để phân tích (hoặc chấp nhận câu trả lời giới hạn). \newline
+(3) Hệ thống có đủ dữ liệu chi tiêu lịch sử và khả năng phân tích.
+\\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng gửi câu hỏi, ví dụ ``mình tiêu nhiều nhất vào gì tháng này?''. \newline
+2) Frontend gọi POST /api/ai/action. \newline
+3) Backend tổng hợp context và gọi AI provider. \newline
+4) Hệ thống phát hiện intent: \newline
+   - SPENDING\_QUERY $\rightarrow$ trả summary gồm totalIncome, totalExpense, topCategoryName, topCategoryAmount trong tháng. \newline
+   - BUDGET\_QUERY $\rightarrow$ trả budgetId, remaining, categoryId của ngân sách phù hợp. \newline
+   - INSIGHT\_REQUEST $\rightarrow$ trả danh sách insights (type, severity, message) từ behaviorSignals 30 ngày. \newline
+   - COACHING $\rightarrow$ trả lời tư vấn dựa trên summary, budgets và insights. \newline
+5) Hệ thống trả AiActionResponse với message tiếng Việt ngắn gọn, structuredResult tương ứng và 2--3 suggestions (ví dụ: ``Tháng này chi nhiều nhất?'', ``Cho tôi lời khuyên'', ``Ghi chi tiêu''). \newline
+6) Frontend render hội thoại và lưu message vào history để gửi kèm các lượt sau.
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: AI provider lỗi hoặc timeout $\rightarrow$ hệ thống fallback: trả UNKNOWN với thông điệp hướng dẫn và aiFallbackUsed = true. \newline
+A2: Không đủ dữ liệu (chưa có giao dịch/ngân sách) $\rightarrow$ trả danh sách rỗng kèm message ``Chưa có dữ liệu để phân tích''. \newline
+A3: Câu hỏi ngoài phạm vi tài chính $\rightarrow$ intent = UNKNOWN, trả gợi ý các câu hỏi liên quan. \newline
+A4: Câu chứa cả ý hỏi và số tiền (mơ hồ) $\rightarrow$ ưu tiên intent = transaction.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- Người dùng nhận được câu trả lời phù hợp với câu hỏi. \newline
+- Lịch sử hội thoại được cập nhật cho các lượt sau. \newline
+- Nếu là INSIGHT/COACHING, người dùng có thêm cơ sở để điều chỉnh chi tiêu hoặc ngân sách.
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng đóng AI companion hoặc chuyển sang chức năng khác. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC12 -- Gợi ý ngân sách bằng AI}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC12 -- Gợi ý ngân sách bằng AI \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Hỗ trợ người dùng nhanh chóng lập kế hoạch ngân sách dựa trên phân tích lịch sử chi tiêu. \\ \hline
+Kích hoạt & Người dùng chọn nút ``Tạo bằng AI'' trong màn hình tạo ngân sách. \\ \hline
+Mô tả & Use case mô tả việc hệ thống phân tích lịch sử chi tiêu gần đây của người dùng theo từng danh mục, ví và chu kỳ, từ đó sinh bản nháp ngân sách gồm danh sách hạn mức, ngưỡng cảnh báo, chu kỳ và danh mục gợi ý. Bản nháp được kiểm tra hợp lệ về số tiềm và dữ liệu trước khi trả về. Người dùng xem và chỉnh sửa trước khi lưu thành ngân sách chính thức. \\ \hline
+Điều kiện tiên quyết &
+(1) Người dùng đã đăng nhập thành công. \newline
+(2) Có đủ dữ liệu chi tiêu trong các danh mục để AI phân tích. \newline
+(3) Hệ thống có đủ dữ liệu chi tiêu lịch sử và khả năng phân tích.
+\\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng mở màn hình tạo ngân sách và chọn ``Tạo bằng AI''. \newline
+2) Hệ thống phân tích lịch sử chi tiêu theo danh mục, ví và chu kỳ để sinh bản nháp. \newline
+3) Backend (AiBudgetService) phân tích chi tiêu lịch sử theo danh mục, ví và chu kỳ. \newline
+4) Hệ thống sinh bản nháp gồm danh sách ngân sách (hạn mức, ngưỡng cảnh báo, chu kỳ, danh mục gợi ý). \newline
+5) Hệ thống kiểm tra bản nháp hợp lệ về số tiền, danh mục và khoảng thời gian. \newline
+6) Hệ thống trả về bản nháp gồm tổng quan và danh sách ngân sách gợi ý cho người dùng. \newline
+7) Người dùng xem, chỉnh sửa hạn mức/ngưỡng cảnh báo rồi bấm Lưu. \newline
+8) Người dùng xác nhận và hệ thống lưu các ngân sách trong bản nháp vào cơ sở dữ liệu.
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: Chưa đủ dữ liệu chi tiêu $\rightarrow$ hệ thống trả danh sách rỗng kèm thông báo ``Chưa đủ dữ liệu để gợi ý''. \newline
+A2: Bản nháp không hợp lệ $\rightarrow$ validator trả lỗi, hệ thống yêu cầu sinh lại. \newline
+A3: Người dùng hủy $\rightarrow$ bản nháp bị hủy, không tạo ngân sách. \newline
+A4: AI provider lỗi $\rightarrow$ hệ thống dùng fallback rule-based dựa trên trung bình chi tiêu 3 tháng gần nhất.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- Ngân sách mới được tạo nếu người dùng xác nhận. \newline
+- Người dùng có thể quay lại chỉnh sửa hạn mức/ngưỡng cảnh báo sau (UC03--UC04).
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng lưu, chỉnh sửa thủ công, hoặc hủy. \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC13 -- Theo dõi chuỗi hoạt động hằng ngày (Streak)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & UC13 -- Theo dõi chuỗi hoạt động hằng ngày (Streak) \\ \hline
+Tác nhân & Người dùng đã đăng nhập \\ \hline
+Mục tiêu & Khuyến khích người dùng ghi nhận giao dịch đều đặn mỗi ngày và nhận huy hiệu thành tích khi đạt mốc. \\ \hline
+Kích hoạt & Người dùng mở màn hình Streak hoặc sau khi tạo giao dịch đầu tiên trong ngày. \\ \hline
+Mô tả & Use case mô tả việc hệ thống theo dõi và lưu giữ chuỗi ngày mà người dùng ghi nhận giao dịch liên tiếp. Hệ thống tự động phát hiện ngày mới, tăng chuỗi hiện tại thêm một nếu ngày hôm qua đã có hoạt động, hoặc đặt lại về một nếu bị gián đoạn; đồng thời cập nhật chuỗi dài nhất, tổng số ngày hoạt động và cấp huy hiệu thành tích khi đạt các mốc đã định (chuỗi dài nhất, tuần hoàn hảo, tháng hoàn hảo) nếu người dùng chưa có. \\ \hline
+Điều kiện tiên quyết & (1) Người dùng đã đăng nhập thành công. \\ \hline
+Luồng sự kiện chính &
+\begin{tabular}[t]{p{9.5cm}}
+1) Người dùng mở màn hình Streak. \newline
+2) Hệ thống truy vấn trạng thái chuỗi hiện tại; nếu người dùng chưa có bản ghi, hệ thống tự khởi tạo bản ghi chuỗi mới. \newline
+3) Hệ thống kiểm tra nếu lastActiveDate < hôm nay $-$ 1 $\rightarrow$ reset currentStreak = 0 (streak bị đứt). \newline
+4) Hệ thống tính remainingHours tới lần reset của ngày hôm sau. \newline
+5) Hệ thống trả StreakResponse: currentStreak, longestStreak, lastActiveDate, streakStartDate, remainingHours, totalActiveDays, activeDates (danh sách ngày có giao dịch trong tháng), achievements. \newline
+6) Khi người dùng tạo giao dịch đầu tiên trong ngày, hệ thống ghi nhận đây là ngày hoạt động. \newline
+7) Hệ thống cập nhật currentStreak (tăng 1 nếu hôm qua đã active, reset = 1 nếu bị gián đoạn), cập nhật longestStreak và totalActiveDays nếu là ngày mới. \newline
+8) Hệ thống gọi checkAndGrantAchievements; trả về danh sách achievement mới (nếu có).
+\end{tabular}
+\\ \hline
+Luồng thay thế &
+\begin{tabular}[t]{p{9.5cm}}
+A1: Đã ghi nhận activity trong ngày $\rightarrow$ isNewDay = false, không cập nhật streak, không cấp achievement mới. \newline
+A2: Streak bị đứt (bỏ $\geq$ 1 ngày) $\rightarrow$ currentStreak reset về 0; lần ghi nhận tiếp theo sẽ bắt đầu chuỗi mới (currentStreak = 1). \newline
+A3: Đạt mốc achievement đã có $\rightarrow$ không cấp trùng (kiểm tra existsByUserIdAndTypeAndLevel). \newline
+A4: Lỗi mạng $\rightarrow$ frontend hiển thị giá trị cache và thử lại.
+\end{tabular}
+\\ \hline
+Điều kiện sau &
+\begin{tabular}[t]{p{9.5cm}}
+- UserStreak được cập nhật với currentStreak, longestStreak, totalActiveDays, lastActiveDate. \newline
+- Achievement mới (nếu đạt mốc) được lưu và trả về để hiển thị. \newline
+- Người dùng có động lực duy trì thói quen ghi giao dịch mỗi ngày.
+\end{tabular}
+\\ \hline
+Điều kiện thoát & Người dùng đóng màn hình Streak hoặc tạo giao dịch thành công. \\ \hline
+\end{tabular}
+\end{table}
+
+% ============================================================
+%  NHÓM 1: QUẢN LÝ TÀI KHOẢN CÁ NHÂN  (UC14--UC17)
+% ============================================================
+
+\subsection{Đặc tả use case UC14 -- Đăng nhập}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC14 -- Đăng nhập\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Cho phép người dùng truy cập vào hệ thống bằng email và mật khẩu hợp lệ.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng mở ứng dụng và chọn chức năng đăng nhập.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả quy trình người dùng nhập email, mật khẩu; hệ thống xác thực thông tin, sinh JWT access token và refresh token, trả về thông tin người dùng.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã có tài khoản đã đăng ký và đã xác thực email. \newline
+(2) Người dùng chưa đăng nhập hoặc đã đăng xuất.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng nhập email và mật khẩu, gửi yêu cầu đăng nhập. \newline
+2) Hệ thống kiểm tra dữ liệu đầu vào hợp lệ. \newline
+3) Hệ thống truy vấn cơ sở dữ liệu để tìm người dùng theo email. \newline
+4) Hệ thống so sánh mật khẩu người dùng nhập với mật khẩu đã mã hóa lưu trong cơ sở dữ liệu. \newline
+5) Hệ thống kiểm tra tài khoản đã xác thực email. \newline
+6) Hệ thống sinh JWT access token và refresh token cho người dùng. \newline
+7) Hệ thống trả access token, refresh token và thông tin cơ bản của người dùng.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Email không tồn tại $\rightarrow$ hệ thống trả lỗi thông tin xác thực không hợp lệ. \newline
+A2: Mật khẩu không đúng $\rightarrow$ hệ thống trả lỗi, không cấp token. \newline
+A3: Email chưa được xác thực $\rightarrow$ hệ thống thông báo yêu cầu xác thực email trước khi đăng nhập. \newline
+A4: Tài khoản bị khóa hoặc vô hiệu hóa $\rightarrow$ hệ thống từ chối đăng nhập.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Access token và refresh token được lưu phía client để sử dụng cho các yêu cầu tiếp theo. \newline
+- Người dùng được chuyển vào giao diện chính của ứng dụng.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng đăng nhập thành công, hủy thao tác, hoặc hệ thống từ chối xác thực.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC15 -- Đổi mật khẩu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC15 -- Đổi mật khẩu\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Cập nhật mật khẩu mới cho tài khoản nhằm tăng cường bảo mật.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng đổi mật khẩu trong phần cài đặt tài khoản.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng nhập mật khẩu hiện tại, mật khẩu mới và xác nhận mật khẩu mới; hệ thống xác thực mật khẩu hiện tại, mã hóa và lưu mật khẩu mới.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công và có phiên làm việc hợp lệ.\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng đổi mật khẩu. \newline
+2) Người dùng nhập mật khẩu hiện tại, mật khẩu mới và xác nhận mật khẩu mới. \newline
+3) Hệ thống kiểm tra dữ liệu đầu vào hợp lệ. \newline
+4) Hệ thống xác thực mật khẩu hiện tại trùng khớp. \newline
+5) Hệ thống mã hóa mật khẩu mới theo thuật toán băm. \newline
+6) Hệ thống cập nhật mật khẩu mới vào cơ sở dữ liệu. \newline
+7) Hệ thống thông báo đổi mật khẩu thành công.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Mật khẩu hiện tại không đúng $\rightarrow$ hệ thống từ chối và yêu cầu nhập lại. \newline
+A2: Mật khẩu mới không đủ mạnh hoặc không hợp lệ $\rightarrow$ hệ thống yêu cầu nhập mật khẩu đáp ứng yêu cầu bảo mật. \newline
+A3: Xác nhận mật khẩu mới không trùng khớp $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A4: Phiên đăng nhập hết hạn $\rightarrow$ hệ thống yêu cầu đăng nhập lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Mật khẩu người dùng được cập nhật thành công. \newline
+- Phiên đăng nhập hiện tại có thể bị hủy tuỳ chính sách bảo mật, người dùng có thể cần đăng nhập lại bằng mật khẩu mới.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất đổi mật khẩu hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC16 -- Thay đổi thông tin cá nhân}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC16 -- Thay đổi thông tin cá nhân\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Cập nhật các thông tin hồ sơ cá nhân để dữ liệu luôn chính xác và phù hợp.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng chỉnh sửa thông tin cá nhân.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng cập nhật các thông tin hồ sơ như họ tên, ngày sinh, số điện thoại, ngôn ngữ, múi giờ hoặc ảnh đại diện; hệ thống xác thực dữ liệu hợp lệ và lưu lại.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công.\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng chỉnh sửa thông tin cá nhân. \newline
+2) Hệ thống hiển thị các trường thông tin hiện tại. \newline
+3) Người dùng chỉnh sửa một hoặc nhiều trường và gửi yêu cầu cập nhật. \newline
+4) Hệ thống kiểm tra dữ liệu nhập vào hợp lệ. \newline
+5) Hệ thống cập nhật thông tin người dùng vào cơ sở dữ liệu. \newline
+6) Hệ thống trả thông tin cá nhân mới cho người dùng.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Dữ liệu nhập vào không hợp lệ (định dạng email, số điện thoại, ngày sinh) $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A2: Email mới trùng với email của người dùng khác $\rightarrow$ hệ thống từ chối cập nhật. \newline
+A3: Ảnh đại diện vượt quá dung lượng cho phép $\rightarrow$ hệ thống yêu cầu chọn ảnh khác.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Thông tin cá nhân được cập nhật thành công. \newline
+- Các thành phần giao diện liên quan sử dụng thông tin cá nhân sẽ được làm mới.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất cập nhật hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC17 -- Đăng xuất}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC17 -- Đăng xuất\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Kết thúc phiên làm việc hiện tại, đảm bảo an toàn thông tin khi không tiếp tục sử dụng.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng đăng xuất trong giao diện chính.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống vô hiệu hoá refresh token hiện tại, xoá thông tin phiên lưu phía client và chuyển người dùng về màn hình đăng nhập.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công và có phiên làm việc hợp lệ.\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng đăng xuất. \newline
+2) Hệ thống ghi nhận yêu cầu đăng xuất. \newline
+3) Hệ thống vô hiệu hoá refresh token của người dùng. \newline
+4) Hệ thống xoá thông tin phiên lưu trên thiết bị (token, ví đang chọn, cache ngân sách). \newline
+5) Hệ thống chuyển người dùng về màn hình đăng nhập.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Không có kết nối mạng $\rightarrow$ hệ thống vẫn xoá phiên phía client, đồng bộ vô hiệu hoá token ở lần kết nối tiếp theo. \newline
+A2: Refresh token đã hết hạn $\rightarrow$ hệ thống xoá phiên phía client và thông báo phiên đã hết hạn.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Phiên làm việc của người dùng kết thúc. \newline
+- Refresh token không còn được chấp nhận cho các lần đăng nhập tiếp theo.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng xuất và ở màn hình đăng nhập.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+
+% ============================================================
+%  NHÓM 2: QUẢN LÝ VÍ  (UC18--UC21)
+% ============================================================
+
+\subsection{Đặc tả use case UC18 -- Xem danh sách ví sở hữu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC18 -- Xem danh sách ví sở hữu\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Hiển thị toàn bộ ví thuộc quyền sở hữu của người dùng kèm thông tin số dư.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng truy cập màn hình quản lý ví hoặc tab Ví trên trang chủ.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống truy vấn cơ sở dữ liệu, lấy về danh sách ví của người dùng (bao gồm ví thường, ví tiền mặt, ví tiết kiệm và ví nợ được tạo tự động) và hiển thị kèm tên, loại, đơn vị tiền tệ và số dư hiện tại.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công.\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng mở màn hình quản lý ví. \newline
+2) Hệ thống kiểm tra phiên đăng nhập hợp lệ. \newline
+3) Hệ thống truy vấn danh sách ví theo userId, loại bỏ các ví đã xóa mềm. \newline
+4) Hệ thống trả về danh sách ví kèm tên, loại, đơn vị tiền tệ, số dư và ngày cập nhật. \newline
+5) Giao diện hiển thị tổng số dư tất cả ví và danh sách chi tiết từng ví.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Người dùng chưa có ví nào $\rightarrow$ hệ thống hiển thị trạng thái rỗng kèm gợi ý tạo ví mới. \newline
+A2: Phiên đăng nhập hết hạn $\rightarrow$ hệ thống yêu cầu đăng nhập lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Người dùng xem được danh sách ví và tổng quan tài chính. \newline
+- Người dùng có thể chọn một ví cụ thể để xem chi tiết giao dịch hoặc thực hiện các thao tác quản lý.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng xem xong danh sách hoặc rời màn hình.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC19 -- Tạo ví chi tiêu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC19 -- Tạo ví chi tiêu\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Khởi tạo một ví mới để phục vụ quản lý nguồn tiền cho các mục đích sử dụng khác nhau.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng tạo ví mới trên màn hình quản lý ví.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng nhập tên ví, loại ví, đơn vị tiền tệ và số dư ban đầu; hệ thống kiểm tra trùng tên, lưu ví mới với số dư khởi tạo.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Tên ví chưa tồn tại trong danh sách ví của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng tạo ví mới. \newline
+2) Người dùng nhập tên ví, loại ví, đơn vị tiền tệ và số dư ban đầu. \newline
+3) Hệ thống kiểm tra dữ liệu đầu vào hợp lệ. \newline
+4) Hệ thống kiểm tra tên ví chưa tồn tại với cùng người dùng. \newline
+5) Hệ thống tạo ví mới với số dư khởi tạo bằng giá trị người dùng nhập (mặc định 0). \newline
+6) Hệ thống lưu ví vào cơ sở dữ liệu và trả thông tin ví vừa tạo.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Tên ví đã tồn tại $\rightarrow$ hệ thống từ chối và yêu cầu nhập tên khác. \newline
+A2: Số dư ban đầu âm hoặc không hợp lệ $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A3: Loại ví hoặc đơn vị tiền tệ không hợp lệ $\rightarrow$ hệ thống từ chối tạo ví.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Ví mới được tạo thành công và xuất hiện trong danh sách ví của người dùng. \newline
+- Người dùng có thể bắt đầu thực hiện giao dịch trên ví vừa tạo.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất tạo ví hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC20 -- Cập nhật thông tin ví}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC20 -- Cập nhật thông tin ví\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Chỉnh sửa thông tin ví hiện có để đảm bảo dữ liệu luôn chính xác.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn một ví cụ thể và yêu cầu cập nhật.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng thay đổi tên ví, loại ví hoặc đơn vị tiền tệ; hệ thống kiểm tra trùng tên với ví khác và lưu thông tin mới.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Ví được chọn thuộc quyền sở hữu của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn ví và chức năng chỉnh sửa. \newline
+2) Người dùng thay đổi tên, loại ví hoặc đơn vị tiền tệ. \newline
+3) Hệ thống kiểm tra dữ liệu hợp lệ. \newline
+4) Hệ thống kiểm tra tên ví mới không trùng với ví khác của cùng người dùng. \newline
+5) Hệ thống cập nhật thông tin ví và lưu vào cơ sở dữ liệu. \newline
+6) Hệ thống trả thông tin ví sau cập nhật.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Tên ví mới trùng với ví khác $\rightarrow$ hệ thống từ chối cập nhật. \newline
+A2: Ví là ví tiết kiệm hoặc ví nợ được tạo tự động từ mục tiêu $\rightarrow$ hệ thống cập nhật đồng bộ tên ví và tên mục tiêu tương ứng. \newline
+A3: Ví không tồn tại hoặc không thuộc người dùng $\rightarrow$ hệ thống từ chối.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Thông tin ví được cập nhật thành công. \newline
+- Lịch sử giao dịch liên quan đến ví được bảo toàn.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất cập nhật hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC21 -- Xóa ví chi tiêu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC21 -- Xóa ví chi tiêu\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Loại bỏ ví không còn sử dụng, giúp hệ thống quản lý dữ liệu gọn gàng và hiệu quả hơn.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn một ví cụ thể và yêu cầu xóa.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống đánh dấu xóa mềm ví để ví không còn xuất hiện trong danh sách nhưng vẫn bảo toàn lịch sử giao dịch liên quan phục vụ thống kê.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Ví được chọn thuộc quyền sở hữu của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn ví và yêu cầu xóa. \newline
+2) Hệ thống hiển thị hộp thoại xác nhận. \newline
+3) Người dùng xác nhận xóa. \newline
+4) Hệ thống kiểm tra ví không còn liên kết với sự kiện nhóm, mục tiêu tiết kiệm hoặc khoản nợ đang hoạt động. \newline
+5) Hệ thống đánh dấu deletedAt của ví bằng thời điểm hiện tại (xóa mềm). \newline
+6) Ví không còn xuất hiện trong danh sách ví khả dụng.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Ví đang được tham chiếu bởi sự kiện nhóm, mục tiêu tiết kiệm hoặc khoản nợ $\rightarrow$ hệ thống cảnh báo và yêu cầu xử lý liên kết trước khi xóa. \newline
+A2: Người dùng hủy xác nhận $\rightarrow$ hệ thống giữ nguyên trạng thái ví. \newline
+A3: Ví không tồn tại hoặc không thuộc người dùng $\rightarrow$ hệ thống từ chối.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Ví bị đánh dấu xóa mềm, không còn xuất hiện trong danh sách. \newline
+- Lịch sử giao dịch liên quan đến ví được bảo toàn phục vụ thống kê và truy vết.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất thao tác hoặc hủy bỏ.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+
+% ============================================================
+%  NHÓM 3: QUẢN LÝ GIAO DỊCH  (UC22--UC28)
+% ============================================================
+
+\subsection{Đặc tả use case UC22 -- Xem danh sách giao dịch}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC22 -- Xem danh sách giao dịch\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Hiển thị danh sách các giao dịch thu, chi của một ví cụ thể trong khoảng thời gian yêu cầu.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn một ví và mở màn hình giao dịch.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống truy vấn các giao dịch của ví đã chọn với phân trang, hỗ trợ lọc theo khoảng ngày, danh mục, loại thu/chi; sắp xếp theo ngày giảm dần.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Ví được chọn thuộc quyền của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn ví và mở màn hình giao dịch. \newline
+2) Hệ thống nhận tham số lọc gồm walletId, khoảng ngày (fromDate, toDate), danh mục, loại. \newline
+3) Hệ thống truy vấn cơ sở dữ liệu, áp dụng phân trang (page, size) và sắp xếp theo ngày giảm dần. \newline
+4) Hệ thống trả về danh sách giao dịch kèm PageMeta gồm tổng số bản ghi, số trang, kích thước trang. \newline
+5) Giao diện hiển thị danh sách giao dịch và cho phép cuộn hoặc chuyển trang.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Ví không tồn tại hoặc không thuộc người dùng $\rightarrow$ hệ thống từ chối trả dữ liệu. \newline
+A2: Không có giao dịch trong khoảng thời gian lọc $\rightarrow$ hệ thống trả danh sách rỗng kèm thông báo phù hợp. \newline
+A3: Tham số phân trang không hợp lệ $\rightarrow$ hệ thống áp dụng giá trị mặc định.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Người dùng xem được danh sách giao dịch của ví trong khoảng thời gian đã chọn. \newline
+- Số dư hiện tại của ví được hiển thị kèm theo để đối chiếu.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng xem xong hoặc chuyển sang thao tác khác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC23 -- Xem chi tiết giao dịch}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC23 -- Xem chi tiết giao dịch\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Hiển thị đầy đủ thông tin chi tiết của một giao dịch cụ thể.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn một giao dịch trong danh sách và yêu cầu xem chi tiết.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống truy vấn giao dịch theo mã định danh, kiểm tra quyền sở hữu và trả về toàn bộ thông tin gồm ví, danh mục, số tiền, loại thu/chi, ngày, ghi chú, thời điểm tạo và cập nhật.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Giao dịch tồn tại và thuộc ví của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn một giao dịch từ danh sách. \newline
+2) Hệ thống nhận yêu cầu lấy chi tiết giao dịch theo id. \newline
+3) Hệ thống kiểm tra giao dịch tồn tại và chưa bị xóa. \newline
+4) Hệ thống kiểm tra giao dịch thuộc ví của người dùng. \newline
+5) Hệ thống trả về toàn bộ thông tin chi tiết giao dịch.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Giao dịch không tồn tại hoặc đã bị xóa $\rightarrow$ hệ thống trả lỗi không tìm thấy. \newline
+A2: Giao dịch không thuộc người dùng hiện tại $\rightarrow$ hệ thống từ chối truy cập.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Người dùng xem được đầy đủ thông tin chi tiết của giao dịch. \newline
+- Người dùng có thể chuyển sang thao tác cập nhật hoặc xóa giao dịch.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng đóng màn hình chi tiết hoặc chuyển sang thao tác khác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC24 -- Thêm giao dịch}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC24 -- Thêm giao dịch\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Ghi nhận một giao dịch thu hoặc chi vào hệ thống và cập nhật số dư của ví liên quan.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng thêm giao dịch mới.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng nhập thông tin giao dịch, hệ thống kiểm tra dữ liệu hợp lệ, lưu giao dịch và cập nhật số dư ví tương ứng.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Ví được chọn thuộc quyền quản lý của người dùng. \newline
+(3) Danh mục giao dịch phù hợp và được phép sử dụng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng nhập thông tin giao dịch gồm ví, danh mục, số tiền, ghi chú và ngày giao dịch. \newline
+2) Hệ thống kiểm tra dữ liệu đầu vào hợp lệ. \newline
+3) Hệ thống kiểm tra ví thuộc quyền của người dùng. \newline
+4) Hệ thống kiểm tra danh mục giao dịch có thể sử dụng. \newline
+5) Hệ thống xác định giao dịch là thu hay chi theo loại danh mục. \newline
+6) Hệ thống cập nhật số dư hiện tại của ví. \newline
+7) Hệ thống lưu giao dịch mới vào cơ sở dữ liệu. \newline
+8) Hệ thống trả kết quả giao dịch vừa tạo cho người dùng.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Ví không tồn tại hoặc không thuộc người dùng hiện tại $\rightarrow$ hệ thống từ chối tạo giao dịch. \newline
+A2: Danh mục không hợp lệ hoặc không được phép sử dụng $\rightarrow$ hệ thống từ chối tạo giao dịch. \newline
+A3: Số tiền không hợp lệ $\rightarrow$ hệ thống yêu cầu nhập lại dữ liệu. \newline
+A4: Dữ liệu giao dịch thiếu trường bắt buộc $\rightarrow$ hệ thống thông báo lỗi nhập liệu.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Giao dịch mới được lưu thành công. \newline
+- Số dư của ví được cập nhật theo loại giao dịch. \newline
+- Người dùng xem được thông tin giao dịch vừa tạo.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất thêm giao dịch hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC25 -- Cập nhật giao dịch}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC25 -- Cập nhật giao dịch\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Chỉnh sửa thông tin giao dịch khi có thay đổi hoặc phát hiện sai sót.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn một giao dịch và yêu cầu cập nhật.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng thay đổi số tiền, danh mục, ghi chú hoặc ngày của giao dịch; hệ thống hoàn trả số dư cũ, áp dụng số dư mới tương ứng với giao dịch cập nhật và lưu lại.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Giao dịch tồn tại và thuộc ví của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn giao dịch và chức năng chỉnh sửa. \newline
+2) Người dùng thay đổi một hoặc nhiều trường thông tin và gửi yêu cầu cập nhật. \newline
+3) Hệ thống kiểm tra dữ liệu nhập vào hợp lệ. \newline
+4) Hệ thống tính toán chênh lệch số dư giữa giá trị cũ và giá trị mới. \newline
+5) Hệ thống hoàn trả phần chênh lệch vào số dư ví. \newline
+6) Hệ thống cập nhật giao dịch và lưu vào cơ sở dữ liệu. \newline
+7) Hệ thống trả thông tin giao dịch sau cập nhật.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Giao dịch không tồn tại hoặc không thuộc người dùng $\rightarrow$ hệ thống từ chối cập nhật. \newline
+A2: Số dư ví sau khi hoàn trả không đủ để áp dụng giao dịch mới $\rightarrow$ hệ thống từ chối và thông báo. \newline
+A3: Dữ liệu cập nhật thiếu trường bắt buộc $\rightarrow$ hệ thống yêu cầu nhập lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Giao dịch được cập nhật thành công. \newline
+- Số dư ví được điều chỉnh nhất quán với giá trị mới của giao dịch. \newline
+- Lịch sử chỉnh sửa giao dịch được lưu vết bằng trường updatedAt.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất cập nhật hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC26 -- Xóa giao dịch}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC26 -- Xóa giao dịch\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Loại bỏ giao dịch không còn cần thiết hoặc nhập sai và hoàn trả ảnh hưởng tới số dư ví.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn một giao dịch và yêu cầu xóa.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống hoàn trả số tiền giao dịch về số dư ví tương ứng (nếu là chi thì cộng lại, nếu là thu thì trừ đi) và đánh dấu xóa mềm giao dịch.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Giao dịch tồn tại và thuộc ví của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn giao dịch và yêu cầu xóa, hệ thống yêu cầu xác nhận. \newline
+2) Người dùng xác nhận xóa. \newline
+3) Hệ thống xác định loại giao dịch (thu hay chi) và tính toán số tiền cần hoàn trả. \newline
+4) Hệ thống cập nhật số dư ví tương ứng. \newline
+5) Hệ thống đánh dấu deletedAt của giao dịch bằng thời điểm hiện tại (xóa mềm). \newline
+6) Hệ thống thông báo xóa thành công.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Giao dịch không tồn tại hoặc không thuộc người dùng $\rightarrow$ hệ thống từ chối xóa. \newline
+A2: Người dùng hủy xác nhận $\rightarrow$ hệ thống giữ nguyên giao dịch. \newline
+A3: Giao dịch là chuyển tiền liên kết với sự kiện nhóm hoặc mục tiêu tiết kiệm $\rightarrow$ hệ thống cảnh báo ảnh hưởng liên kết và yêu cầu xác nhận lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Giao dịch bị đánh dấu xóa mềm, không còn xuất hiện trong danh sách. \newline
+- Số dư ví được hoàn trả về giá trị trước khi có giao dịch.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng xác nhận xóa thành công hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC27 -- Lọc giao dịch}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC27 -- Lọc giao dịch\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Hỗ trợ người dùng phân loại và hiển thị giao dịch theo các tiêu chí nhất định, giúp việc theo dõi trở nên thuận tiện hơn.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn bộ lọc trên màn hình giao dịch.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống nhận các tham số lọc gồm khoảng ngày, danh mục, loại thu/chi, ví; truy vấn và trả về danh sách giao dịch phù hợp kèm phân trang.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Ví được chọn thuộc quyền của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn ví và mở màn hình giao dịch. \newline
+2) Người dùng chọn các tiêu chí lọc: khoảng ngày, danh mục, loại thu/chi. \newline
+3) Hệ thống xây dựng truy vấn với các điều kiện kết hợp AND. \newline
+4) Hệ thống áp dụng phân trang và sắp xếp theo ngày giảm dần. \newline
+5) Hệ thống trả về danh sách giao dịch khớp điều kiện kèm PageMeta. \newline
+6) Giao diện hiển thị kết quả và cho phép người dùng bỏ/chọn thêm bộ lọc.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Không có giao dịch nào khớp điều kiện $\rightarrow$ hệ thống hiển thị trạng thái rỗng kèm gợi ý nới lỏng bộ lọc. \newline
+A2: Tham số lọc xung đột (fromDate $>$ toDate) $\rightarrow$ hệ thống trả lỗi và yêu cầu nhập lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Người dùng xem được danh sách giao dịch đã được lọc. \newline
+- Bộ lọc hiện tại được lưu lại để người dùng có thể quay lại với cùng điều kiện.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng xem xong kết quả, xoá bộ lọc hoặc rời màn hình.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC28 -- Tìm kiếm giao dịch}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC28 -- Tìm kiếm giao dịch\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Cho phép người dùng nhanh chóng tìm kiếm các giao dịch cụ thể dựa trên thông tin liên quan.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng nhập từ khoá tìm kiếm trên màn hình giao dịch.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống tìm kiếm trong trường ghi chú, tên danh mục và khoảng số tiền; trả về danh sách giao dịch phù hợp kèm phân trang.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Ví được chọn thuộc quyền của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn ví và nhập từ khoá tìm kiếm. \newline
+2) Hệ thống escape các ký tự đặc biệt và xây dựng truy vấn LIKE. \newline
+3) Hệ thống tìm trên các trường note, categoryName và amount (nếu là số). \newline
+4) Hệ thống áp dụng phân trang và sắp xếp theo ngày giảm dần. \newline
+5) Hệ thống trả về danh sách giao dịch khớp từ khoá kèm PageMeta. \newline
+6) Giao diện hiển thị kết quả và cho phép người dùng chỉnh từ khoá hoặc chuyển trang.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Không có giao dịch nào khớp từ khoá $\rightarrow$ hệ thống hiển thị trạng thái rỗng kèm gợi ý từ khoá khác. \newline
+A2: Từ khoá chứa ký tự đặc biệt nguy hiểm $\rightarrow$ hệ thống tự động escape trước khi truy vấn. \newline
+A3: Từ khoá rỗng $\rightarrow$ hệ thống trả về toàn bộ giao dịch của ví trong phạm vi phân trang mặc định.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Người dùng xem được danh sách giao dịch khớp từ khoá. \newline
+- Lịch sử từ khoá tìm kiếm gần nhất được lưu lại để gợi ý trong các lần sau.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng tìm được giao dịch mong muốn hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+
+% ============================================================
+%  NHÓM 4: QUẢN LÝ NGÂN SÁCH CHI TIÊU  (UC29--UC32)
+% ============================================================
+
+\subsection{Đặc tả use case UC29 -- Tạo ngân sách mới}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC29 -- Tạo ngân sách mới\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Thiết lập hạn mức chi tiêu cho một danh mục trong một khoảng thời gian xác định.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng tạo ngân sách mới.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng nhập thông tin ngân sách, hệ thống kiểm tra dữ liệu hợp lệ và lưu ngân sách để theo dõi mức chi tiêu sau này.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Người dùng đã chọn được danh mục cần thiết lập ngân sách. \newline
+(3) Khoảng thời gian ngân sách được xác định rõ.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng nhập thông tin ngân sách gồm danh mục, hạn mức chi tiêu, ngày bắt đầu, ngày kết thúc, loại kỳ và ngưỡng cảnh báo. \newline
+2) Hệ thống kiểm tra dữ liệu đầu vào hợp lệ. \newline
+3) Hệ thống tạo mới ngân sách theo thông tin người dùng cung cấp. \newline
+4) Hệ thống lưu ngân sách vào cơ sở dữ liệu. \newline
+5) Hệ thống trả thông tin ngân sách vừa tạo cho người dùng.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Thiếu thông tin bắt buộc $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A2: Dữ liệu hạn mức hoặc thời gian không hợp lệ $\rightarrow$ hệ thống từ chối tạo ngân sách. \newline
+A3: Không thể lưu ngân sách $\rightarrow$ hệ thống trả lỗi và không tạo mới.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Ngân sách mới được tạo thành công. \newline
+- Hệ thống lưu lại hạn mức, khoảng thời gian và ngưỡng cảnh báo để phục vụ báo cáo sau này.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất thiết lập ngân sách hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC30 -- Gợi ý ngân sách bằng AI}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC30 -- Gợi ý ngân sách bằng AI\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Hỗ trợ người dùng nhanh chóng lập kế hoạch ngân sách dựa trên phân tích lịch sử chi tiêu.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn nút ``Tạo bằng AI trong màn hình tạo ngân sách.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống phân tích lịch sử chi tiêu gần đây của người dùng theo từng danh mục, ví và chu kỳ, từ đó sinh bản nháp ngân sách gồm danh sách hạn mức, ngưỡng cảnh báo, chu kỳ và danh mục gợi ý. Bản nháp được kiểm tra hợp lệ trước khi trả về. Người dùng xem và chỉnh sửa trước khi lưu thành ngân sách chính thức.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Có đủ dữ liệu chi tiêu trong các danh mục để AI phân tích. \newline
+(3) Hệ thống có đủ dữ liệu chi tiêu lịch sử và khả năng phân tích.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng mở màn hình tạo ngân sách và chọn ``Tạo bằng AI. \newline
+2) Hệ thống phân tích lịch sử chi tiêu theo danh mục, ví và chu kỳ để sinh bản nháp. \newline
+3) Backend (AiBudgetService) phân tích chi tiêu lịch sử theo danh mục, ví và chu kỳ. \newline
+4) Hệ thống sinh bản nháp gồm danh sách ngân sách (hạn mức, ngưỡng cảnh báo, chu kỳ, danh mục gợi ý). \newline
+5) Hệ thống kiểm tra bản nháp hợp lệ về số tiền, danh mục và khoảng thời gian. \newline
+6) Hệ thống trả về bản nháp gồm tổng quan và danh sách ngân sách gợi ý cho người dùng. \newline
+7) Người dùng xem, chỉnh sửa hạn mức/ngưỡng cảnh báo rồi bấm Lưu. \newline
+8) Người dùng xác nhận và hệ thống lưu các ngân sách trong bản nháp vào cơ sở dữ liệu.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Chưa đủ dữ liệu chi tiêu $\rightarrow$ hệ thống trả danh sách rỗng kèm thông báo ``Chưa đủ dữ liệu để gợi ý. \newline
+A2: Bản nháp không hợp lệ $\rightarrow$ validator trả lỗi, hệ thống yêu cầu sinh lại. \newline
+A3: Người dùng hủy $\rightarrow$ bản nháp bị hủy, không tạo ngân sách. \newline
+A4: AI provider lỗi $\rightarrow$ hệ thống dùng fallback rule-based dựa trên trung bình chi tiêu 3 tháng gần nhất.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Ngân sách mới được tạo nếu người dùng xác nhận. \newline
+- Người dùng có thể quay lại chỉnh sửa hạn mức/ngưỡng cảnh báo sau (UC29, UC31).
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng lưu, chỉnh sửa thủ công, hoặc hủy.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC31 -- Xem danh sách và tiến độ ngân sách}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC31 -- Xem danh sách và tiến độ ngân sách\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Theo dõi tiến độ sử dụng ngân sách đã thiết lập cho từng danh mục trong chu kỳ hiện tại.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng mở màn hình danh sách ngân sách.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống truy vấn các ngân sách của người dùng, tổng hợp số tiền đã chi trong chu kỳ hiện tại, tính phần trăm sử dụng và trả về kèm trạng thái cảnh báo.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công.\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng mở màn hình ngân sách. \newline
+2) Hệ thống truy vấn ngân sách của người dùng còn hiệu lực. \newline
+3) Hệ thống tổng hợp số tiền đã chi trong kỳ hiện tại theo từng ngân sách. \newline
+4) Hệ thống tính phần trăm sử dụng, số tiền còn lại, trạng thái cảnh báo (an toàn / sắp vượt / vượt). \newline
+5) Hệ thống trả về danh sách ngân sách kèm tiến độ. \newline
+6) Giao diện hiển thị thanh tiến độ và phần trăm cho từng ngân sách.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Người dùng chưa tạo ngân sách nào $\rightarrow$ hệ thống hiển thị trạng thái rỗng kèm gợi ý tạo ngân sách mới. \newline
+A2: Dữ liệu chi tiêu trong kỳ chưa được tổng hợp kịp $\rightarrow$ hệ thống trả tiến độ tạm thời 0\% và yêu cầu làm mới.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Người dùng theo dõi được tiến độ ngân sách hiện tại. \newline
+- Người dùng có thể chọn một ngân sách để chỉnh sửa hoặc xóa.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng xem xong danh sách hoặc rời màn hình.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC32 -- Sửa và xóa ngân sách}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC32 -- Sửa và xóa ngân sách\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Điều chỉnh hạn mức, thời gian hoặc xóa bỏ các ngân sách không còn phù hợp.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn một ngân sách trong danh sách.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả hai thao tác: (a) chỉnh sửa thông tin ngân sách (hạn mức, ngưỡng cảnh báo, thời gian); (b) xóa ngân sách khi không còn phù hợp, không ảnh hưởng tới dữ liệu giao dịch lịch sử.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Ngân sách thuộc quyền sở hữu của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}\textbf{Đối với sửa ngân sách:} \newline
+1) Người dùng chọn ngân sách và thay đổi hạn mức, thời gian hoặc ngưỡng. \newline
+2) Hệ thống kiểm tra dữ liệu hợp lệ và lưu lại. \newline
+3) Hệ thống tính lại tiến độ sử dụng. \newline
+\textbf{Đối với xóa ngân sách:} \newline
+4) Người dùng chọn ngân sách, hệ thống yêu cầu xác nhận. \newline
+5) Hệ thống đánh dấu ngân sách là đã xóa, không ảnh hưởng tới dữ liệu giao dịch lịch sử.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Ngân sách không tồn tại hoặc không thuộc người dùng $\rightarrow$ hệ thống từ chối thao tác. \newline
+A2: Giá trị sửa mới không hợp lệ (hạn mức $\leq$ 0, ngày kết thúc $<$ ngày bắt đầu) $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A3: Người dùng hủy xác nhận xóa $\rightarrow$ hệ thống giữ nguyên ngân sách.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Ngân sách được cập nhật hoặc xóa nhất quán, không ảnh hưởng tới giao dịch lịch sử. \newline
+- Hệ thống cập nhật lại tiến độ và cảnh báo tương ứng.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất thao tác hoặc hủy bỏ.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+
+% ============================================================
+%  NHÓM 5: THỐNG KÊ VÀ BÁO CÁO  (UC33--UC35)
+% ============================================================
+
+\subsection{Đặc tả use case UC33 -- Xem tổng quan thu chi}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC33 -- Xem tổng quan thu chi\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Theo dõi tình hình tài chính tổng thể qua các thông tin tổng hợp như tổng thu, tổng chi và số dư hiện tại trong một khoảng thời gian.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng xem báo cáo tổng quan.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống tổng hợp các giao dịch thu và chi của người dùng trong khoảng thời gian yêu cầu, tính toán tổng thu, tổng chi, số dư và kèm biểu đồ trực quan theo thời gian.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Người dùng chọn được khoảng thời gian hợp lệ. \newline
+(3) Hệ thống có dữ liệu giao dịch trong khoảng thời gian yêu cầu.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng xem báo cáo tổng quan. \newline
+2) Người dùng chọn khoảng thời gian (mặc định là tháng hiện tại). \newline
+3) Hệ thống truy vấn giao dịch theo userId và khoảng thời gian. \newline
+4) Hệ thống tổng hợp tổng thu, tổng chi, số dư ròng. \newline
+5) Hệ thống nhóm dữ liệu theo ngày/tuần/tháng để vẽ biểu đồ xu hướng. \newline
+6) Hệ thống trả ReportSummaryResponse cho client. \newline
+7) Giao diện hiển thị số liệu tổng hợp và biểu đồ trực quan.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Không có giao dịch trong khoảng thời gian chọn $\rightarrow$ hệ thống trả về kết quả rỗng với tổng thu/chi bằng 0. \newline
+A2: Khoảng thời gian không hợp lệ (fromDate $>$ toDate) $\rightarrow$ hệ thống yêu cầu người dùng chọn lại. \newline
+A3: Người dùng không có quyền truy cập dữ liệu $\rightarrow$ hệ thống từ chối xem báo cáo.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Người dùng xem được tổng quan thu chi trong khoảng thời gian đã chọn. \newline
+- Người dùng nhận biết được giai đoạn chi tiêu cao điểm và mức biến động chi tiêu.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất xem báo cáo hoặc rời khỏi màn hình báo cáo.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC34 -- Thống kê theo danh mục}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC34 -- Thống kê theo danh mục\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Phân tích dữ liệu giao dịch theo từng danh mục chi tiêu để giúp người dùng hiểu rõ khoản chi chính.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng thống kê theo danh mục.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống nhóm các giao dịch theo danh mục trong khoảng thời gian, tính tổng số tiền và tỷ trọng phần trăm cho mỗi danh mục, kèm biểu đồ tròn hoặc cột.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Người dùng chọn khoảng thời gian thống kê. \newline
+(3) Hệ thống có dữ liệu giao dịch trong khoảng thời gian.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng thống kê theo danh mục. \newline
+2) Người dùng chọn khoảng thời gian và loại giao dịch (thu hoặc chi). \newline
+3) Hệ thống truy vấn giao dịch theo userId, khoảng thời gian và loại. \newline
+4) Hệ thống nhóm giao dịch theo categoryId và tính tổng số tiền cho mỗi danh mục. \newline
+5) Hệ thống tính tỷ trọng phần trăm cho mỗi danh mục so với tổng. \newline
+6) Hệ thống trả ReportByCategoryResponse với danh sách danh mục, tổng tiền và tỷ trọng. \newline
+7) Giao diện hiển thị biểu đồ tròn hoặc cột kèm bảng chi tiết.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Không có giao dịch trong khoảng thời gian chọn $\rightarrow$ hệ thống trả về kết quả rỗng. \newline
+A2: Khoảng thời gian không hợp lệ $\rightarrow$ hệ thống yêu cầu người dùng chọn lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Người dùng xem được tỷ trọng chi tiêu theo từng danh mục. \newline
+- Người dùng nhận diện được danh mục chiếm tỷ trọng lớn nhất để điều chỉnh.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất xem thống kê hoặc rời khỏi màn hình.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC35 -- Xuất báo cáo}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC35 -- Xuất báo cáo\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Cho phép trích xuất dữ liệu thống kê theo từng khoảng thời gian dưới dạng báo cáo, phục vụ cho việc lưu trữ, theo dõi và tổng hợp thông tin.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng xuất báo cáo và khoảng thời gian tương ứng.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống tổng hợp dữ liệu tổng quan, biểu đồ theo thời gian, theo danh mục và theo ví trong khoảng thời gian yêu cầu; đóng gói thành tệp JSON đính kèm Content-Disposition: attachment và trả về cho client.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Người dùng chọn khoảng thời gian hợp lệ cho báo cáo.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng xuất báo cáo. \newline
+2) Người dùng nhập khoảng thời gian (fromDate, toDate). \newline
+3) Hệ thống gọi ReportService.summary để tổng hợp số liệu tổng quan. \newline
+4) Hệ thống đóng gói payload gồm summary, byWallet, byTime, byCategory. \newline
+5) Hệ thống serialize payload thành chuỗi JSON. \newline
+6) Hệ thống trả response với Content-Type: application/json và Content-Disposition: attachment; filename="report.json". \newline
+7) Trình duyệt/ứng dụng tải xuống tệp báo cáo cho người dùng.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Khoảng thời gian không hợp lệ $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A2: Không có dữ liệu trong khoảng thời gian $\rightarrow$ hệ thống vẫn trả tệp JSON với các trường rỗng. \newline
+A3: Lỗi serialize $\rightarrow$ hệ thống trả lỗi và yêu cầu thử lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Người dùng tải xuống thành công tệp báo cáo. \newline
+- Tệp báo cáo chứa đầy đủ số liệu tổng hợp trong khoảng thời gian đã chọn.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng đã nhận tệp báo cáo hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+
+% ============================================================
+%  NHÓM 6: QUẢN LÝ MỤC TIÊU TÀI CHÍNH  (UC36--UC41)
+%  Bao gồm tiết kiệm có mục đích và theo dõi hoàn trả nợ.
+%  Bám sát module /saving và /debt (backend + frontend).
+%  Một số chi tiết dùng meta-token trong note để liên kết cặp
+%  transaction (Saving/Transfer và Debt/Payment) -- đây là
+%  thiết kế hiện tại của hệ thống.
+% ============================================================
+
+\subsection{Đặc tả use case UC36 -- Tạo khoản tiết kiệm}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC36 -- Tạo khoản tiết kiệm\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Thiết lập một mục tiêu tiết kiệm mới kèm ví tiết kiệm tự động để ghi nhận các khoản nạp sau này.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng tạo mục tiêu tiết kiệm trong công cụ Tiết kiệm.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng nhập tên, số tiền mục tiêu, loại tiết kiệm (một lần hoặc định kỳ theo tháng/năm), chu kỳ và đơn vị tiền tệ; hệ thống tự động tạo ví loại SAVING với số dư ban đầu bằng 0 và lưu mục tiêu tiết kiệm.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Tên mục tiêu tiết kiệm không trùng với ví đã tồn tại của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng tạo mục tiêu tiết kiệm. \newline
+2) Người dùng nhập tên mục tiêu, số tiền mục tiêu, loại (một lần/định kỳ), chu kỳ (tháng/năm) và đơn vị tiền tệ. \newline
+3) Hệ thống kiểm tra dữ liệu đầu vào hợp lệ (số tiền $>$ 0, tiền tệ khác rỗng, loại bắt buộc). \newline
+4) Hệ thống kiểm tra tên mục tiêu chưa trùng với ví hiện có. \newline
+5) Hệ thống tạo ví mới với type = SAVING, currentBalance = 0, currency theo yêu cầu. \newline
+6) Hệ thống tạo SavingGoal liên kết với walletId vừa tạo, lưu targetAmount, type, periodUnit, startPeriod (mặc định đầu tháng/năm hiện tại). \newline
+7) Hệ thống trả SavingResponse cho client.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Tên trùng với ví đã tồn tại $\rightarrow$ hệ thống từ chối và yêu cầu nhập tên khác. \newline
+A2: Số tiền mục tiêu $\leq$ 0 hoặc thiếu trường bắt buộc $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A3: Loại PERIODIC mà không chọn chu kỳ $\rightarrow$ hệ thống yêu cầu chọn chu kỳ tháng hoặc năm.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Mục tiêu tiết kiệm và ví SAVING liên kết được tạo thành công. \newline
+- Người dùng có thể thực hiện thêm bản ghi tiết kiệm (UC37) để bắt đầu tích lũy.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất tạo mục tiêu hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC37 -- Thêm tiết kiệm}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC37 -- Thêm tiết kiệm\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Ghi nhận một khoản nạp vào mục tiêu tiết kiệm, đồng thời cập nhật số dư ví tiết kiệm và tiến độ hoàn thành mục tiêu.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng thêm bản ghi tiết kiệm trong màn hình chi tiết mục tiêu.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng nhập số tiền, ghi chú, ngày; tuỳ chọn chuyển từ ví cá nhân; hệ thống tạo income transaction gắn với ví tiết kiệm, đồng thời tạo expense transaction paired từ ví nguồn nếu có, cập nhật số dư hai ví và tính lại tiến độ.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Mục tiêu tiết kiệm tồn tại và thuộc người dùng. \newline
+(3) Số dư ví nguồn đủ để chuyển (nếu chọn chuyển từ ví khác).
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng mở chi tiết mục tiêu tiết kiệm và chọn ``Thêm bản ghi. \newline
+2) Người dùng nhập số tiền, ghi chú, ngày và chọn có chuyển từ ví nguồn hay không. \newline
+3) Hệ thống kiểm tra dữ liệu hợp lệ và số dư ví nguồn (nếu có). \newline
+4) Nếu chuyển từ ví nguồn: hệ thống tạo expense transaction trên ví nguồn với category ``Tiết kiệm EXPENSE và ghi chú kèm token [saving-transfer:walletId=...;savingId=...]. \newline
+5) Hệ thống tạo income transaction trên ví SAVING với category ``Tiết kiệm INCOME. \newline
+6) Hệ thống cập nhật currentBalance của ví SAVING (cộng số tiền) và ví nguồn (trừ số tiền). \newline
+7) Hệ thống tính lại tiến độ mục tiêu (đối với tiết kiệm định kỳ: cộng dồn income -- expense trong kỳ; đối với một lần: lấy currentBalance). \newline
+8) Hệ thống trả danh sách transaction mới và chi tiết mục tiêu cập nhật.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Số tiền không hợp lệ $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A2: Ví nguồn không đủ số dư (trừ trường hợp ví nguồn là ví DEBT) $\rightarrow$ hệ thống từ chối và thông báo. \newline
+A3: Mục tiêu tiết kiệm không tồn tại hoặc đã bị xóa $\rightarrow$ hệ thống từ chối. \newline
+A4: Danh mục ``Tiết kiệm INCOME/EXPENSE chưa được seed $\rightarrow$ hệ thống thông báo lỗi yêu cầu cài đặt lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Bản ghi tiết kiệm được tạo thành công. \newline
+- Số dư ví SAVING và ví nguồn được cập nhật nhất quán. \newline
+- Tiến độ hoàn thành mục tiêu được tính lại.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất thêm bản ghi hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC38 -- Xóa tiết kiệm}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC38 -- Xóa tiết kiệm\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Xóa bỏ một mục tiêu tiết kiệm khi không còn nhu cầu sử dụng, đảm bảo dữ liệu lịch sử vẫn được bảo toàn.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn mục tiêu tiết kiệm và chọn chức năng xóa.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống thực hiện xóa mềm đối với cả mục tiêu tiết kiệm và ví SAVING liên kết; lịch sử giao dịch liên quan vẫn được giữ nguyên phục vụ thống kê.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Mục tiêu tiết kiệm thuộc quyền sở hữu của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn mục tiêu tiết kiệm và yêu cầu xóa, hệ thống yêu cầu xác nhận. \newline
+2) Người dùng xác nhận xóa. \newline
+3) Hệ thống đánh dấu deletedAt cho SavingGoal. \newline
+4) Hệ thống đánh dấu deletedAt cho ví SAVING liên kết. \newline
+5) Hệ thống thông báo xóa thành công.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Mục tiêu không tồn tại hoặc không thuộc người dùng $\rightarrow$ hệ thống từ chối. \newline
+A2: Người dùng hủy xác nhận $\rightarrow$ hệ thống giữ nguyên.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Mục tiêu tiết kiệm và ví SAVING liên kết bị đánh dấu xóa mềm. \newline
+- Lịch sử giao dịch liên quan vẫn được bảo toàn phục vụ thống kê.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng xác nhận xóa thành công hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC39 -- Tạo khoản nợ}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC39 -- Tạo khoản nợ\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Ghi nhận một khoản nợ cần thanh toán kèm ví nợ tự động để theo dõi tiến độ trả nợ.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng tạo món nợ trong công cụ Món nợ.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng nhập tên khoản nợ, tổng số tiền, ngày bắt đầu và ngày mục tiêu hoàn thành; hệ thống tự động tạo ví loại DEBT với số dư ban đầu bằng 0 và lưu DebtGoal liên kết.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Tên khoản nợ không trùng với ví đã tồn tại của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng tạo món nợ. \newline
+2) Người dùng nhập tên, tổng số tiền, ngày bắt đầu (mặc định hôm nay), ngày mục tiêu và đơn vị tiền tệ. \newline
+3) Hệ thống kiểm tra dữ liệu đầu vào hợp lệ. \newline
+4) Hệ thống kiểm tra tên khoản nợ chưa trùng với ví hiện có. \newline
+5) Hệ thống tạo ví mới với type = DEBT, currentBalance = 0, currency theo yêu cầu. \newline
+6) Hệ thống tạo DebtGoal liên kết với walletId vừa tạo, lưu targetAmount, startDate, targetDate. \newline
+7) Hệ thống trả DebtResponse cho client.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Tên trùng với ví đã tồn tại $\rightarrow$ hệ thống từ chối và yêu cầu nhập tên khác. \newline
+A2: Số tiền mục tiêu $\leq$ 0 hoặc thiếu trường bắt buộc $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A3: Ngày mục tiêu trước ngày bắt đầu $\rightarrow$ hệ thống yêu cầu nhập lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Mục tiêu nợ và ví DEBT liên kết được tạo thành công. \newline
+- Người dùng có thể thực hiện thanh toán nợ (UC40) để bắt đầu giảm số nợ.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất tạo món nợ hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC40 -- Thanh toán nợ}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC40 -- Thanh toán nợ\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Ghi nhận một khoản đã trả cho món nợ, cập nhật số dư nợ còn lại và tiến độ hoàn thành.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng thêm thanh toán nợ trong màn hình chi tiết món nợ.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng nhập số tiền, ghi chú, ngày; tuỳ chọn trừ tiền từ ví cá nhân; hệ thống tạo income transaction gắn với ví DEBT, đồng thời tạo expense transaction paired từ ví nguồn nếu có, cập nhật số dư hai ví và tính phần trăm tiến độ.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Món nợ tồn tại và thuộc người dùng. \newline
+(3) Số dư ví nguồn đủ để trừ (nếu chọn trừ từ ví khác).
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng mở chi tiết món nợ và chọn ``Thêm bản ghi. \newline
+2) Người dùng nhập số tiền, ghi chú, ngày và chọn có trừ từ ví nguồn hay không. \newline
+3) Hệ thống kiểm tra dữ liệu hợp lệ và số dư ví nguồn (nếu có). \newline
+4) Nếu trừ từ ví nguồn: hệ thống tạo expense transaction trên ví nguồn với category ``Nợ EXPENSE và ghi chú tương ứng. \newline
+5) Hệ thống tạo income transaction trên ví DEBT với category ``Nợ INCOME. \newline
+6) Hệ thống cập nhật currentBalance của ví DEBT (cộng số tiền) và ví nguồn (trừ số tiền). \newline
+7) Hệ thống tính phần trăm tiến độ (currentBalance / targetAmount) và số ngày còn lại đến targetDate. \newline
+8) Hệ thống trả danh sách transaction mới và chi tiết món nợ cập nhật.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Số tiền không hợp lệ $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A2: Ví nguồn không đủ số dư (trừ trường hợp ví nguồn là ví DEBT) $\rightarrow$ hệ thống từ chối và thông báo. \newline
+A3: Món nợ không tồn tại hoặc đã bị xóa $\rightarrow$ hệ thống từ chối. \newline
+A4: Danh mục ``Nợ INCOME/EXPENSE chưa được seed $\rightarrow$ hệ thống thông báo lỗi yêu cầu cài đặt lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Bản ghi thanh toán nợ được tạo thành công. \newline
+- Số dư ví DEBT và ví nguồn được cập nhật nhất quán. \newline
+- Tiến độ hoàn thành món nợ và số ngày còn lại được cập nhật.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất thêm thanh toán hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC41 -- Xóa khoản nợ}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC41 -- Xóa khoản nợ\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Xóa bỏ một mục tiêu nợ đã hoàn thành hoặc không còn cần theo dõi, đảm bảo dữ liệu liên quan được xử lý nhất quán.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn món nợ và chọn chức năng xóa.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống thực hiện xóa mềm đối với cả món nợ và ví DEBT liên kết; không ảnh hưởng tới các giao dịch khác của người dùng.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Món nợ thuộc quyền sở hữu của người dùng.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn món nợ và yêu cầu xóa, hệ thống yêu cầu xác nhận. \newline
+2) Người dùng xác nhận xóa. \newline
+3) Hệ thống đánh dấu deletedAt cho DebtGoal. \newline
+4) Hệ thống đánh dấu deletedAt cho ví DEBT liên kết. \newline
+5) Hệ thống thông báo xóa thành công.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Món nợ không tồn tại hoặc không thuộc người dùng $\rightarrow$ hệ thống từ chối. \newline
+A2: Người dùng hủy xác nhận $\rightarrow$ hệ thống giữ nguyên.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Món nợ và ví DEBT liên kết bị đánh dấu xóa mềm. \newline
+- Lịch sử giao dịch liên quan vẫn được bảo toàn phục vụ thống kê.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng xác nhận xóa thành công hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+
+% ============================================================
+%  NHÓM 7: QUẢN LÝ CHI TIÊU NHÓM  (UC42--UC45)
+%  Bám sát module /event (backend + frontend).
+% ============================================================
+
+\subsection{Đặc tả use case UC42 -- Tạo sự kiện nhóm}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC42 -- Tạo sự kiện nhóm\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Khởi tạo một sự kiện chi tiêu chung giữa nhiều thành viên kèm mã chia sẻ để mời người khác tham gia.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng tạo sự kiện nhóm.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc người dùng nhập tên sự kiện, mô tả, biểu tượng, ngày bắt đầu và ngày kết thúc; hệ thống tự động sinh shareCode 6 ký tự, shareLink, đặt trạng thái ACTIVE và thêm người tạo vào danh sách thành viên với vai trò OWNER.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công.\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng tạo sự kiện nhóm. \newline
+2) Người dùng nhập tên sự kiện, mô tả, biểu tượng, ngày bắt đầu, ngày kết thúc. \newline
+3) Hệ thống kiểm tra dữ liệu đầu vào hợp lệ (tên không rỗng, độ dài hợp lệ). \newline
+4) Hệ thống sinh shareCode 6 ký tự (loại bỏ ký tự dễ nhầm) và shareLink ``https://moneytracker.app/e/CODE. \newline
+5) Hệ thống tạo Event với trạng thái ACTIVE. \newline
+6) Hệ thống thêm người tạo vào EventMember với vai trò OWNER. \newline
+7) Hệ thống trả EventResponse cho client.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Tên sự kiện trống hoặc vượt quá 100 ký tự $\rightarrow$ hệ thống yêu cầu nhập lại. \newline
+A2: Sinh shareCode thất bại sau nhiều lần thử $\rightarrow$ hệ thống trả lỗi và yêu cầu thử lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Sự kiện được tạo thành công với trạng thái ACTIVE. \newline
+- Người tạo trở thành OWNER và có thể mời thành viên khác bằng shareCode.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất tạo sự kiện hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC43 -- Tham gia sự kiện nhóm}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC43 -- Tham gia sự kiện nhóm\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Cho phép người dùng khác gia nhập một sự kiện chi tiêu chung hiện có thông qua mã chia sẻ.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng tham gia sự kiện và nhập mã chia sẻ.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống tìm sự kiện theo shareCode, kiểm tra trạng thái ACTIVE, kiểm tra người dùng chưa phải thành viên, sau đó thêm vào EventMember với vai trò MEMBER.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Sự kiện tồn tại với shareCode hợp lệ. \newline
+(3) Sự kiện đang ở trạng thái ACTIVE.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng tham gia sự kiện. \newline
+2) Người dùng nhập shareCode 6 ký tự. \newline
+3) Hệ thống chuẩn hoá shareCode (uppercase, trim) và tìm sự kiện chưa xóa mềm. \newline
+4) Hệ thống kiểm tra sự kiện đang ở trạng thái ACTIVE. \newline
+5) Hệ thống kiểm tra người dùng chưa phải thành viên của sự kiện. \newline
+6) Hệ thống thêm EventMember với vai trò MEMBER và thời điểm tham gia hiện tại. \newline
+7) Hệ thống trả EventResponse cho client.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: shareCode không tồn tại $\rightarrow$ hệ thống trả lỗi không tìm thấy. \newline
+A2: Sự kiện đang SETTLED hoặc ARCHIVED $\rightarrow$ hệ thống từ chối tham gia. \newline
+A3: Người dùng đã là thành viên $\rightarrow$ hệ thống thông báo đã tham gia trước đó.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Người dùng trở thành thành viên MEMBER của sự kiện. \newline
+- Người dùng có thể thêm giao dịch cho sự kiện (UC44) và xem báo cáo (UC45).
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng tham gia thành công hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC44 -- Thêm giao dịch cho sự kiện}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC44 -- Thêm giao dịch cho sự kiện\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Thành viên của sự kiện\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Ghi nhận một khoản chi phát sinh trong sự kiện kèm người trả, danh mục, ghi chú và tuỳ chọn liên kết với ví cá nhân.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Thành viên chọn chức năng thêm giao dịch trong màn hình chi tiết sự kiện.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc thành viên nhập số tiền, danh mục, ngày, ghi chú, chọn người trả (mặc định là chính mình) và tuỳ chọn trừ tiền từ ví cá nhân; hệ thống tạo EventTransaction và -- nếu chọn chuyển từ ví cá nhân -- tạo thêm một transaction TRANSFER trên ví cá nhân đó.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Người dùng là thành viên của sự kiện. \newline
+(3) Sự kiện đang ở trạng thái ACTIVE.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Thành viên mở sự kiện và chọn ``Thêm giao dịch. \newline
+2) Thành viên nhập số tiền, danh mục, ngày, ghi chú, người trả, có/không chuyển từ ví cá nhân. \newline
+3) Hệ thống kiểm tra dữ liệu hợp lệ, danh mục tồn tại. \newline
+4) Nếu isTransferFromPersonal = true và personalWalletId khác null: hệ thống gọi TransactionService.create với type = TRANSFER để trừ tiền ví cá nhân, note = ``<note> → <eventName>. \newline
+5) Hệ thống tạo EventTransaction với creatorId, payerId, amount, category, note, date. \newline
+6) Hệ thống lưu giao dịch và trả về danh sách EventTransaction.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Người dùng không phải thành viên $\rightarrow$ hệ thống từ chối. \newline
+A2: Sự kiện không ACTIVE $\rightarrow$ hệ thống từ chối thêm giao dịch. \newline
+A3: Danh mục không tồn tại $\rightarrow$ hệ thống báo lỗi. \newline
+A4: Ví cá nhân không đủ số dư $\rightarrow$ hệ thống từ chối và thông báo.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Giao dịch sự kiện được tạo thành công và tính vào tổng chi của sự kiện. \newline
+- Nếu chuyển từ ví cá nhân, ví cá nhân được cập nhật số dư.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Thành viên hoàn tất thêm giao dịch hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC45 -- Xuất báo cáo chi tiêu nhóm}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC45 -- Xuất báo cáo chi tiêu nhóm\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Thành viên của sự kiện\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Cung cấp bảng tổng kết chi tiêu sự kiện gồm tổng chi, phần đóng góp, số dư và danh sách chuyển tiền tối ưu để cân bằng quỹ.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Thành viên mở màn hình báo cáo / quyết toán của sự kiện.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống tổng hợp toàn bộ giao dịch của sự kiện, tính tổng chi, chia đều cho từng thành viên (perPersonShare), tính contribution và balance của từng người, sau đó áp dụng thuật toán tham lam để tìm danh sách chuyển tiền tối thiểu nhằm cân bằng quỹ chung.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Người dùng là thành viên của sự kiện.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Thành viên mở màn hình báo cáo / quyết toán của sự kiện. \newline
+2) Hệ thống tổng hợp toàn bộ EventTransaction của sự kiện. \newline
+3) Hệ thống tính tổng chi totalSpent và perPersonShare = totalSpent / memberCount. \newline
+4) Hệ thống tính contribution của từng thành viên (sum amount theo payerId). \newline
+5) Hệ thống tính balance = contribution -- perPersonShare cho từng thành viên. \newline
+6) Hệ thống áp dụng thuật toán greedy: tách creditors (balance $>$ 0) và debtors (balance $<$ 0), sắp xếp giảm/tăng dần, ghép cặp để tạo danh sách SettlementItem tối thiểu. \newline
+7) Hệ thống trả SettlementResponse gồm totalSpent, memberCount, perPersonShare, memberBalances, settlements. \newline
+8) Giao diện hiển thị bảng đóng góp, số dư và danh sách chuyển tiền gợi ý.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Sự kiện chưa có giao dịch $\rightarrow$ hệ thống trả báo cáo rỗng với totalSpent = 0, perPersonShare = 0, settlements = rỗng. \newline
+A2: Người dùng không phải thành viên $\rightarrow$ hệ thống từ chối xem báo cáo. \newline
+A3: Có thành viên đã rời sự kiện $\rightarrow$ hệ thống chỉ tính trên các thành viên còn lại trong event\_members.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Thành viên xem được báo cáo chi tiêu nhóm. \newline
+- Danh sách chuyển tiền tối ưu được tạo ra làm cơ sở để các thành viên chuyển khoản cho nhau. \newline
+- Khi OWNER chốt sự kiện (settle), sự kiện chuyển sang SETTLED và không thể thêm giao dịch.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Thành viên xem xong báo cáo hoặc OWNER đã chốt sự kiện.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+
+% ============================================================
+%  NHÓM 8: QUẢN LÝ DỮ LIỆU CÁ NHÂN  (UC46--UC48)
+%  Bám sát module /sync (push/pull + outbox + changelog).
+% ============================================================
+
+\subsection{Đặc tả use case UC46 -- Đồng bộ dữ liệu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC46 -- Đồng bộ dữ liệu\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Đảm bảo dữ liệu trên thiết bị và trên hệ thống được cập nhật đồng nhất.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng mở chức năng đồng bộ hoặc ứng dụng tự đồng bộ khi có thay đổi dữ liệu.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả quy trình đồng bộ hai chiều giữa thiết bị và máy chủ: (a) đẩy các thay đổi cục bộ (được lưu trong bộ đệm outbox) lên máy chủ kèm mã định danh clientId để chống trùng lặp; máy chủ kiểm tra trùng lặp qua bảng idempotency, áp dụng thay đổi và ghi nhận lịch sử thay đổi; (b) kéo các bản ghi mới hoặc thay đổi kể từ lần đồng bộ gần nhất về thiết bị. Hệ thống đảm bảo khi có xung đột thì bản ghi mới nhất được ưu tiên.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Thiết bị có kết nối mạng. \newline
+(3) Dữ liệu cần đồng bộ thuộc tài khoản hiện tại.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng hoặc hệ thống kích hoạt đồng bộ dữ liệu. \newline
+2) Hệ thống kiểm tra trạng thái đăng nhập và quyền truy cập dữ liệu. \newline
+3) Thiết bị gửi các thay đổi cục bộ (operation, entity, payload, clientId) từ bộ đệm outbox lên máy chủ. \newline
+4) Backend kiểm tra trùng lặp qua SyncPushDedup theo clientId; nếu đã xử lý, trả về kết quả cũ. \newline
+5) Backend áp dụng từng thao tác lên cơ sở dữ liệu và ghi SyncChangeLog. \newline
+6) Thiết bị yêu cầu máy chủ trả về các bản ghi mới hoặc thay đổi kể từ mốc lastSyncAt gần nhất. \newline
+7) Backend trả về SyncPullResponse gồm wallets, categories, transactions, savings, debts, events thay đổi sau lastSyncAt. \newline
+8) Thiết bị cập nhật SQLite cục bộ và xác nhận đồng bộ thành công.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Người dùng chưa đăng nhập hoặc phiên đăng nhập hết hạn $\rightarrow$ không cho đồng bộ. \newline
+A2: Không có kết nối mạng $\rightarrow$ hoãn đồng bộ và cho thử lại sau. \newline
+A3: Dữ liệu hai phía bị xung đột (cùng record, khác nội dung) $\rightarrow$ hệ thống thông báo để thiết bị xử lý theo dữ liệu mới nhất (last-writer-wins). \newline
+A4: Dữ liệu gửi lên không hợp lệ $\rightarrow$ hệ thống từ chối cập nhật và trả lỗi phù hợp.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Dữ liệu trên thiết bị được cập nhật theo dữ liệu mới nhất từ hệ thống. \newline
+- Các thay đổi hợp lệ từ thiết bị được ghi nhận lên máy chủ. \newline
+- Nếu có lỗi, hệ thống trả thông báo để người dùng hoặc ứng dụng xử lý tiếp.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất đồng bộ hoặc dừng thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC47 -- Sao lưu dữ liệu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC47 -- Sao lưu dữ liệu\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Tạo một bản sao lưu dữ liệu cá nhân để phục vụ khôi phục khi cần.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn chức năng sao lưu dữ liệu.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống tạo một bản sao lưu của dữ liệu người dùng (wallet, category, transaction, saving, debt, event, budget, streak, insights) và lưu trữ để sử dụng về sau.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Người dùng có quyền sao lưu dữ liệu của chính mình.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn chức năng sao lưu dữ liệu. \newline
+2) Hệ thống kiểm tra người dùng có hợp lệ và có quyền thao tác hay không. \newline
+3) Hệ thống tổng hợp toàn bộ dữ liệu của người dùng từ các bảng liên quan. \newline
+4) Hệ thống nén và lưu bản sao lưu vào nơi lưu trữ đã cấu hình. \newline
+5) Hệ thống ghi nhận mã sao lưu, thời điểm tạo, kích thước và trạng thái sao lưu. \newline
+6) Hệ thống thông báo sao lưu thành công cho người dùng.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Người dùng chưa đăng nhập $\rightarrow$ không cho sao lưu. \newline
+A2: Không lưu được bản sao lưu $\rightarrow$ hệ thống trả lỗi và thông báo sao lưu thất bại. \newline
+A3: Dung lượng lưu trữ không đủ $\rightarrow$ hệ thống từ chối và đề xuất dọn dẹp.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Hệ thống tạo được bản sao lưu hợp lệ cho người dùng. \newline
+- Người dùng có thể dùng bản sao lưu này để khôi phục dữ liệu về sau.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất sao lưu hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC48 -- Khôi phục dữ liệu}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC48 -- Khôi phục dữ liệu\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Khôi phục dữ liệu cá nhân từ một bản sao lưu đã có.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng chọn một bản sao lưu và yêu cầu khôi phục.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống lấy dữ liệu từ bản sao lưu và phục hồi lại dữ liệu cho người dùng.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công. \newline
+(2) Bản sao lưu tồn tại và thuộc về người dùng hiện tại.
+\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng chọn bản sao lưu cần khôi phục. \newline
+2) Hệ thống kiểm tra bản sao lưu có hợp lệ và đúng chủ sở hữu hay không. \newline
+3) Hệ thống tải dữ liệu từ bản sao lưu. \newline
+4) Hệ thống phục hồi dữ liệu vào hệ thống (wallet, category, transaction, saving, debt, event, budget, streak, insights). \newline
+5) Hệ thống ghi nhận trạng thái khôi phục thành công. \newline
+6) Hệ thống thông báo kết quả khôi phục cho người dùng.
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Bản sao lưu không tồn tại $\rightarrow$ hệ thống trả lỗi không tìm thấy. \newline
+A2: Bản sao lưu không thuộc người dùng hiện tại $\rightarrow$ hệ thống từ chối khôi phục. \newline
+A3: Không đọc được dữ liệu sao lưu $\rightarrow$ hệ thống trả lỗi khôi phục thất bại. \newline
+A4: Khôi phục dữ liệu không thành công $\rightarrow$ hệ thống hoàn tác và trả lỗi phù hợp.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Dữ liệu người dùng được phục hồi theo bản sao lưu hợp lệ. \newline
+- Hệ thống ghi nhận kết quả khôi phục để theo dõi.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng hoàn tất khôi phục hoặc hủy thao tác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+
+% ============================================================
+%  NHÓM 9: CHUỖI NGÀY GHI CHÉP VÀ THÀNH TÍCH  (UC49--UC50)
+%  Bám sát module /streak (backend + frontend).
+% ============================================================
+
+\subsection{Đặc tả use case UC49 -- Đếm chuỗi ngày ghi chép (Streak)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC49 -- Đếm chuỗi ngày ghi chép (Streak)\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Khuyến khích người dùng ghi nhận giao dịch đều đặn mỗi ngày và hiển thị trạng thái chuỗi hiện tại.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng mở màn hình Streak hoặc sau khi tạo giao dịch đầu tiên trong ngày.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống theo dõi và lưu giữ chuỗi ngày mà người dùng ghi nhận giao dịch liên tiếp. Hệ thống tự động phát hiện ngày mới, tăng chuỗi hiện tại thêm một nếu ngày hôm qua đã có hoạt động, hoặc đặt lại về một nếu bị gián đoạn; đồng thời cập nhật chuỗi dài nhất, tổng số ngày hoạt động và cấp huy hiệu thành tích khi đạt mốc.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công.\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng mở màn hình Streak. \newline
+2) Hệ thống truy vấn trạng thái chuỗi hiện tại; nếu người dùng chưa có bản ghi, hệ thống tự khởi tạo bản ghi chuỗi mới. \newline
+3) Hệ thống kiểm tra nếu lastActiveDate $<$ hôm nay $-$ 1 $\rightarrow$ reset currentStreak = 0 (streak bị đứt). \newline
+4) Hệ thống tính remainingHours tới lần reset của ngày hôm sau. \newline
+5) Hệ thống trả StreakResponse: currentStreak, longestStreak, lastActiveDate, streakStartDate, remainingHours, totalActiveDays, activeDates, achievements. \newline
+6) Khi người dùng tạo giao dịch đầu tiên trong ngày, hệ thống ghi nhận đây là ngày hoạt động. \newline
+7) Hệ thống cập nhật currentStreak (tăng 1 nếu hôm qua đã active, reset = 1 nếu bị gián đoạn), cập nhật longestStreak và totalActiveDays nếu là ngày mới. \newline
+8) Hệ thống gọi checkAndGrantAchievements; trả về danh sách achievement mới (nếu có).
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Đã ghi nhận activity trong ngày $\rightarrow$ isNewDay = false, không cập nhật streak, không cấp achievement mới. \newline
+A2: Streak bị đứt (bỏ $\geq$ 1 ngày) $\rightarrow$ currentStreak reset về 0; lần ghi nhận tiếp theo sẽ bắt đầu chuỗi mới (currentStreak = 1). \newline
+A3: Lỗi mạng $\rightarrow$ frontend hiển thị giá trị cache và thử lại.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- UserStreak được cập nhật với currentStreak, longestStreak, totalActiveDays, lastActiveDate. \newline
+- Người dùng có động lực duy trì thói quen ghi giao dịch mỗi ngày.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng đóng màn hình Streak hoặc tạo giao dịch thành công.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\subsection{Đặc tả use case UC50 -- Xem thành tích (Achievements)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{11cm}|}
+\hline
+Tên Use case & \begin{tabular}[t]{p{9.5cm}}UC50 -- Xem thành tích (Achievements)\end{tabular} \hline
+
+Tác nhân & \begin{tabular}[t]{p{9.5cm}}Người dùng đã đăng nhập\end{tabular} \hline
+
+Mục tiêu & \begin{tabular}[t]{p{9.5cm}}Hiển thị các huy hiệu thành tích mà người dùng đã đạt được dựa trên chuỗi hoạt động và mốc chi tiêu.\end{tabular} \hline
+
+Kích hoạt & \begin{tabular}[t]{p{9.5cm}}Người dùng mở màn hình thành tích hoặc sau khi đạt mốc mới.\end{tabular} \hline
+
+Mô tả & \begin{tabular}[t]{p{9.5cm}}Use case mô tả việc hệ thống truy vấn danh sách achievement của người dùng, gồm loại (LONGEST\_STREAK, PERFECT\_WEEK, PERFECT\_MONTH), mốc (level), ngày đạt và hiển thị kèm trạng thái khoá/mở khoá cho từng huy hiệu.\end{tabular} \hline
+
+Điều kiện tiên quyết & \begin{tabular}[t]{p{9.5cm}}(1) Người dùng đã đăng nhập thành công.\end{tabular} \hline
+
+Luồng sự kiện chính & \begin{tabular}[t]{p{9.5cm}}1) Người dùng mở màn hình thành tích. \newline
+2) Hệ thống truy vấn danh sách achievement của người dùng kèm thông tin user. \newline
+3) Hệ thống tính toán tiến độ đạt các mốc tiếp theo (ví dụ: đã 5 ngày, còn 2 ngày nữa để đạt mốc 7). \newline
+4) Hệ thống trả về danh sách achievement kèm trạng thái và ngày đạt. \newline
+5) Giao diện hiển thị huy hiệu đã đạt (khoá) và các huy hiệu chưa đạt (mờ, kèm tiến độ).
+\end{tabular} \hline
+
+Luồng thay thế & \begin{tabular}[t]{p{9.5cm}}A1: Người dùng chưa có thành tích nào $\rightarrow$ hệ thống hiển thị danh sách rỗng kèm gợi ý ghi nhận giao dịch mỗi ngày để đạt huy hiệu. \newline
+A2: Đạt mốc achievement đã có $\rightarrow$ không cấp trùng (kiểm tra existsByUserIdAndTypeAndLevel). \newline
+A3: Hệ thống chưa seed danh sách huy hiệu $\rightarrow$ trả danh sách rỗng.
+\end{tabular} \hline
+
+Điều kiện sau & \begin{tabular}[t]{p{9.5cm}}- Người dùng xem được danh sách huy hiệu thành tích của mình. \newline
+- Huy hiệu mới (nếu đạt mốc) được lưu và trả về để hiển thị.
+\end{tabular} \hline
+
+Điều kiện thoát & \begin{tabular}[t]{p{9.5cm}}Người dùng đóng màn hình thành tích hoặc chuyển sang chức năng khác.\end{tabular}
+
+\end{tabular}
+\end{table}
+
+\section{Yêu cầu phi chức năng}
+\label{section:2.4}
+
+Ngoài các yêu cầu chức năng đã được trình bày ở các phần trước, hệ thống \textbf{Ứng dụng quản lý chi tiêu cá nhân} cần đáp ứng một số yêu cầu phi chức năng quan trọng để đảm bảo hoạt động ổn định, an toàn và mang lại trải nghiệm tốt nhất cho người dùng. Các yêu cầu này bao gồm độ tin cậy, tính bảo mật, tính sử dụng và khả năng bảo trì, mở rộng trong quá trình phát triển lâu dài của hệ thống.
+
+\subsection{Độ tin cậy}
+Hệ thống phải đảm bảo khả năng hoạt động liên tục, ổn định và hạn chế tối đa các sự cố ảnh hưởng đến quá trình sử dụng của người dùng. Dữ liệu cần được lưu trữ một cách an toàn, có cơ chế sao lưu định kỳ để tránh mất mát thông tin khi xảy ra lỗi hệ thống hoặc mất kết nối. Mọi giao dịch và thao tác của người dùng phải được ghi nhận chính xác, đồng bộ trên toàn bộ nền tảng, giúp đảm bảo tính toàn vẹn và nhất quán dữ liệu. Ngoài ra, hệ thống cần có khả năng tự động phục hồi sau các sự cố nhỏ nhằm duy trì hoạt động ổn định và tin cậy trong quá trình vận hành.
+
+\subsection{Tính bảo mật}
+Hệ thống phải bảo vệ tuyệt đối thông tin cá nhân và dữ liệu tài chính của người dùng. Toàn bộ quá trình truyền và lưu trữ dữ liệu đều phải được mã hóa, đặc biệt là các thông tin nhạy cảm như mật khẩu, email và lịch sử giao dịch. Ngoài ra, hệ thống cần có chính sách phân quyền rõ ràng giữa các loại tài khoản (người dùng, quản trị viên), nhằm ngăn chặn hành vi truy cập trái phép hoặc chỉnh sửa dữ liệu ngoài phạm vi cho phép.
+
+\subsection{Tính sử dụng}
+Giao diện người dùng được thiết kế thân thiện, trực quan và dễ thao tác, giúp người dùng nhanh chóng làm quen với hệ thống. Các chức năng chính như thêm giao dịch, xem thống kê hay quản lý ví và danh mục được bố trí hợp lý, đảm bảo thực hiện nhanh chỉ với vài bước đơn giản. Màu sắc và biểu tượng được lựa chọn phù hợp để dễ nhận biết danh mục, trạng thái và loại giao dịch. Ứng dụng duy trì trải nghiệm nhất quán giữa các nền tảng và phản hồi nhanh, giúp người dùng theo dõi và kiểm soát chi tiêu một cách thuận tiện và hiệu quả.
+
+
+\subsection{Tính dễ bảo trì và mở rộng}
+Hệ thống được phát triển dựa trên kiến trúc module hóa, trong đó các thành phần được tách biệt rõ ràng theo từng chức năng như giao diện người dùng, xử lý nghiệp vụ và quản lý dữ liệu. Cách tiếp cận này giúp việc bảo trì trở nên thuận lợi hơn, cho phép phát hiện và khắc phục lỗi nhanh chóng mà không ảnh hưởng đến toàn bộ hệ thống. Ngoài ra, cấu trúc module còn tạo điều kiện thuận lợi cho việc mở rộng và nâng cấp, cho phép bổ sung các tính năng mới hoặc điều chỉnh quy trình hoạt động khi có thay đổi về yêu cầu mà không làm gián đoạn các phần đang vận hành ổn định. Nhờ vậy, hệ thống có khả năng thích ứng linh hoạt với nhu cầu phát triển trong tương lai, đảm bảo duy trì hiệu quả và tính ổn định lâu dài trong quá trình sử dụng.
+
+\end{document}

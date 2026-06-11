@@ -1,7 +1,5 @@
 package com.examples.moneytracker.transaction.service;
 
-import com.examples.moneytracker.accounts.model.Account;
-import com.examples.moneytracker.accounts.repository.AccountRepository;
 import com.examples.moneytracker.category.model.Category;
 import com.examples.moneytracker.category.repository.CategoryRepository;
 import com.examples.moneytracker.transaction.dto.CreateTransactionRequest;
@@ -9,8 +7,12 @@ import com.examples.moneytracker.transaction.dto.TransactionFilterRequest;
 import com.examples.moneytracker.transaction.dto.TransactionResponse;
 import com.examples.moneytracker.transaction.dto.UpdateTransactionRequest;
 import com.examples.moneytracker.transaction.model.Transaction;
+import com.examples.moneytracker.transaction.model.TransactionType;
 import com.examples.moneytracker.transaction.repository.TransactionRepository;
 import com.examples.moneytracker.transaction.spec.TransactionSpecification;
+import com.examples.moneytracker.wallet.model.Wallet;
+import com.examples.moneytracker.wallet.repository.WalletRepository;
+import com.examples.moneytracker.wallet.service.WalletBalanceService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,24 +30,21 @@ public class TransactionService {
 
     private final TransactionRepository txRepo;
     private final CategoryRepository categoryRepo;
-    private final AccountRepository accountRepo;
+        private final WalletRepository walletRepo;
+        private final WalletBalanceService walletBalanceService;
+        private final com.examples.moneytracker.sync.service.SyncChangeLogService syncChangeLogService;
 
     public Page<TransactionResponse> getTransactions(
             TransactionFilterRequest filter,
             Pageable pageable,
             UUID userId
     ) {
-        //check owner account
-        Account acc = accountRepo.findById(filter.getAccountId())
-                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
-
-        if (!userId.equals(acc.getUserId())) {
-            throw new AccessDeniedException("Not your account");
-        }
+        walletRepo.findByWalletIdAndUserIdAndDeletedAtIsNull(filter.getWalletId(), userId)
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
 
         var spec = TransactionSpecification.filter(
                 userId,
-                filter.getAccountId(),
+                filter.getWalletId(),
                 filter.getCategoryId(),
                 filter.getType(),
                 filter.getFromDate(),
@@ -62,13 +61,8 @@ public class TransactionService {
     @Transactional
     public TransactionResponse create(CreateTransactionRequest req, UUID userId) {
 
-        // ===== CHECK ACCOUNT =====
-        Account acc = accountRepo.findById(req.getAccountId())
-                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
-
-        if (!userId.equals(acc.getUserId())) {
-            throw new AccessDeniedException("Not your account");
-        }
+        Wallet wallet = walletRepo.findByWalletIdAndUserIdAndDeletedAtIsNull(req.getWalletId(), userId)
+                .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
 
         // ===== CHECK CATEGORY (DEFAULT OR USER) =====
         Category cat = categoryRepo
@@ -78,28 +72,21 @@ public class TransactionService {
                 )
                 .orElseThrow(() -> new AccessDeniedException("Not your category"));
 
-        // ===== DETERMINE SIGN =====
-        BigDecimal signed;
-        switch (cat.getType()) {
-            case "INCOME" -> signed = req.getAmount();
-            case "EXPENSE" -> signed = req.getAmount().negate();
-            default -> throw new IllegalStateException("Invalid category type");
-        }
-
-        // ===== UPDATE ACCOUNT BALANCE =====
-        acc.setCurrentValue(acc.getCurrentValue().add(signed));
-        accountRepo.save(acc);
+        TransactionType type = resolveType(req.getType(), cat.getType(), null);
 
         // ===== SAVE TRANSACTION =====
         Transaction tx = new Transaction();
-        tx.setAccountId(acc.getAccountId());
+        tx.setWalletId(wallet.getWalletId());
         tx.setCreatedBy(userId);
-        tx.setCategory(cat);
+        tx.setCategoryId(req.getCategoryId());
         tx.setAmount(req.getAmount());
+        tx.setType(type);
         tx.setNote(req.getNote());
         tx.setDate(req.getDate() != null ? req.getDate() : LocalDate.now());
 
         txRepo.save(tx);
+        walletBalanceService.applyTransactionCreate(wallet, tx);
+        syncChangeLogService.recordChange(userId, "transactions", tx.getTransactionId(), "UPSERT");
         return map(tx);
     }
 
@@ -108,42 +95,32 @@ public class TransactionService {
     public TransactionResponse update(UUID transactionId, UpdateTransactionRequest req, UUID userId) {
 
         Transaction tx = txRepo
-                .findByTransactionIdAndCreatedBy(transactionId, userId)
+                .findByTransactionIdAndCreatedByAndDeletedAtIsNull(transactionId, userId)
                 .orElseThrow(() -> new AccessDeniedException("Transaction not found"));
 
-        Account acc = accountRepo.findById(tx.getAccountId())
-                .orElseThrow(() -> new IllegalStateException("Account not found"));
-
-        if (!userId.equals(acc.getUserId())) {
-            throw new AccessDeniedException("Not your account");
-        }
+        Wallet wallet = walletRepo.findByWalletIdAndUserIdAndDeletedAtIsNull(tx.getWalletId(), userId)
+                .orElseThrow(() -> new AccessDeniedException("Not your wallet"));
 
         Category newCat = categoryRepo
                 .findAccessibleCategory(req.getCategoryId(), userId)
                 .orElseThrow(() -> new AccessDeniedException("Not your category"));
 
-        // rollback old
-        BigDecimal oldSigned =
-                "EXPENSE".equals(tx.getCategory().getType())
-                        ? tx.getAmount().negate()
-                        : tx.getAmount();
-        acc.setCurrentValue(acc.getCurrentValue().subtract(oldSigned));
+        BigDecimal oldAmount = tx.getAmount();
+        TransactionType oldType = tx.getType() != null
+                ? tx.getType()
+                : resolveType(null, newCat.getType(), TransactionType.EXPENSE);
 
-        // apply new
-        BigDecimal newSigned =
-                "EXPENSE".equals(newCat.getType())
-                        ? req.getAmount().negate()
-                        : req.getAmount();
-        acc.setCurrentValue(acc.getCurrentValue().add(newSigned));
+        TransactionType newType = resolveType(req.getType(), newCat.getType(), oldType);
 
-        accountRepo.save(acc);
-
-        tx.setCategory(newCat);
+        tx.setCategoryId(req.getCategoryId());
         tx.setAmount(req.getAmount());
+        tx.setType(newType);
         tx.setNote(req.getNote());
         tx.setDate(req.getDate() != null ? req.getDate() : tx.getDate());
 
         txRepo.save(tx);
+        walletBalanceService.applyTransactionUpdate(wallet, oldAmount, oldType, tx.getAmount(), tx.getType());
+        syncChangeLogService.recordChange(userId, "transactions", tx.getTransactionId(), "UPSERT");
 
         return map(tx);
     }
@@ -155,35 +132,17 @@ public class TransactionService {
     public void delete(UUID transactionId, UUID userId) {
 
         // 1) Lấy transaction của chính user
-        Transaction tx = txRepo.findByTransactionIdAndCreatedBy(transactionId, userId)
+        Transaction tx = txRepo.findByTransactionIdAndCreatedByAndDeletedAtIsNull(transactionId, userId)
                 .orElseThrow(() -> new AccessDeniedException("Transaction not found"));
 
-        // 2) Lấy account và check owner (an toàn thêm)
-        Account acc = accountRepo.findById(tx.getAccountId())
-                .orElseThrow(() -> new IllegalStateException("Account not found"));
+        // 2) Lấy wallet và check owner (an toàn thêm)
+        Wallet wallet = walletRepo.findByWalletIdAndUserIdAndDeletedAtIsNull(tx.getWalletId(), userId)
+                .orElseThrow(() -> new AccessDeniedException("Not your wallet"));
 
-        if (!userId.equals(acc.getUserId())) { // Kiểm tra account này có phải của user này hay ko
-            throw new AccessDeniedException("Not your account");
-        }
-
-        // 3) Lấy category để biết INCOME/EXPENSE
-        Category cat = tx.getCategory();
-
-        // ROLL BACK
-        // 4) Tính signed của transaction cũ
-        BigDecimal signed;
-        switch (cat.getType()) {
-            case "INCOME" -> signed = tx.getAmount();
-            case "EXPENSE" -> signed = tx.getAmount().negate();
-            default -> throw new IllegalStateException("Invalid category type");
-        }
-
-        // 5) Rollback số dư: balance = balance - signed
-        acc.setCurrentValue(acc.getCurrentValue().subtract(signed));
-        accountRepo.save(acc);
-
-        // 6) Xóa transaction
-        txRepo.delete(tx);
+                walletBalanceService.applyTransactionDelete(wallet, tx);
+                tx.setDeletedAt(java.time.Instant.now());
+                txRepo.save(tx);
+                syncChangeLogService.recordChange(userId, "transactions", tx.getTransactionId(), "DELETE");
     }
 
 
@@ -191,14 +150,52 @@ public class TransactionService {
     private TransactionResponse map(Transaction tx) {
         return new TransactionResponse(
                 tx.getTransactionId(),
-                tx.getAccountId(),
-                tx.getCategory().getCategoryId(),
+                tx.getWalletId(),
+                tx.getCategoryId(),
                 tx.getAmount(),
+                tx.getType() != null ? tx.getType().name() : null,
                 tx.getNote(),
                 tx.getDate(),
                 tx.getCreatedAt(),
-                tx.getUpdatedAt()
+                tx.getUpdatedAt(),
+                tx.getDeletedAt(),
+                tx.getVersion()
         );
     }
+
+        public TransactionResponse getTransactionById(UUID transactionId, UUID userId) {
+                Transaction tx = txRepo.findByTransactionIdAndCreatedByAndDeletedAtIsNull(transactionId, userId)
+                                .orElseThrow(() -> new AccessDeniedException("Transaction not found"));
+
+                Wallet wallet = walletRepo.findByWalletIdAndUserIdAndDeletedAtIsNull(tx.getWalletId(), userId)
+                        .orElseThrow(() -> new AccessDeniedException("Not your wallet"));
+
+                return map(tx);
+        }
+
+        private TransactionType resolveType(String requestedType, String categoryType, TransactionType fallback) {
+                TransactionType requested = parseType(requestedType);
+                if (requested != null) {
+                        return requested;
+                }
+
+                TransactionType fromCategory = parseType(categoryType);
+                if (fromCategory != null) {
+                        return fromCategory;
+                }
+
+                return fallback != null ? fallback : TransactionType.EXPENSE;
+        }
+
+        private TransactionType parseType(String type) {
+                if (type == null || type.isBlank()) {
+                        return null;
+                }
+                try {
+                        return TransactionType.valueOf(type.trim().toUpperCase());
+                } catch (IllegalArgumentException ex) {
+                        return null;
+                }
+        }
 }
 

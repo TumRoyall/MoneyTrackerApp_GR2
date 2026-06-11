@@ -1,0 +1,73 @@
+package com.examples.moneytracker.wallet.model;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(name = "wallets")
+@Data
+public class Wallet {
+
+    @Id
+    @Column(nullable = false, updatable = false)
+    private UUID walletId;
+
+    @Column(nullable = false)
+    private UUID userId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private WalletType type;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(name = "current_balance", precision = 18, scale = 2, nullable = false)
+    private BigDecimal currentBalance;
+
+    @Column(name = "opening_balance", precision = 18, scale = 2, nullable = false)
+    private BigDecimal openingBalance;
+
+    @Column(nullable = false)
+    private String currency;
+
+    private String description;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Version
+    @Column(nullable = false)
+    private Long version = null;
+
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(nullable = false)
+    private Instant updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.walletId == null) {
+            this.walletId = UUID.randomUUID();
+        }
+        Instant now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+        if (this.openingBalance == null) {
+            this.openingBalance = BigDecimal.ZERO;
+        }
+        if (this.currentBalance == null) {
+            this.currentBalance = this.openingBalance;
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = Instant.now();
+    }
+}

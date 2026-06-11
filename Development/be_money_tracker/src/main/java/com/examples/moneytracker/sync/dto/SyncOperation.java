@@ -18,8 +18,8 @@ public class SyncOperation {
     private String requestId;
     
     @NotBlank(message = "Entity is required")
-    @Pattern(regexp = "accounts|categories|transactions|budgets|user_profiles", 
-             message = "Entity must be one of: accounts, categories, transactions, budgets, user_profiles")
+    @Pattern(regexp = "wallets|categories|transactions|budgets|user_profiles", 
+             message = "Entity must be one of: wallets, categories, transactions, budgets, user_profiles")
     private String entity;
     
     @NotBlank(message = "Entity ID is required")

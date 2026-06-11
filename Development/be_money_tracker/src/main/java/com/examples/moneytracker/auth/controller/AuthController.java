@@ -2,10 +2,13 @@ package com.examples.moneytracker.auth.controller;
 
 import com.examples.moneytracker.auth.dto.*;
 import com.examples.moneytracker.auth.service.AuthService;
+import com.examples.moneytracker.common.dto.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.examples.moneytracker.auth.security.CustomUserDetails;
 
 import java.util.Map;
 
@@ -17,43 +20,63 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public String register(@RequestBody RegisterRequest req) {
+    public ResponseEntity<ApiResponse<MessageResponse>> register(@RequestBody @Valid RegisterRequest req) {
         authService.register(req);
-        return "Đã gửi yêu cầu xác thực đến Email: "+ req.getEmail();
+        return ResponseEntity.ok(ApiResponse.of(new MessageResponse("Da gui yeu cau xac thuc den email")));
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody LoginRequest req) {
-        System.out.println("Đăng nhập thành công!");
-        return authService.login(req);
+    public ResponseEntity<ApiResponse<AuthLoginResponse>> login(@RequestBody @Valid LoginRequest req) {
+        return ResponseEntity.ok(ApiResponse.of(authService.login(req)));
     }
 
-    @GetMapping("/verify")
-    public String verify(@RequestParam String token) {
-        return authService.verifyEmail(token);
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<MessageResponse>> logout() {
+        return ResponseEntity.ok(ApiResponse.of(new MessageResponse(authService.logout())));
     }
 
-    @PostMapping("/resend")
-    public String resend(@RequestParam String email) {
-        return authService.resendVerification(email);
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<MessageResponse>> changePassword(
+            @RequestBody @Valid ChangePasswordRequest request,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        String message = authService.changePassword(user.getId(), request);
+        return ResponseEntity.ok(ApiResponse.of(new MessageResponse(message)));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<MessageResponse>> forgotPassword(
+            @RequestBody @Valid ForgotPasswordRequest request
+    ) {
+        String message = authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.of(new MessageResponse(message)));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<MessageResponse>> resetPassword(
+            @RequestBody @Valid ResetPasswordRequest request
+    ) {
+        String message = authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.of(new MessageResponse(message)));
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<ApiResponse<MessageResponse>> verifyEmail(@RequestParam String token) {
+        String message = authService.verifyEmail(token);
+        return ResponseEntity.ok(ApiResponse.of(new MessageResponse(message)));
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<ApiResponse<MessageResponse>> resendVerification(
+            @RequestBody @Valid ResendVerificationRequest request
+    ) {
+        String message = authService.resendVerification(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.of(new MessageResponse(message)));
     }
 
     @GetMapping("/check-email")
-    public ResponseEntity<?> checkEmail(@RequestParam String email) {
-
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> checkEmail(@RequestParam String email) {
         boolean exists = authService.emailExists(email);
-
-        if (exists) {
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body(Map.of(
-                            "exists", true,
-                            "message", "Email đã tồn tại"
-                    ));
-        }
-
-        return ResponseEntity.ok(
-                Map.of("exists", false)
-        );
+        return ResponseEntity.ok(ApiResponse.of(Map.of("exists", exists)));
     }
 }

@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -17,4 +18,10 @@ public class CategoryResponse {
     private String icon;
     private String color;
     private String type; // EXPENSE / INCOME
+    private Boolean isDefault;
+    private Boolean isHidden;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private Instant deletedAt;
+    private Long version;
 }

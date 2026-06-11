@@ -15,21 +15,29 @@ import java.util.UUID;
 public class Transaction {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(nullable = false, updatable = false)
     private UUID transactionId;
 
-    @Column(nullable = false)
-    private UUID accountId;
+    @Column(name = "wallet_id", nullable = false)
+    private UUID walletId;
 
     @Column(nullable = false)
     private UUID createdBy;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "category_id", nullable = false)
+    // Support both UUID (user categories) and String (default categories)
+    @Column(name = "category_id", nullable = false)
+    private UUID categoryId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", insertable = false, updatable = false)
     private Category category;
 
     @Column(precision = 18, scale = 2, nullable = false)
     private BigDecimal amount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private TransactionType type;
 
     @Column(columnDefinition = "TEXT")
     private String note;
@@ -46,12 +54,16 @@ public class Transaction {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    @Version
     @Column(nullable = false)
-    private Long version = 1L;
+    private Long version = null;
 
     // ===== AUDIT =====
     @PrePersist
     public void prePersist() {
+        if (this.transactionId == null) {
+            this.transactionId = UUID.randomUUID();
+        }
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;

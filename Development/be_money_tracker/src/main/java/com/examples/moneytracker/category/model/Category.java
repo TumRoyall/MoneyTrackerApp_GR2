@@ -12,7 +12,7 @@ import java.util.UUID;
 public class Category {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(nullable = false, updatable = false)
     private UUID categoryId;
 
     /**
@@ -42,6 +42,9 @@ public class Category {
     @Column(nullable = false)
     private Boolean isDefault = false;
 
+    @Column(name = "is_hidden", nullable = false)
+    private Boolean isHidden = false;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -51,11 +54,15 @@ public class Category {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    @Version
     @Column(nullable = false)
-    private Long version = 1L;
+    private Long version = null;
 
     @PrePersist
     public void prePersist() {
+        if (this.categoryId == null) {
+            this.categoryId = UUID.randomUUID();
+        }
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;

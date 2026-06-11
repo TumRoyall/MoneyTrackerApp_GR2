@@ -27,13 +27,42 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
             c.isDefault = true
             OR c.userId = :userId
           )
+      AND c.isHidden = false
+      AND c.deletedAt IS NULL
     """)
-        Optional<Category> findAccessibleCategory(
-                @Param("categoryId") UUID categoryId,
-                @Param("userId") UUID userId
-        );
+    Optional<Category> findAccessibleCategory(
+            @Param("categoryId") UUID categoryId,
+            @Param("userId") UUID userId
+    );
+
+    @Query("""
+    SELECT c
+    FROM Category c
+    WHERE (c.isDefault = true OR c.userId = :userId)
+      AND c.isHidden = false
+      AND c.deletedAt IS NULL
+    """)
+    List<Category> findAccessibleCategories(@Param("userId") UUID userId);
+
+    Optional<Category> findByCategoryIdAndUserIdAndDeletedAtIsNull(UUID categoryId, UUID userId);
 
     List<Category> findByUserIdAndCategoryIdInAndDeletedAtIsNull(UUID userId, Collection<UUID> categoryIds);
 
+    List<Category> findByCategoryIdInAndDeletedAtIsNull(Collection<UUID> categoryIds);
 
+    List<Category> findByUserIdAndDeletedAtIsNotNull(UUID userId);
+
+    @Query("""
+    SELECT c
+    FROM Category c
+    WHERE (c.isDefault = true OR c.userId = :userId)
+      AND c.deletedAt IS NULL
+    """)
+    List<Category> findSyncCategories(@Param("userId") UUID userId);
+
+    @Query("SELECT c FROM Category c WHERE c.categoryId = :categoryId AND c.deletedAt IS NULL")
+    Optional<Category> findByCategoryIdRaw(@Param("categoryId") UUID categoryId);
+
+    @Query("SELECT c FROM Category c WHERE c.categoryId IN :categoryIds AND c.deletedAt IS NULL")
+    List<Category> findByCategoryIdInRaw(@Param("categoryIds") Collection<UUID> categoryIds);
 }

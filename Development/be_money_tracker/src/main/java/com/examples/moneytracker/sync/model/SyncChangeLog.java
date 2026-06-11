@@ -15,7 +15,8 @@ public class SyncChangeLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long cursor;
+    @Column(name = "cursor_id")
+    private Long cursorId;
 
     @Column(nullable = false)
     private UUID userId;
@@ -31,4 +32,11 @@ public class SyncChangeLog {
 
     @Column(nullable = false)
     private Instant changedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (changedAt == null) {
+            changedAt = Instant.now();
+        }
+    }
 }

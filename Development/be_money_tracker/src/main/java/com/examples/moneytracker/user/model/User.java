@@ -47,9 +47,13 @@ public class User {
     @Column(nullable = false)
     private Long version = 1L;
 
-    @Column(nullable = false, length = 255)
+    @Column(length = 255)
     private String verificationToken;
 
-    @Column(nullable = false, updatable = false)
     private Instant verificationSentAt;
+
+    @Column(length = 255)
+    private String resetPasswordToken;
+
+    private Instant resetPasswordSentAt;
 }

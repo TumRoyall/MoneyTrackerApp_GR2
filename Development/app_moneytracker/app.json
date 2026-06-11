@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "MoneyTracker",
+    "slug": "moneytracker-mobile",
+    "icon": "./assets/icon.png",
+    "scheme": "moneytracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "aebf6a5e-4496-4284-8613-6045e1936558"
+      }
+    },
+    "android": {
+      "package": "com.tumroyal.moneytrackermobile"
+    }
+  }
+}

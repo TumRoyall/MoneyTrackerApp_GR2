@@ -3,6 +3,7 @@ package com.examples.moneytracker.config;
 import com.examples.moneytracker.auth.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.*;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.*;
@@ -29,6 +30,8 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/logo_money_tracker.png"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/events/*/guest-transactions").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/events/*/guest-info").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

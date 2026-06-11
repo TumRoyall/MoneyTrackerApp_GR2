@@ -14,10 +14,10 @@ import java.util.UUID;
 @Component
 public class JwtProvider {
 
-    @Value("${security.jwt.secret}")
+    @Value("${security.jwt.secret:DefaultJwtSecretDontUseInProd0123456789}")
     private String jwtSecret;
 
-    @Value("${security.jwt.expiration}")
+    @Value("${security.jwt.expiration:86400000}")
     private Long jwtExpiration;
 
     private SecretKey key;

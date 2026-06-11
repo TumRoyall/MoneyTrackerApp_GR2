@@ -10,6 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Categories are static system data seeded at boot by
+ * {@link com.examples.moneytracker.category.seed.DefaultCategoriesSeeder}.
+ * Only read-only access is exposed; create/update/hide was removed because
+ * the client no longer manages custom categories.
+ */
 @Service
 @RequiredArgsConstructor
 public class CategoryService {
@@ -23,6 +29,12 @@ public class CategoryService {
                 .icon(c.getIcon())
                 .color(c.getColor())
                 .type(c.getType())
+                .isDefault(c.getIsDefault())
+                .isHidden(c.getIsHidden())
+                .createdAt(c.getCreatedAt())
+                .updatedAt(c.getUpdatedAt())
+                .deletedAt(c.getDeletedAt())
+                .version(c.getVersion())
                 .build();
     }
 
@@ -33,12 +45,9 @@ public class CategoryService {
      */
     @Transactional(readOnly = true)
     public List<CategoryResponse> getAccessibleCategories(UUID userId) {
-        // Chưa có query sẵn trong repo -> dùng findAll + filter (OK cho project nhỏ).
-        // Nếu data lớn: tạo query riêng trong repository để filter thẳng DB.
-        return categoryRepository.findAll().stream()
-                .filter(c -> Boolean.TRUE.equals(c.getIsDefault()) || (c.getUserId() != null && c.getUserId().equals(userId)))
-                .map(this::toResponse)
-                .toList();
+        return categoryRepository.findAccessibleCategories(userId).stream()
+            .map(this::toResponse)
+            .toList();
     }
 
     /**
