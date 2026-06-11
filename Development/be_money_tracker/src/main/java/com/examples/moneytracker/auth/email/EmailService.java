@@ -1,34 +1,60 @@
 package com.examples.moneytracker.auth.email;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import java.util.List;
+import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    @Value("${brevo.api.key:}")
+    private String brevoApiKey;
+
+    @Value("${spring.mail.username:nguyenkimngoctum@gmail.com}")
+    private String senderEmail;
+
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Async
     public void send(String to, String subject, String htmlContent) {
+        if (brevoApiKey == null || brevoApiKey.isEmpty()) {
+            System.err.println("Chưa cấu hình brevo.api.key, không thể gửi mail.");
+            return;
+        }
+
+        String url = "https://api.brevo.com/v3/smtp/email";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("api-key", brevoApiKey);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+        Map<String, Object> body = Map.of(
+                "sender", Map.of("name", "MoneyTracker", "email", senderEmail),
+                "to", List.of(Map.of("email", to)),
+                "subject", subject,
+                "htmlContent", htmlContent
+        );
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
-
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(htmlContent, true);
-
-            mailSender.send(message);
-
-        } catch (MessagingException e) {
-            throw new RuntimeException("Gửi Email bị lỗi : " + e.getMessage());
+            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                System.err.println("Gửi mail thất bại: " + response.getBody());
+            } else {
+                System.out.println("Đã gửi email thành công qua Brevo tới: " + to);
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi gọi Brevo API: " + e.getMessage());
         }
     }
 
