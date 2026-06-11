@@ -28,7 +28,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
-                                "/logo_money_tracker.png"
+                                "/logo_money_tracker.png",
+                                "/healthz",
+                                "/actuator/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/events/*/guest-transactions").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/*/guest-info").permitAll()
