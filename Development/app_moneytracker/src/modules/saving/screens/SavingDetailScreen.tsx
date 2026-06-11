@@ -5,7 +5,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 
-import { Button, BackButton, colors, spacing } from '@/components/common';
+import { Button, BackButton, DatePickerModal, colors, spacing } from '@/components/common';
 import { useSavingUsecases } from '@/modules/saving/usecases';
 import { SavingPeriodUnit, SavingType } from '@/modules/saving/models/saving.types';
 import { useCategoryUsecases } from '@/modules/category/usecases';
@@ -92,6 +92,13 @@ const formatActivityDate = (value: string) => {
   return `${weekdays[date.getDay()]}, ${day} thg ${month}, ${year}`;
 };
 
+const formatShortAmount = (val: number) => {
+  if (val >= 1000000000) return (val / 1000000000).toFixed(1) + 'B';
+  if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
+  if (val >= 1000) return (val / 1000).toFixed(0) + 'k';
+  return val.toString();
+};
+
 const ProgressRing = ({ size, strokeWidth, percent }: { size: number; strokeWidth: number; percent: number }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -164,9 +171,11 @@ export const SavingDetailScreen = () => {
   const [formNote, setFormNote] = useState('');
   const [formAmount, setFormAmount] = useState('');
   const [formDate, setFormDate] = useState(toIsoDate(new Date()));
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [recordModalMode, setRecordModalMode] = useState<'create' | 'edit'>('create');
   const [editingRecord, setEditingRecord] = useState<Transaction | null>(null);
   const [editingTransferWalletId, setEditingTransferWalletId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'activity' | 'stats'>('activity');
 
   const savingType = normalizeSavingType(saving?.type);
   const periodUnit = normalizePeriodUnit(saving?.periodUnit);
@@ -205,6 +214,61 @@ export const SavingDetailScreen = () => {
   const progressValue = savingType === 'periodic' ? periodSaved : totalSaved;
   const percent = targetAmount > 0 ? Math.min((progressValue / targetAmount) * 100, 100) : 0;
   const remainingAmount = Math.max(targetAmount - progressValue, 0);
+
+  const targetDateStr = saving?.targetDate;
+  const targetDateObj = targetDateStr ? new Date(targetDateStr) : null;
+  const daysRemaining = targetDateObj
+    ? Math.ceil((targetDateObj.getTime() - new Date().getTime()) / (1000 * 3600 * 24))
+    : null;
+
+  const chartData = useMemo(() => {
+    if (savingType !== 'periodic' || activeTab !== 'stats') return [];
+    
+    const buckets: { label: string; total: number; fullDate: string }[] = [];
+    
+    if (periodUnit === 'monthly') {
+      const anchor = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(anchor.getFullYear(), anchor.getMonth() - i, 1);
+        const label = `T${d.getMonth() + 1}`;
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        buckets.push({ label, total: 0, fullDate: key });
+      }
+    } else {
+      const anchor = new Date();
+      for (let i = 4; i >= 0; i--) {
+        const d = new Date(anchor.getFullYear() - i, 0, 1);
+        const label = `${d.getFullYear()}`;
+        const key = `${d.getFullYear()}`;
+        buckets.push({ label, total: 0, fullDate: key });
+      }
+    }
+    
+    activityItems.forEach(item => {
+      if (!item.date) return;
+      let key = '';
+      if (periodUnit === 'monthly') {
+        key = item.date.substring(0, 7);
+      } else {
+        key = item.date.substring(0, 4);
+      }
+      
+      const bucket = buckets.find(b => b.fullDate === key);
+      if (bucket) {
+        const type = normalizeCategoryType(categoryMap.get(item.categoryId)?.type || item.type);
+        const amt = Number(item.amount || 0);
+        if (type === 'EXPENSE') {
+          bucket.total -= amt;
+        } else {
+          bucket.total += amt;
+        }
+      }
+    });
+    
+    return buckets;
+  }, [activityItems, categoryMap, periodUnit, savingType, activeTab]);
+
+  const maxChartValue = Math.max(targetAmount, ...chartData.map(d => d.total));
 
   const regularWallets = useMemo(
     () =>
@@ -334,6 +398,7 @@ export const SavingDetailScreen = () => {
 
         await updateTransaction(editingRecord.transactionId, {
           amount: amountValue,
+          type: 'INCOME',
           note: noteValue,
         });
 
@@ -352,6 +417,7 @@ export const SavingDetailScreen = () => {
           if (paired) {
             await updateTransaction(paired.transactionId, {
               amount: amountValue,
+              type: 'EXPENSE',
               note: noteValue,
             });
           }
@@ -368,6 +434,7 @@ export const SavingDetailScreen = () => {
             walletId: selectedSourceWalletId,
             categoryId: expenseCategoryId,
             amount: amountValue,
+            type: 'EXPENSE',
             note: transferNote,
             date: dateValue,
           });
@@ -378,6 +445,7 @@ export const SavingDetailScreen = () => {
           walletId: saving.walletId,
           categoryId: incomeCategoryId,
           amount: amountValue,
+          type: 'INCOME',
           note: savingNote,
           date: dateValue,
         });
@@ -469,6 +537,17 @@ export const SavingDetailScreen = () => {
                   : 'Một lần'}
               </Text>
             </View>
+            {savingType === 'one_time' && targetDateObj ? (
+              <View style={[styles.tagChip, { backgroundColor: daysRemaining !== null && daysRemaining <= 3 ? '#ffebee' : '#e8f4fd' }]}>
+                <Text style={[styles.tagText, { color: daysRemaining !== null && daysRemaining <= 3 ? '#d32f2f' : '#1976d2' }]}>
+                  {daysRemaining !== null && daysRemaining > 0
+                    ? `Còn ${daysRemaining} ngày`
+                    : daysRemaining === 0
+                    ? 'Hôm nay'
+                    : 'Đã quá hạn'}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           {savingType === 'periodic' ? (
@@ -523,24 +602,51 @@ export const SavingDetailScreen = () => {
           <Text style={styles.totalAmount}>{formatVndAmount(totalSaved)}</Text>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Hoạt động</Text>
-          <Text style={styles.sectionCount}>{activityItems.length} mục</Text>
-        </View>
-        {activityItems.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>Chưa có hồ sơ nào. Nhấn + để thêm giao dịch của bạn.</Text>
+        {savingType === 'periodic' ? (
+          <View style={styles.tabContainer}>
+            <Pressable
+              style={[styles.tabButton, activeTab === 'activity' && styles.tabButtonActive]}
+              onPress={() => setActiveTab('activity')}
+            >
+              <Text style={[styles.tabText, activeTab === 'activity' && styles.tabTextActive]}>Hoạt động</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.tabButton, activeTab === 'stats' && styles.tabButtonActive]}
+              onPress={() => setActiveTab('stats')}
+            >
+              <Text style={[styles.tabText, activeTab === 'stats' && styles.tabTextActive]}>Thống kê</Text>
+            </Pressable>
           </View>
         ) : (
-          activityItems.reduce((groups: Array<{ date: string; items: Transaction[] }>, item) => {
-            const last = groups[groups.length - 1];
-            if (!last || last.date !== item.date) {
-              groups.push({ date: item.date, items: [item] });
-            } else {
-              last.items.push(item);
-            }
-            return groups;
-          }, []).map((group) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Hoạt động</Text>
+            <Text style={styles.sectionCount}>{activityItems.length} mục</Text>
+          </View>
+        )}
+
+        {savingType !== 'periodic' || activeTab === 'activity' ? (
+          <>
+            {savingType === 'periodic' && (
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Hoạt động</Text>
+                <Text style={styles.sectionCount}>{activityItems.length} mục</Text>
+              </View>
+            )}
+            
+            {activityItems.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>Chưa có hồ sơ nào. Nhấn + để thêm giao dịch của bạn.</Text>
+              </View>
+            ) : (
+              activityItems.reduce((groups: Array<{ date: string; items: Transaction[] }>, item) => {
+                const last = groups[groups.length - 1];
+                if (!last || last.date !== item.date) {
+                  groups.push({ date: item.date, items: [item] });
+                } else {
+                  last.items.push(item);
+                }
+                return groups;
+              }, []).map((group) => (
             <View key={group.date} style={styles.activityGroup}>
               <Text style={styles.activityDate}>{formatActivityDate(group.date)}</Text>
               {group.items.map((item) => {
@@ -578,6 +684,50 @@ export const SavingDetailScreen = () => {
               })}
             </View>
           ))
+        )}
+        </>
+        ) : null}
+
+        {savingType === 'periodic' && activeTab === 'stats' && (
+          <View style={styles.chartCard}>
+            <Text style={styles.chartTitle}>Tiến độ theo kỳ</Text>
+            
+            <View style={styles.chartContainer}>
+              {chartData.map((data, index) => {
+                const heightPercent = maxChartValue > 0 ? Math.max(0, Math.min((data.total / maxChartValue) * 100, 100)) : 0;
+                const targetPercent = maxChartValue > 0 ? Math.max(0, Math.min((targetAmount / maxChartValue) * 100, 100)) : 0;
+                const isReached = data.total >= targetAmount;
+
+                return (
+                  <View key={index} style={styles.chartColumn}>
+                    <Text style={styles.chartValueText} numberOfLines={1} adjustsFontSizeToFit>
+                      {data.total > 0 ? formatShortAmount(data.total) : '0'}
+                    </Text>
+                    <View style={styles.chartBarBackground}>
+                      <View style={[styles.chartTargetLine, { bottom: `${targetPercent}%` }]} />
+                      <View style={[styles.chartBarFill, { height: `${heightPercent}%`, backgroundColor: isReached ? '#2bb6c2' : '#81C784' }]} />
+                    </View>
+                    <Text style={styles.chartLabelText}>{data.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
+
+            <View style={styles.chartLegendRow}>
+              <View style={styles.chartLegendItem}>
+                <View style={[styles.chartLegendColor, { backgroundColor: '#81C784' }]} />
+                <Text style={styles.chartLegendText}>Đang gom</Text>
+              </View>
+              <View style={styles.chartLegendItem}>
+                <View style={[styles.chartLegendColor, { backgroundColor: '#2bb6c2' }]} />
+                <Text style={styles.chartLegendText}>Đạt mục tiêu</Text>
+              </View>
+              <View style={styles.chartLegendItem}>
+                <View style={[styles.chartLegendColor, { backgroundColor: '#ff9800', height: 2 }]} />
+                <Text style={styles.chartLegendText}>Mục tiêu</Text>
+              </View>
+            </View>
+          </View>
         )}
       </ScrollView>
 
@@ -622,13 +772,19 @@ export const SavingDetailScreen = () => {
             />
 
             <Text style={styles.modalLabel}>Ngày</Text>
-            <TextInput
-              style={[styles.input, recordModalMode === 'edit' ? styles.inputDisabled : null]}
-              placeholder="YYYY-MM-DD"
-              value={formDate}
-              onChangeText={setFormDate}
-              editable={recordModalMode !== 'edit'}
-            />
+            <Pressable
+              style={[styles.input, recordModalMode === 'edit' ? styles.inputDisabled : null, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+              onPress={() => {
+                if (recordModalMode !== 'edit') {
+                  setShowDatePicker(true);
+                }
+              }}
+            >
+              <Text style={{ fontSize: 15, color: recordModalMode === 'edit' ? colors.textSecondary : colors.textPrimary }}>
+                {formDate}
+              </Text>
+              <Ionicons name="calendar-outline" size={18} color={recordModalMode === 'edit' ? colors.textSecondary : '#3a464e'} />
+            </Pressable>
 
             {recordModalMode === 'create' ? (
               <>
@@ -712,6 +868,17 @@ export const SavingDetailScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <DatePickerModal
+        visible={showDatePicker}
+        value={new Date(formDate)}
+        title="Chọn ngày"
+        onConfirm={(date) => {
+          setFormDate(toIsoDate(date));
+          setShowDatePicker(false);
+        }}
+        onCancel={() => setShowDatePicker(false)}
+      />
     </View>
   );
 };
@@ -997,6 +1164,129 @@ const styles = StyleSheet.create({
   emptyWalletText: {
     fontSize: 13,
     color: colors.textSecondary,
+  },
+  recordFormSection: {
+    marginBottom: 20,
+  },
+  recordFormLabel: {
+    fontSize: 14,
+    color: '#4b5963',
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 24,
+    marginBottom: 8,
+    backgroundColor: '#e8ecef',
+    borderRadius: 8,
+    padding: 4,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  tabButtonActive: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#5a6770',
+  },
+  tabTextActive: {
+    color: '#1f1f1f',
+  },
+  chartCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f1f1f',
+  },
+  chartContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 180,
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  chartColumn: {
+    flex: 1,
+    alignItems: 'center',
+    height: '100%',
+  },
+  chartValueText: {
+    fontSize: 10,
+    color: '#7b8891',
+    marginBottom: 6,
+    height: 14,
+  },
+  chartBarBackground: {
+    width: 24,
+    flex: 1,
+    backgroundColor: '#f5f7f9',
+    borderRadius: 4,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  chartBarFill: {
+    width: '100%',
+    borderRadius: 4,
+  },
+  chartTargetLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: '#ff9800',
+    zIndex: 1,
+  },
+  chartLabelText: {
+    fontSize: 12,
+    color: '#5a6770',
+    marginTop: 8,
+    fontWeight: '500',
+    height: 16,
+  },
+  chartLegendRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 16,
+    gap: 16,
+  },
+  chartLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  chartLegendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 3,
+  },
+  chartLegendText: {
+    fontSize: 12,
+    color: '#5a6770',
   },
   activityGroup: {
     gap: 8,

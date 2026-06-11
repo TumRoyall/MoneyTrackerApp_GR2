@@ -16,4 +16,5 @@ public class UpdateSavingRequest {
     private SavingType type;
     private SavingPeriodUnit periodUnit;
     private LocalDate startPeriod;
+    private LocalDate targetDate;
 }

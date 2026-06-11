@@ -27,4 +27,6 @@ public class CreateSavingRequest {
     private SavingPeriodUnit periodUnit;
 
     private LocalDate startPeriod;
+
+    private LocalDate targetDate;
 }

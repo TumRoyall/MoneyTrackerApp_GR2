@@ -40,6 +40,9 @@ public class SavingGoal {
     @Column(name = "start_period")
     private LocalDate startPeriod;
 
+    @Column(name = "target_date")
+    private LocalDate targetDate;
+
     @Column(name = "deleted_at")
     private Instant deletedAt;
 

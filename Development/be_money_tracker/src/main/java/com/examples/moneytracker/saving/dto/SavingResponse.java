@@ -25,6 +25,7 @@ public class SavingResponse {
     private SavingType type;
     private SavingPeriodUnit periodUnit;
     private LocalDate startPeriod;
+    private LocalDate targetDate;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -40,6 +41,7 @@ public class SavingResponse {
                 saving.getType(),
                 saving.getPeriodUnit(),
                 saving.getStartPeriod(),
+                saving.getTargetDate(),
                 saving.getCreatedAt(),
                 saving.getUpdatedAt()
         );

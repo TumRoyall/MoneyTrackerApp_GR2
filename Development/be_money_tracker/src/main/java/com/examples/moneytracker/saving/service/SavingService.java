@@ -63,6 +63,7 @@ public class SavingService {
         saving.setTitle(title);
         saving.setTargetAmount(request.getTargetAmount());
         saving.setType(request.getType());
+        saving.setTargetDate(request.getTargetDate());
         applyPeriodSettings(saving, request.getType(), request.getPeriodUnit(), request.getStartPeriod());
 
         savingRepository.save(saving);
@@ -114,6 +115,10 @@ public class SavingService {
                 throw new IllegalArgumentException("Target amount must be greater than 0");
             }
             saving.setTargetAmount(request.getTargetAmount());
+        }
+
+        if (request.getTargetDate() != null) {
+            saving.setTargetDate(request.getTargetDate());
         }
 
         if (request.getType() != null || request.getPeriodUnit() != null || request.getStartPeriod() != null) {

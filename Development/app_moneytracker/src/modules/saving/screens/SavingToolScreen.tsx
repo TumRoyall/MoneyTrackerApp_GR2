@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -21,6 +22,7 @@ import {
   FAB,
   ProgressBar,
   Switch,
+  DatePickerModal,
   colors,
   spacing,
   typography,
@@ -96,6 +98,8 @@ export const SavingToolScreen = () => {
   const [targetInput, setTargetInput] = useState('');
   const [currency, setCurrency] = useState('VND');
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const [targetDate, setTargetDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
 
   const savingsQuery = useQuery({
@@ -191,7 +195,24 @@ export const SavingToolScreen = () => {
         currency,
         type: savingType,
         periodUnit: savingType === 'periodic' ? periodUnit : undefined,
+        targetDate: savingType === 'one_time' ? toIsoDate(targetDate) : undefined,
       });
+
+      if (savingType === 'one_time' && targetDate) {
+         const triggerDate = new Date(targetDate);
+         triggerDate.setDate(triggerDate.getDate() - 3);
+         triggerDate.setHours(9, 0, 0, 0);
+         if (triggerDate > new Date()) {
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: 'Nhắc nhở Tiết kiệm',
+                body: `Mục tiêu "${titleInput.trim()}" của bạn sắp đến hạn vào ngày ${toIsoDate(targetDate)}. Bạn đã đạt mục tiêu chưa?`,
+              },
+              trigger: triggerDate,
+            });
+         }
+      }
+
       await queryClient.invalidateQueries({ queryKey: ['savings'] });
       setShowCreateModal(false);
       setTitleInput('');
@@ -199,9 +220,15 @@ export const SavingToolScreen = () => {
       setSavingType('periodic');
       setPeriodUnit('monthly');
       setCurrency('VND');
+      setTargetDate(new Date());
       Alert.alert('Thành công', 'Đã tạo mục tiêu tiết kiệm mới.');
-    } catch {
-      Alert.alert('Lỗi', 'Không thể tạo mục tiêu tiết kiệm. Vui lòng thử lại.');
+    } catch (error: any) {
+      const msg = error?.response?.data?.error?.message || error?.response?.data?.message || '';
+      if (msg === 'Wallet name already exists' || msg.includes('exists')) {
+        Alert.alert('Tên mục tiêu đã tồn tại', 'Tên này đã được sử dụng (ví tiết kiệm trùng tên). Vui lòng chọn một tên khác.');
+      } else {
+        Alert.alert('Lỗi', 'Không thể tạo mục tiêu tiết kiệm. Vui lòng thử lại.');
+      }
     }
   };
 
@@ -243,9 +270,25 @@ export const SavingToolScreen = () => {
           filteredSavings.map((saving) => {
             const type = normalizeSavingType(saving.type);
             const unit = normalizePeriodUnit(saving.periodUnit);
-            const totalSaved = Number(saving.currentBalance || 0);
+            const totalSavedAllTime = Number(saving.currentBalance || 0);
             const progressTarget = saving.targetAmount;
-            const percent = progressTarget > 0 ? Math.min((totalSaved / progressTarget) * 100, 100) : 0;
+            
+            let progressValue = totalSavedAllTime;
+            if (type === 'periodic') {
+              const transactions = transactionsBySavingId.get(saving.savingId) ?? [];
+              progressValue = sumSignedAmount(transactions, categoryMap);
+            }
+            
+            const percent = progressTarget > 0 ? Math.max(0, Math.min((progressValue / progressTarget) * 100, 100)) : 0;
+
+            let isOverdue = false;
+            if (saving.targetDate) {
+              const target = new Date(saving.targetDate);
+              const today = new Date();
+              target.setHours(0, 0, 0, 0);
+              today.setHours(0, 0, 0, 0);
+              isOverdue = target.getTime() < today.getTime();
+            }
 
             return (
               <Card
@@ -277,22 +320,43 @@ export const SavingToolScreen = () => {
                 </View>
 
                 <View style={styles.amountRow}>
-                  <Text style={styles.amountPrimary}>{formatVndAmount(totalSaved)}</Text>
+                  <Ionicons name="wallet" size={20} color={type === 'periodic' ? '#2bb6c2' : '#f9a826'} style={{ marginRight: 2 }} />
+                  <Text style={[styles.amountPrimary, { color: type === 'periodic' ? '#2bb6c2' : '#f9a826' }]}>{formatVndAmount(progressValue)}</Text>
                   <Text style={styles.amountSecondary}>/ {formatVndAmount(progressTarget)}</Text>
                 </View>
 
                 <View style={styles.metaRow}>
-                  <View style={styles.typeChip}>
-                    <Text style={styles.typeChipText}>{type === 'periodic' ? 'Định kỳ' : 'Một lần'}</Text>
+                  <View style={[styles.typeChip, type === 'one_time' && styles.typeChipOneTime]}>
+                    <Text style={[styles.typeChipText, type === 'one_time' && styles.typeChipTextOneTime]}>
+                      {type === 'periodic' ? 'Định kỳ' : 'Một lần'}
+                    </Text>
                   </View>
                   {type === 'periodic' ? (
                     <>
                       <Text style={styles.metaText}>{formatPeriodLabel(unit)}</Text>
                       <Text style={styles.metaText}>•</Text>
                       <Text style={styles.metaText}>{formatPeriodChip(unit, new Date())}</Text>
+                      {saving.targetDate && (
+                        <>
+                          <Text style={styles.metaText}>•</Text>
+                          <Text style={[styles.metaText, isOverdue ? { color: '#e53935' } : null]}>
+                            Hạn: {saving.targetDate}
+                          </Text>
+                        </>
+                      )}
                     </>
                   ) : (
-                    <Text style={styles.metaText}>Tổng đã tiết kiệm: {formatVndAmount(totalSaved)}</Text>
+                    <>
+                      <Text style={styles.metaText}>Tổng tiết kiệm: {formatVndAmount(totalSavedAllTime)}</Text>
+                      {saving.targetDate && (
+                        <>
+                          <Text style={styles.metaText}>•</Text>
+                          <Text style={[styles.metaText, isOverdue ? { color: '#e53935' } : null]}>
+                            Hạn: {saving.targetDate}
+                          </Text>
+                        </>
+                      )}
+                    </>
                   )}
                 </View>
 
@@ -363,7 +427,18 @@ export const SavingToolScreen = () => {
                   </View>
                 ) : null}
               </View>
-            ) : null}
+            ) : (
+              <View style={styles.dropdownWrapper}>
+                <Text style={styles.noteText}>Ngày mục tiêu</Text>
+                <Pressable
+                  style={[styles.dropdownInput, { marginTop: 4 }]}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Text style={styles.dropdownText}>{toIsoDate(targetDate)}</Text>
+                  <Ionicons name="calendar-outline" size={18} color="#3a464e" />
+                </Pressable>
+              </View>
+            )}
 
             <TextInput
               style={styles.input}
@@ -411,6 +486,17 @@ export const SavingToolScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <DatePickerModal
+        visible={showDatePicker}
+        value={targetDate}
+        title="Chọn ngày mục tiêu"
+        onConfirm={(date) => {
+          setTargetDate(date);
+          setShowDatePicker(false);
+        }}
+        onCancel={() => setShowDatePicker(false)}
+      />
     </View>
   );
 };
@@ -466,8 +552,9 @@ const styles = StyleSheet.create({
     color: '#1f1f1f',
   },
   editButton: {
-    padding: 4,
-    borderRadius: 8,
+    padding: 6,
+    backgroundColor: '#f2f5f7',
+    borderRadius: 16,
   },
   amountRow: {
     flexDirection: 'row',
@@ -505,6 +592,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#1099a4',
+  },
+  typeChipOneTime: {
+    backgroundColor: '#fff4e5',
+  },
+  typeChipTextOneTime: {
+    color: '#e58e00',
   },
   totalSummaryCard: {
     borderRadius: 16,

@@ -526,9 +526,14 @@ export const WalletHomeScreen = () => {
       setDescription('');
       setShowCreateModal(false);
       Alert.alert('Thành công', 'Đã tạo ví mới.');
-    } catch (e) {
-      console.error('Create wallet error:', e);
-      Alert.alert('Lỗi', 'Không thể tạo ví. Vui lòng thử lại.');
+    } catch (error: any) {
+      console.error('Create wallet error:', error);
+      const msg = error?.response?.data?.error?.message || error?.response?.data?.message || '';
+      if (msg === 'Wallet name already exists' || msg.includes('exists')) {
+        Alert.alert('Tên ví đã tồn tại', 'Tên này đã được sử dụng. Vui lòng chọn một tên khác.');
+      } else {
+        Alert.alert('Lỗi', 'Không thể tạo ví. Vui lòng thử lại.');
+      }
     }
   };
 
@@ -550,15 +555,22 @@ export const WalletHomeScreen = () => {
       name: editWalletName.trim(),
       type: editWalletType,
       currency: editWalletCurrency.trim().toUpperCase() || 'VND',
+      openingBalance: parseMoneyInput(editWalletBalance),
     };
     try {
       await updateWallet(editWalletId, payload);
       await queryClient.invalidateQueries({ queryKey: ['wallets'] });
       setShowEditModal(false);
       Alert.alert('Thành công', 'Đã cập nhật ví.');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      Alert.alert('Lỗi', 'Không thể cập nhật ví. Vui lòng thử lại.');
+      const msg = error?.response?.data?.error?.message || error?.response?.data?.message || '';
+      if (msg === 'Wallet name already exists' || msg.includes('exists')) {
+        Alert.alert('Tên ví đã tồn tại', 'Tên này đã được sử dụng. Vui lòng chọn một tên khác.');
+      } else {
+        const fallback = error?.message ? `Lỗi: ${error.message}` : 'Không thể cập nhật ví. Vui lòng thử lại.';
+        Alert.alert('Lỗi', fallback);
+      }
     }
   };
 

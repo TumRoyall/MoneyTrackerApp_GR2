@@ -13,6 +13,7 @@ export interface Saving {
   type: SavingType | string;
   periodUnit?: SavingPeriodUnit | string | null;
   startPeriod?: string | null;
+  targetDate?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -24,6 +25,7 @@ export interface SavingCreateInput {
   type: SavingType;
   periodUnit?: SavingPeriodUnit;
   startPeriod?: string;
+  targetDate?: string;
 }
 
 export interface SavingUpdateInput {
@@ -32,4 +34,5 @@ export interface SavingUpdateInput {
   type?: SavingType;
   periodUnit?: SavingPeriodUnit;
   startPeriod?: string;
+  targetDate?: string;
 }

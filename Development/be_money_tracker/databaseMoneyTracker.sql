@@ -125,6 +125,7 @@ CREATE TABLE savings (
     type            VARCHAR(20) NOT NULL,
     period_unit     VARCHAR(20) NULL,
     start_period    DATE NULL,
+    target_date     DATE NULL,
     created_at      DATETIME NOT NULL,
     updated_at      DATETIME NOT NULL,
     deleted_at      DATETIME NULL,
