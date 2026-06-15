@@ -7,10 +7,10 @@ import com.examples.moneytracker.event.model.Event;
 import com.examples.moneytracker.event.model.EventMember;
 import com.examples.moneytracker.event.model.EventMemberRole;
 import com.examples.moneytracker.event.model.EventStatus;
-import com.examples.moneytracker.event.model.EventTransaction;
 import com.examples.moneytracker.event.repository.EventMemberRepository;
 import com.examples.moneytracker.event.repository.EventRepository;
-import com.examples.moneytracker.event.repository.EventTransactionRepository;
+import com.examples.moneytracker.transaction.model.Transaction;
+import com.examples.moneytracker.transaction.repository.TransactionRepository;
 import com.examples.moneytracker.transaction.dto.CreateTransactionRequest;
 import com.examples.moneytracker.transaction.service.TransactionService;
 import com.examples.moneytracker.user.model.User;
@@ -34,10 +34,9 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final EventMemberRepository eventMemberRepository;
-    private final EventTransactionRepository eventTransactionRepository;
-    private final UserRepository userRepository;
+    private final TransactionRepository transactionRepository;
     private final CategoryRepository categoryRepository;
-    private final WalletRepository walletRepository;
+    private final UserRepository userRepository;
     private final TransactionService transactionService;
 
     private static final String SHARE_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -92,10 +91,10 @@ public class EventService {
         }
 
         int memberCount = (int) eventMemberRepository.countByEventIdAndDeletedAtIsNull(eventId);
-        BigDecimal totalSpent = eventTransactionRepository.sumAmountByEventId(eventId);
-        int txCount = (int) eventTransactionRepository.countByEventIdAndDeletedAtIsNull(eventId);
+        BigDecimal totalSpent = transactionRepository.sumAmountByEventId(eventId);
+        long txCount = transactionRepository.countByEventIdAndDeletedAtIsNull(eventId);
 
-        return EventDetailResponse.from(event, memberCount, totalSpent, txCount);
+        return EventDetailResponse.from(event, memberCount, totalSpent, (int) txCount);
     }
 
     @Transactional
@@ -183,7 +182,7 @@ public class EventService {
                 .orElseThrow(() -> new IllegalArgumentException("You are not a member of this event"));
 
         // Check if user has transactions
-        if (eventTransactionRepository.hasUserTransactionsInEvent(eventId, userId)) {
+        if (transactionRepository.existsByEventIdAndCreatedByAndDeletedAtIsNull(eventId, userId)) {
             throw new IllegalArgumentException("Cannot leave event with existing transactions");
         }
 
@@ -205,7 +204,7 @@ public class EventService {
         List<EventMemberResponse> responses = new ArrayList<>();
 
         // Calculate per person share
-        BigDecimal totalSpent = eventTransactionRepository.sumAmountByEventId(eventId);
+        BigDecimal totalSpent = transactionRepository.sumAmountByEventId(eventId);
         int memberCount = members.size();
         BigDecimal perPersonShare = memberCount > 0
             ? totalSpent.divide(BigDecimal.valueOf(memberCount), 2, java.math.RoundingMode.HALF_UP)
@@ -214,17 +213,11 @@ public class EventService {
         for (EventMember member : members) {
             User user = userRepository.findById(member.getUserId()).orElse(null);
 
-            // Calculate contribution (sum by payer)
-            BigDecimal contribution = BigDecimal.ZERO;
-            List<Object[]> payerSums = eventTransactionRepository.sumAmountByPayer(eventId);
-            for (Object[] row : payerSums) {
-                if (row[0].equals(member.getUserId())) {
-                    contribution = (BigDecimal) row[1];
-                    break;
-                }
-            }
+            // Calculate contribution (sum by creator)
+            BigDecimal contribution = transactionRepository.sumAmountByEventIdAndCreatedBy(eventId, member.getUserId());
+            if (contribution == null) contribution = BigDecimal.ZERO;
 
-            int txCount = eventTransactionRepository.findByEventIdAndPayerIdAndDeletedAtIsNull(eventId, member.getUserId()).size();
+            long txCount = transactionRepository.countByEventIdAndCreatedByAndDeletedAtIsNull(eventId, member.getUserId());
             BigDecimal balance = contribution.subtract(perPersonShare);
 
             responses.add(new EventMemberResponse(
@@ -236,7 +229,7 @@ public class EventService {
                 member.getRole().name(),
                 member.getJoinedAt(),
                 contribution,
-                txCount,
+                (int) txCount,
                 balance
             ));
         }
@@ -257,7 +250,7 @@ public class EventService {
     }
 
     @Transactional
-    public void addGuestTransaction(UUID eventId, CreateGuestTransactionRequest request) {
+    public EventTransactionResponse addGuestTransaction(UUID eventId, CreateGuestTransactionRequest request) {
         Event event = findEventById(eventId);
 
         if (!event.isActive()) {
@@ -266,15 +259,11 @@ public class EventService {
 
         UUID ownerId = event.getCreatedBy();
 
-        // Guest doesn't have real category ID from DB.
-        // We will try to find an existing expense category of the owner, or create one.
-        // For simplicity, find the first expense category of the owner.
         List<Category> ownerCategories = categoryRepository.findAccessibleCategories(ownerId).stream()
                 .filter(c -> "EXPENSE".equals(c.getType()))
                 .toList();
         Category category = null;
         
-        // Try to find matching icon
         if (request.getCategoryIcon() != null && !ownerCategories.isEmpty()) {
             category = ownerCategories.stream()
                 .filter(c -> request.getCategoryIcon().equals(c.getIcon()))
@@ -283,7 +272,6 @@ public class EventService {
         } else if (!ownerCategories.isEmpty()) {
             category = ownerCategories.get(0);
         } else {
-            // Create a default category if owner has none (unlikely but safe)
             category = new Category();
             category.setUserId(ownerId);
             category.setName(request.getCategoryName() != null ? request.getCategoryName() : "Khác");
@@ -294,17 +282,21 @@ public class EventService {
             category = categoryRepository.save(category);
         }
 
-        EventTransaction tx = new EventTransaction();
+        Transaction tx = new Transaction();
         tx.setEventId(eventId);
-        tx.setCreatorId(ownerId);
-        tx.setPayerId(ownerId);
+        tx.setCreatedBy(null);
+        tx.setWalletId(null);
+        tx.setGuestName(request.getCreatorName());
         tx.setAmount(request.getAmount());
         tx.setCategory(category);
+        tx.setCategoryId(category.getCategoryId());
         tx.setNote("[Khách: " + request.getCreatorName() + "] " + (request.getNote() != null ? request.getNote() : ""));
+        tx.setType(com.examples.moneytracker.transaction.model.TransactionType.EXPENSE);
         tx.setDate(request.getDate() != null ? request.getDate().atZone(java.time.ZoneId.systemDefault()).toLocalDate() : LocalDate.now());
-        tx.setIsTransferFromPersonal(false);
 
-        eventTransactionRepository.save(tx);
+        transactionRepository.save(tx);
+
+        return toEventTransactionResponse(tx);
     }
 
     // ==================== TRANSACTIONS ====================
@@ -324,35 +316,21 @@ public class EventService {
 
         List<EventTransactionResponse> results = new ArrayList<>();
 
-        // 1. Create transfer transaction if requested
-        if (Boolean.TRUE.equals(request.getIsTransferFromPersonal()) && request.getPersonalWalletId() != null) {
-            CreateTransactionRequest transferRequest = new CreateTransactionRequest();
-            transferRequest.setWalletId(request.getPersonalWalletId());
-            transferRequest.setAmount(request.getAmount());
-            transferRequest.setCategoryId(request.getCategoryId());
-            transferRequest.setNote(request.getNote() + " → " + event.getName());
-            transferRequest.setDate(request.getDate());
-            transferRequest.setType("TRANSFER");
-
-            transactionService.create(transferRequest, userId);
-        }
-
-        // 2. Create event transaction
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
 
-        EventTransaction tx = new EventTransaction();
+        Transaction tx = new Transaction();
         tx.setEventId(eventId);
-        tx.setCreatorId(userId);
-        tx.setPayerId(request.getPayerId() != null ? request.getPayerId() : userId);
+        tx.setCreatedBy(userId);
+        tx.setWalletId(request.getWalletId());
         tx.setAmount(request.getAmount());
         tx.setCategory(category);
+        tx.setCategoryId(category.getCategoryId());
         tx.setNote(request.getNote());
+        tx.setType(com.examples.moneytracker.transaction.model.TransactionType.EXPENSE);
         tx.setDate(request.getDate() != null ? request.getDate() : LocalDate.now());
-        tx.setIsTransferFromPersonal(request.getIsTransferFromPersonal());
-        tx.setPersonalWalletId(request.getPersonalWalletId());
 
-        tx = eventTransactionRepository.save(tx);
+        tx = transactionRepository.save(tx);
 
         results.add(toEventTransactionResponse(tx));
 
@@ -367,7 +345,7 @@ public class EventService {
             throw new IllegalArgumentException("You are not a member of this event");
         }
 
-        List<EventTransaction> transactions = eventTransactionRepository.findByEventIdAndDeletedAtIsNullOrderByDateDescCreatedAtDesc(eventId);
+        List<Transaction> transactions = transactionRepository.findByEventIdAndDeletedAtIsNullOrderByDateDescCreatedAtDesc(eventId);
         return transactions.stream()
                 .map(this::toEventTransactionResponse)
                 .collect(Collectors.toList());
@@ -375,12 +353,12 @@ public class EventService {
 
     @Transactional
     public EventTransactionResponse updateTransaction(UUID eventId, UUID transactionId, UpdateEventTransactionRequest request, UUID userId) {
-        EventTransaction tx = eventTransactionRepository.findByIdAndEventIdAndDeletedAtIsNull(transactionId, eventId)
+        Transaction tx = transactionRepository.findByTransactionIdAndEventIdAndDeletedAtIsNull(transactionId, eventId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
 
         // Only creator can update
-        if (!tx.getCreatorId().equals(userId)) {
-            throw new IllegalArgumentException("Only the creator can update this transaction");
+        if (!userId.equals(tx.getCreatedBy())) {
+            throw new IllegalArgumentException("You can only edit your own transactions");
         }
 
         Event event = findEventById(eventId);
@@ -395,24 +373,25 @@ public class EventService {
             Category category = categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new IllegalArgumentException("Category not found"));
             tx.setCategory(category);
+            tx.setCategoryId(category.getCategoryId());
         }
         if (request.getNote() != null) {
             tx.setNote(request.getNote());
         }
 
-        tx = eventTransactionRepository.save(tx);
+        tx = transactionRepository.save(tx);
         return toEventTransactionResponse(tx);
     }
 
     @Transactional
     public void deleteTransaction(UUID eventId, UUID transactionId, UUID userId) {
-        EventTransaction tx = eventTransactionRepository.findByIdAndEventIdAndDeletedAtIsNull(transactionId, eventId)
+        Transaction tx = transactionRepository.findByTransactionIdAndEventIdAndDeletedAtIsNull(transactionId, eventId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
 
         Event event = findEventById(eventId);
 
-        // Creator can delete, or owner can delete anyone's
-        if (!tx.getCreatorId().equals(userId) && !isUserOwnerOfEvent(userId, eventId)) {
+        // Creator or owner can delete
+        if (!userId.equals(tx.getCreatedBy()) && !isUserOwnerOfEvent(userId, eventId)) {
             throw new IllegalArgumentException("You don't have permission to delete this transaction");
         }
 
@@ -421,7 +400,7 @@ public class EventService {
         }
 
         tx.setDeletedAt(Instant.now());
-        eventTransactionRepository.save(tx);
+        transactionRepository.save(tx);
     }
 
     // ==================== SETTLEMENT ====================
@@ -486,8 +465,8 @@ public class EventService {
 
     private EventResponse toEventResponse(Event event) {
         int memberCount = (int) eventMemberRepository.countByEventIdAndDeletedAtIsNull(event.getEventId());
-        BigDecimal totalSpent = eventTransactionRepository.sumAmountByEventId(event.getEventId());
-        int txCount = (int) eventTransactionRepository.countByEventIdAndDeletedAtIsNull(event.getEventId());
+        BigDecimal totalSpent = transactionRepository.sumAmountByEventId(event.getEventId());
+        int txCount = (int) transactionRepository.countByEventIdAndDeletedAtIsNull(event.getEventId());
 
         return new EventResponse(
             event.getEventId(),
@@ -507,33 +486,38 @@ public class EventService {
         );
     }
 
-    private EventTransactionResponse toEventTransactionResponse(EventTransaction tx) {
-        User creator = userRepository.findById(tx.getCreatorId()).orElse(null);
-        User payer = userRepository.findById(tx.getPayerId()).orElse(null);
+    private EventTransactionResponse toEventTransactionResponse(Transaction tx) {
+        User creator = null;
+        if (tx.getCreatedBy() != null) {
+            creator = userRepository.findById(tx.getCreatedBy()).orElse(null);
+        }
+        
+        String finalGuestName = tx.getGuestName();
+        if (tx.getCreatedBy() == null && tx.getGuestName() == null) {
+             finalGuestName = "Guest";
+        }
 
         return new EventTransactionResponse(
-            tx.getId(),
+            tx.getTransactionId(),
             tx.getEventId(),
-            tx.getCreatorId(),
+            tx.getCreatedBy(),
             creator != null ? creator.getFullName() : "Unknown",
             null, // creator avatar
-            tx.getPayerId(),
-            payer != null ? payer.getFullName() : "Unknown",
+            finalGuestName,
+            tx.getWalletId(),
             tx.getAmount(),
             tx.getCategory().getCategoryId(),
             tx.getCategory().getName(),
             tx.getCategory().getIcon(),
             tx.getNote(),
             tx.getDate(),
-            tx.getIsTransferFromPersonal(),
-            tx.getPersonalWalletId(),
             tx.getCreatedAt(),
             tx.getVersion()
         );
     }
 
     private SettlementResponse calculateSettlement(UUID eventId) {
-        BigDecimal totalSpent = eventTransactionRepository.sumAmountByEventId(eventId);
+        BigDecimal totalSpent = transactionRepository.sumAmountByEventId(eventId);
         List<EventMember> members = eventMemberRepository.findByEventIdAndDeletedAtIsNullOrderByJoinedAtAsc(eventId);
         int memberCount = members.size();
 
@@ -547,7 +531,7 @@ public class EventService {
             User user = userRepository.findById(member.getUserId()).orElse(null);
 
             BigDecimal contribution = BigDecimal.ZERO;
-            List<Object[]> payerSums = eventTransactionRepository.sumAmountByPayer(eventId);
+            List<Object[]> payerSums = transactionRepository.sumAmountByPayer(eventId);
             for (Object[] row : payerSums) {
                 if (row[0].equals(member.getUserId())) {
                     contribution = (BigDecimal) row[1];

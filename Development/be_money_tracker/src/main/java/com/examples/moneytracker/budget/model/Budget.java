@@ -23,9 +23,6 @@ public class Budget {
     @Column
     private UUID walletId;
 
-    @Column(nullable = false)
-    private UUID categoryId;
-
     @Column(name = "title")
     private String title;
 

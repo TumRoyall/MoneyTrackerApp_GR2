@@ -8,12 +8,15 @@ import {
   RegisterRequestDto,
   ResendVerificationRequestDto,
   ResetPasswordRequestDto,
+  UpdateUserRequestDto,
+  AuthUserDto,
 } from '@/modules/auth/models/auth.types';
 
 export interface AuthRepository {
   register(payload: RegisterRequestDto): Promise<AuthMessageResponseDto>;
   login(payload: LoginRequestDto): Promise<AuthLoginResponseDto>;
   logout(): Promise<AuthMessageResponseDto>;
+  updateProfile(payload: UpdateUserRequestDto): Promise<AuthUserDto>;
   changePassword(payload: ChangePasswordRequestDto): Promise<AuthMessageResponseDto>;
   forgotPassword(payload: ForgotPasswordRequestDto): Promise<AuthMessageResponseDto>;
   resetPassword(payload: ResetPasswordRequestDto): Promise<AuthMessageResponseDto>;

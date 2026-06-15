@@ -20,11 +20,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { queryAll, executeSql } from '@/core/db/sqlite';
 import { useAuthUsecases } from '@/modules/auth/usecases';
 import { Button, colors } from '@/components/common';
+import { useQueryClient } from '@tanstack/react-query';
 
 const USERNAME_KEY = 'display_username';
 
 export default function SettingsScreen() {
-  const { logout } = useAuthUsecases();
+  const { logout, updateProfile } = useAuthUsecases();
+  const queryClient = useQueryClient();
   const [username, setUsername] = useState('Người dùng');
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -60,9 +62,14 @@ export default function SettingsScreen() {
       return;
     }
     try {
+      await updateProfile({ fullName: tempName.trim() });
       await SecureStore.setItemAsync(USERNAME_KEY, tempName.trim());
       setUsername(tempName.trim());
       setIsEditing(false);
+      
+      // Invalidate event members cache to refresh names in event screen
+      queryClient.invalidateQueries({ queryKey: ['event-members'] });
+      queryClient.invalidateQueries({ queryKey: ['event-transactions'] });
     } catch (e) {
       console.log('Error saving username', e);
       Alert.alert('Lỗi', 'Không thể lưu tên');
@@ -80,8 +87,11 @@ export default function SettingsScreen() {
 
       if (!result.canceled) {
         const uri = result.assets[0].uri;
+        
         setAvatarUri(uri);
         await SecureStore.setItemAsync('user_avatar', uri);
+        
+        // Cập nhật query nếu có avatar nhưng vì server không lưu nên bỏ qua updateProfile.
       }
     } catch (e) {
       console.log('Error picking image:', e);

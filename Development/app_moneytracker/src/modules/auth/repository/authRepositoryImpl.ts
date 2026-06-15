@@ -10,6 +10,8 @@ import {
   RegisterRequestDto,
   ResendVerificationRequestDto,
   ResetPasswordRequestDto,
+  UpdateUserRequestDto,
+  AuthUserDto,
 } from '@/modules/auth/models/auth.types';
 import { AuthRemoteDataSource } from '@/modules/auth/api/authRemoteDataSource';
 import { AuthRepository } from '@/modules/auth/repository/authRepository';
@@ -27,8 +29,9 @@ export class AuthRepositoryImpl implements AuthRepository {
     if (result.user?.fullName) {
       try {
         await SecureStore.setItemAsync('display_username', result.user.fullName);
+        await SecureStore.setItemAsync('user_id', result.user.userId);
       } catch (e) {
-        console.warn('Failed to save username to SecureStore', e);
+        console.warn('Failed to save user info to SecureStore', e);
       }
     }
     return result;
@@ -37,6 +40,18 @@ export class AuthRepositoryImpl implements AuthRepository {
   async logout(): Promise<AuthMessageResponseDto> {
     const result = await this.remote.logout();
     await tokenStorage.clear();
+    return result;
+  }
+
+  async updateProfile(payload: UpdateUserRequestDto): Promise<AuthUserDto> {
+    const result = await this.remote.updateProfile(payload);
+    if (result.fullName) {
+      try {
+        await SecureStore.setItemAsync('display_username', result.fullName);
+      } catch (e) {
+        console.warn('Failed to save updated username to SecureStore', e);
+      }
+    }
     return result;
   }
 

@@ -9,6 +9,11 @@ export interface RegisterRequestDto {
   fullname: string;
 }
 
+export interface UpdateUserRequestDto {
+  fullName?: string;
+  avatarUrl?: string;
+}
+
 export interface ChangePasswordRequestDto {
   currentPassword: string;
   newPassword: string;

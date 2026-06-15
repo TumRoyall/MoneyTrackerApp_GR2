@@ -11,6 +11,8 @@ import {
   RegisterRequestDto,
   ResendVerificationRequestDto,
   ResetPasswordRequestDto,
+  UpdateUserRequestDto,
+  AuthUserDto,
 } from '@/modules/auth/models/auth.types';
 
 export class AuthRemoteDataSource {
@@ -35,6 +37,15 @@ export class AuthRemoteDataSource {
       '/api/auth/logout',
       undefined,
       { headers: await this.getAuthHeaders() },
+    );
+    return response.data.data;
+  }
+
+  async updateProfile(payload: UpdateUserRequestDto): Promise<AuthUserDto> {
+    const response = await httpClient.put<ApiResponse<AuthUserDto>>(
+      '/api/users/me',
+      payload,
+      { headers: await this.getAuthHeaders() }
     );
     return response.data.data;
   }

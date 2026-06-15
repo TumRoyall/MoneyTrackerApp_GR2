@@ -52,8 +52,6 @@ public class BudgetService {
         if (categoryIds == null || categoryIds.isEmpty()) {
             throw new IllegalArgumentException("At least one category is required");
         }
-        // keep legacy column populated with first category for compatibility
-        budget.setCategoryId(categoryIds.get(0));
         budget.setTitle(request.getTitle());
         budget.setAmountLimit(request.getAmountLimit());
         budget.setPeriodStart(request.getPeriodStart());
@@ -108,10 +106,7 @@ public class BudgetService {
                     .map(catId -> new BudgetCategory(budget.getBudgetId(), catId))
                     .collect(Collectors.toList());
             budgetCategoryRepository.saveAll(entities);
-            // update legacy column
-            budget.setCategoryId(request.getCategoryIds().get(0));
         } else if (request.getCategoryId() != null) {
-            budget.setCategoryId(request.getCategoryId());
             // keep join table in sync: replace with single id
             budgetCategoryRepository.deleteByIdBudgetId(budget.getBudgetId());
             budgetCategoryRepository.saveAll(List.of(new BudgetCategory(budget.getBudgetId(), request.getCategoryId())));
@@ -169,7 +164,6 @@ public class BudgetService {
             Budget budget = new Budget();
             budget.setUserId(userId);
             budget.setWalletId(request.getWalletId());
-            budget.setCategoryId(item.getCategoryId());
             budget.setTitle(generatedTitle);
             budget.setAmountLimit(item.getAmount());
             budget.setPeriodStart(request.getPeriodStart());
@@ -186,10 +180,12 @@ public class BudgetService {
             savedBudgets.add(budget);
         }
 
-        List<BudgetResponse> responses = savedBudgets.stream()
-                .map(b -> BudgetResponse.from(b, BigDecimal.ZERO, b.getAmountLimit(),
-                        List.of(b.getCategoryId())))
-                .toList();
+        List<BudgetResponse> responses = new ArrayList<>();
+        for (int i = 0; i < savedBudgets.size(); i++) {
+            Budget b = savedBudgets.get(i);
+            UUID catId = request.getItems().get(i).getCategoryId();
+            responses.add(BudgetResponse.from(b, BigDecimal.ZERO, b.getAmountLimit(), List.of(catId)));
+        }
         return new BatchCreateBudgetResponse(responses);
     }
 

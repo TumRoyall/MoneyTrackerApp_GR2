@@ -39,6 +39,7 @@ export default function EventListScreen() {
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [eventDescription, setEventDescription] = useState('');
   const [joinCode, setJoinCode] = useState('');
+  const [showActiveOnly, setShowActiveOnly] = useState(true);
 
   const eventsQuery = useQuery({
     queryKey: ['events'],
@@ -57,8 +58,11 @@ export default function EventListScreen() {
   }, [eventsQuery]);
 
   const events = eventsQuery.data ?? [];
+  const filteredEvents = showActiveOnly 
+    ? events.filter(e => e.status === 'ACTIVE') 
+    : events;
   const isLoading = eventsQuery.isLoading;
-  const isEmpty = !isLoading && events.length === 0;
+  const isEmpty = !isLoading && filteredEvents.length === 0;
   const hasError = eventsQuery.isError;
 
   const handleCreateEvent = async () => {
@@ -112,6 +116,24 @@ export default function EventListScreen() {
         </View>
       </View>
 
+      {/* Filter Tabs */}
+      {!hasError && !isLoading && events.length > 0 && (
+        <View style={styles.filterTabs}>
+          <Pressable 
+            style={[styles.filterTab, showActiveOnly && styles.filterTabActive]} 
+            onPress={() => setShowActiveOnly(true)}
+          >
+            <Text style={[styles.filterTabText, showActiveOnly && styles.filterTabTextActive]}>Đang hoạt động</Text>
+          </Pressable>
+          <Pressable 
+            style={[styles.filterTab, !showActiveOnly && styles.filterTabActive]} 
+            onPress={() => setShowActiveOnly(false)}
+          >
+            <Text style={[styles.filterTabText, !showActiveOnly && styles.filterTabTextActive]}>Tất cả</Text>
+          </Pressable>
+        </View>
+      )}
+
       {/* Event List */}
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {isLoading ? (
@@ -141,7 +163,7 @@ export default function EventListScreen() {
             }}
           />
         ) : (
-          events.map((event) => (
+          filteredEvents.map((event) => (
             <Pressable key={event.eventId} style={styles.eventCard} onPress={() => router.push(`/tools/events/${event.eventId}`)}>
               <View style={styles.eventIconWrap}>
                 <Text style={styles.eventIcon}>{event.icon || '🎉'}</Text>
@@ -302,6 +324,36 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  filterTabs: {
+    flexDirection: 'row',
+    backgroundColor: '#eef2f5',
+    marginHorizontal: spacing.lg,
+    padding: 4,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.md,
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: borderRadius.md,
+  },
+  filterTabActive: {
+    backgroundColor: colors.surface,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  filterTabText: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
+  },
+  filterTabTextActive: {
+    color: colors.text,
   },
   content: {
     padding: spacing.md,

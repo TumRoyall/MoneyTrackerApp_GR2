@@ -1,6 +1,7 @@
 package com.examples.moneytracker.report.service;
 
 import com.examples.moneytracker.budget.repository.BudgetRepository;
+import com.examples.moneytracker.budget.repository.BudgetCategoryRepository;
 import com.examples.moneytracker.report.dto.*;
 import com.examples.moneytracker.transaction.model.Transaction;
 import com.examples.moneytracker.transaction.repository.TransactionRepository;
@@ -9,6 +10,7 @@ import com.examples.moneytracker.wallet.model.Wallet;
 import com.examples.moneytracker.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -25,6 +27,7 @@ public class ReportService {
     private final TransactionRepository transactionRepository;
     private final WalletRepository walletRepository;
     private final BudgetRepository budgetRepository;
+    private final BudgetCategoryRepository budgetCategoryRepository;
 
     public ReportSummaryResponse summary(UUID userId, LocalDate fromDate, LocalDate toDate) {
         List<Transaction> txs = transactionRepository.findAll(
@@ -182,19 +185,20 @@ public class ReportService {
         List<BudgetHealthItem> items = budgetRepository.findByUserIdAndDeletedAtIsNull(userId)
                 .stream()
                 .map(budget -> {
-                BigDecimal spent = transactionRepository.findAll(
-                    TransactionSpecification.filter(
-                        userId,
-                        budget.getWalletId(),
-                        budget.getCategoryId(),
-                        "EXPENSE",
-                        budget.getPeriodStart(),
-                        budget.getPeriodEnd(),
-                        null,
-                        null,
-                        null
-                    )
-                ).stream()
+                List<UUID> categoryIds = budgetCategoryRepository.findByIdBudgetId(budget.getBudgetId())
+                        .stream().map(bc -> bc.getId().getCategoryId()).toList();
+
+                var spec = Specification
+                        .where(TransactionSpecification.hasUser(userId))
+                        .and(TransactionSpecification.hasCategories(categoryIds))
+                        .and(TransactionSpecification.hasType("EXPENSE"))
+                        .and(TransactionSpecification.fromDate(budget.getPeriodStart()))
+                        .and(TransactionSpecification.toDate(budget.getPeriodEnd()));
+                if (budget.getWalletId() != null) {
+                    spec = spec.and(TransactionSpecification.hasWallet(budget.getWalletId()));
+                }
+
+                BigDecimal spent = transactionRepository.findAll(spec).stream()
                     .map(Transaction::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -204,7 +208,7 @@ public class ReportService {
 
                     return new BudgetHealthItem(
                             budget.getBudgetId(),
-                            budget.getCategoryId(),
+                            categoryIds.isEmpty() ? null : categoryIds.get(0),
                             spent,
                             budget.getAmountLimit(),
                             ratio

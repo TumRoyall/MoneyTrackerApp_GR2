@@ -18,11 +18,18 @@ public class Transaction {
     @Column(nullable = false, updatable = false)
     private UUID transactionId;
 
-    @Column(name = "wallet_id", nullable = false)
+    @Column(name = "wallet_id", nullable = true)
     private UUID walletId;
 
-    @Column(nullable = false)
+    @Column(name = "created_by", nullable = true)
     private UUID createdBy;
+
+    // --- EVENT FIELDS ---
+    @Column(name = "event_id")
+    private UUID eventId;
+
+    @Column(name = "guest_name")
+    private String guestName;
 
     // Support both UUID (user categories) and String (default categories)
     @Column(name = "category_id", nullable = false)

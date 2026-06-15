@@ -44,16 +44,14 @@ export interface EventTransaction {
   creatorId: string;
   creatorName: string;
   creatorAvatar?: string;
-  payerId: string;
-  payerName: string;
+  guestName?: string;
+  walletId?: string;
   amount: number;
   categoryId: string;
   categoryName: string;
   categoryIcon: string;
   note?: string;
   date: string;
-  isTransferFromPersonal?: boolean;
-  personalWalletId?: string;
   createdAt: string;
   version: number;
 }
@@ -117,9 +115,7 @@ export interface CreateEventTransactionInput {
   categoryId: string;
   note?: string;
   date: string;
-  payerId?: string;
-  isTransferFromPersonal?: boolean;
-  personalWalletId?: string;
+  walletId: string;
 }
 
 export interface UpdateEventTransactionInput {

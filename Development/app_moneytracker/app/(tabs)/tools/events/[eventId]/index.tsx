@@ -53,11 +53,11 @@ export default function EventDetailScreen() {
   const [selectedCategoryIcon, setSelectedCategoryIcon] = useState('');
   const [selectedCategoryColor, setSelectedCategoryColor] = useState('');
   const [note, setNote] = useState('');
-  const [isTransferFromPersonal, setIsTransferFromPersonal] = useState(false);
-  const [selectedWalletId, setSelectedWalletId] = useState('');
-  const [selectedWalletName, setSelectedWalletName] = useState('');
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
+  const [selectedWalletName, setSelectedWalletName] = useState<string | null>(null);
 
   const [currentUsername, setCurrentUsername] = useState('');
+  const [currentUserId, setCurrentUserId] = useState('');
   const [editingTxId, setEditingTxId] = useState<string | null>(null);
   const [showTxOptionsModal, setShowTxOptionsModal] = useState(false);
   const [selectedTx, setSelectedTx] = useState<EventTransaction | null>(null);
@@ -65,6 +65,9 @@ export default function EventDetailScreen() {
   useEffect(() => {
     SecureStore.getItemAsync('display_username').then(name => {
       if (name) setCurrentUsername(name);
+    });
+    SecureStore.getItemAsync('user_id').then(id => {
+      if (id) setCurrentUserId(id);
     });
   }, []);
 
@@ -171,14 +174,18 @@ export default function EventDetailScreen() {
     setSelectedCategoryName('');
     setSelectedCategoryIcon('');
     setSelectedCategoryColor('');
-    setIsTransferFromPersonal(false);
-    setSelectedWalletId('');
-    setSelectedWalletName('');
+    setSelectedWalletId(null);
+    setSelectedWalletName(null);
   };
 
   const handleAddTransaction = async () => {
     if (!amount || !selectedCategoryId) {
       Alert.alert('Lỗi', 'Vui lòng nhập số tiền và chọn danh mục');
+      return;
+    }
+
+    if (!editingTxId && !selectedWalletId) {
+      Alert.alert('Lỗi', 'Vui lòng chọn ví thanh toán');
       return;
     }
 
@@ -194,8 +201,7 @@ export default function EventDetailScreen() {
         categoryId: selectedCategoryId,
         note: note.trim() || undefined,
         date: new Date().toISOString().split('T')[0],
-        isTransferFromPersonal: isTransferFromPersonal || undefined,
-        personalWalletId: isTransferFromPersonal ? selectedWalletId || undefined : undefined,
+        walletId: selectedWalletId!,
       });
     }
   };
@@ -238,13 +244,6 @@ export default function EventDetailScreen() {
     if (event?.shareCode) {
       await Clipboard.setStringAsync(event.shareCode);
       Alert.alert('Đã copy', 'Mã tham gia đã được copy!');
-    }
-  };
-
-  const handleCopyShareLink = async () => {
-    if (event?.shareLink) {
-      await Clipboard.setStringAsync(event.shareLink);
-      Alert.alert('Đã copy', 'Link tham gia App đã được copy!');
     }
   };
 
@@ -376,6 +375,11 @@ export default function EventDetailScreen() {
                       <Text style={styles.ownerBadgeText}>Chủ sở hữu</Text>
                     </View>
                   )}
+                  {member.userId === currentUserId && (
+                    <View style={styles.youBadge}>
+                      <Text style={styles.youBadgeText}>Bạn</Text>
+                    </View>
+                  )}
                 </View>
                 <View style={styles.memberContributionRow}>
                   <Text style={styles.memberContributionLabel}>Đã chi: </Text>
@@ -399,8 +403,8 @@ export default function EventDetailScreen() {
               const cat = categories?.find(c => c.categoryId === tx.categoryId);
               const displayIcon = tx.categoryIcon || cat?.icon || 'help';
               const catColor = cat?.color || '#29bcc8';
-              const isOwner = members?.find(m => m.role === 'OWNER')?.displayName === currentUsername;
-              const isCreator = tx.creatorName === currentUsername;
+              const isOwner = members?.find(m => m.role === 'OWNER')?.userId === currentUserId;
+              const isCreator = tx.creatorId === currentUserId;
               const canEdit = isOwner || isCreator;
               
               return (
@@ -494,24 +498,8 @@ export default function EventDetailScreen() {
             />
 
             {!editingTxId && (
-              <View style={styles.checkboxRow}>
-                <Pressable
-                  style={styles.checkbox}
-                  onPress={() => setIsTransferFromPersonal(!isTransferFromPersonal)}
-                >
-                  <Ionicons
-                    name={isTransferFromPersonal ? 'checkbox' : 'square-outline'}
-                    size={24}
-                    color={isTransferFromPersonal ? '#29bcc8' : '#6c737a'}
-                  />
-                  <Text style={styles.checkboxLabel}>Chuyển tiền từ ví cá nhân</Text>
-                </Pressable>
-              </View>
-            )}
-
-            {!editingTxId && isTransferFromPersonal && (
               <>
-                <Text style={styles.label}>Chọn ví</Text>
+                <Text style={styles.label}>Ví thanh toán</Text>
                 <Pressable style={styles.selectBtn} onPress={() => setShowWalletModal(true)}>
                   <Text style={styles.selectBtnText}>
                     {selectedWalletName || 'Chọn ví'}
@@ -633,12 +621,6 @@ export default function EventDetailScreen() {
                 <Ionicons name="copy-outline" size={24} color="#29bcc8" />
               </Pressable>
             </View>
-
-            <Text style={styles.label}>Link tham gia App (Dành cho thành viên)</Text>
-            <Pressable style={styles.shareCodeBox} onPress={handleCopyShareLink}>
-              <Text style={styles.shareLinkText} numberOfLines={1}>{event.shareLink}</Text>
-              <Ionicons name="copy-outline" size={24} color="#29bcc8" />
-            </Pressable>
 
             <Text style={[styles.label, { marginTop: 16 }]}>Link Web Khách (Cho người ngoài)</Text>
             <Pressable style={styles.shareCodeBox} onPress={handleCopyGuestLink}>
@@ -858,6 +840,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#d48806',
+  },
+  youBadge: {
+    backgroundColor: '#fff0f6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffadd2',
+  },
+  youBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#eb2f96',
   },
   memberContributionRow: {
     flexDirection: 'row',

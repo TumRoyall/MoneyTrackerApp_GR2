@@ -29,5 +29,30 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
     java.math.BigDecimal sumSignedAmountByWalletId(@Param("walletId") UUID walletId);
 
     List<Transaction> findByCreatedByAndDeletedAtIsNotNull(UUID createdBy);
+
+    // --- EVENT SPECIFIC QUERIES ---
+    List<Transaction> findByEventIdAndDeletedAtIsNullOrderByDateDescCreatedAtDesc(UUID eventId);
+
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.eventId = :eventId AND t.deletedAt IS NULL")
+    java.math.BigDecimal sumAmountByEventId(@Param("eventId") UUID eventId);
+
+    long countByEventIdAndDeletedAtIsNull(UUID eventId);
+
+    @Query("SELECT t.createdBy, COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.eventId = :eventId AND t.deletedAt IS NULL AND t.createdBy IS NOT NULL GROUP BY t.createdBy")
+    List<Object[]> sumAmountByPayer(@Param("eventId") UUID eventId);
+
+    @Query("SELECT t.guestName, COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.eventId = :eventId AND t.deletedAt IS NULL AND t.guestName IS NOT NULL GROUP BY t.guestName")
+    List<Object[]> sumAmountByGuestPayer(@Param("eventId") UUID eventId);
+
+    List<Transaction> findByEventIdAndCreatedByAndDeletedAtIsNull(UUID eventId, UUID createdBy);
+
+    boolean existsByEventIdAndCreatedByAndDeletedAtIsNull(UUID eventId, UUID createdBy);
+
+    Optional<Transaction> findByTransactionIdAndEventIdAndDeletedAtIsNull(UUID transactionId, UUID eventId);
+
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.eventId = :eventId AND t.createdBy = :createdBy AND t.deletedAt IS NULL")
+    java.math.BigDecimal sumAmountByEventIdAndCreatedBy(@Param("eventId") UUID eventId, @Param("createdBy") UUID createdBy);
+
+    long countByEventIdAndCreatedByAndDeletedAtIsNull(UUID eventId, UUID createdBy);
 }
 

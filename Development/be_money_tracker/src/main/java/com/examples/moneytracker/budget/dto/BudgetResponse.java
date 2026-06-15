@@ -34,7 +34,7 @@ public class BudgetResponse {
         return new BudgetResponse(
                 budget.getBudgetId(),
                 budget.getWalletId(),
-                budget.getCategoryId(),
+                categoryIds != null && !categoryIds.isEmpty() ? categoryIds.get(0) : null,
                 categoryIds,
                 budget.getTitle(),
                 budget.getAmountLimit(),
