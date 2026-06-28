@@ -28,7 +28,7 @@ export default function GuestPortalScreen() {
     retry: false,
   });
 
-  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   
@@ -42,8 +42,11 @@ export default function GuestPortalScreen() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   const handleSubmit = async () => {
-    if (!guestName.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập tên của bạn');
+    const trimmedEmail = guestEmail.trim().toLowerCase();
+    // Email validation đơn giản (regex chuẩn RFC lite)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      Alert.alert('Lỗi', 'Vui lòng nhập email hợp lệ (VD: ten@example.com)');
       return;
     }
     if (!amount || isNaN(Number(amount))) {
@@ -58,7 +61,9 @@ export default function GuestPortalScreen() {
     setIsSubmitting(true);
     try {
       await addGuestTransaction(eventId, {
-        creatorName: guestName.trim(),
+        // Tên hiển thị mặc định = email. Admin có thể sửa sau trong app.
+        creatorName: trimmedEmail,
+        creatorEmail: trimmedEmail,
         amount: Number(amount),
         categoryId: selectedCategoryId,
         categoryName: selectedCategoryName,
@@ -68,7 +73,7 @@ export default function GuestPortalScreen() {
       });
       setIsSuccess(true);
     } catch (error) {
-      Alert.alert('Lỗi', 'Mật khẩu không đúng hoặc sự kiện không tồn tại.');
+      Alert.alert('Lỗi', 'Không thể gửi giao dịch. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -85,6 +90,7 @@ export default function GuestPortalScreen() {
             setIsSuccess(false);
             setAmount('');
             setNote('');
+            // Giữ lại tên + email để khách không phải nhập lại nếu thêm nhiều giao dịch
           }}>
             <Text style={styles.submitBtnText}>Thêm giao dịch khác</Text>
           </Pressable>
@@ -140,13 +146,19 @@ export default function GuestPortalScreen() {
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Tên của bạn</Text>
+          <Text style={styles.label}>Email của bạn <Text style={styles.required}>*</Text></Text>
           <TextInput
             style={styles.input}
-            placeholder="VD: Nguyễn Văn A"
-            value={guestName}
-            onChangeText={setGuestName}
+            placeholder="VD: ten@example.com"
+            value={guestEmail}
+            onChangeText={setGuestEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
           />
+          <Text style={styles.helper}>
+            Tên hiển thị của bạn trong sự kiện sẽ mặc định là email. Chủ sự kiện có thể đổi tên cho bạn sau.
+          </Text>
         </View>
 
         <View style={styles.formGroup}>
@@ -255,6 +267,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 8,
+  },
+  required: {
+    color: '#f36e79',
+    fontWeight: '700',
+  },
+  helper: {
+    fontSize: 12,
+    color: '#6c737a',
+    marginTop: 6,
+    lineHeight: 16,
   },
   input: {
     backgroundColor: '#fff',

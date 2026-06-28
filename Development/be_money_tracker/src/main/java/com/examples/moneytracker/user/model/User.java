@@ -34,6 +34,9 @@ public class User {
     @Column(nullable = false)
     private Boolean isVerified = false;
 
+    @Column(nullable = false)
+    private Boolean isGuest = false;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 

@@ -17,6 +17,7 @@ import com.examples.moneytracker.user.model.User;
 import com.examples.moneytracker.user.repository.UserRepository;
 import com.examples.moneytracker.wallet.model.Wallet;
 import com.examples.moneytracker.wallet.repository.WalletRepository;
+import com.examples.moneytracker.wallet.service.WalletBalanceService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,8 @@ public class EventService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final TransactionService transactionService;
+    private final WalletRepository walletRepository;
+    private final WalletBalanceService walletBalanceService;
 
     private static final String SHARE_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int SHARE_CODE_LENGTH = 6;
@@ -213,21 +216,19 @@ public class EventService {
         for (EventMember member : members) {
             User user = userRepository.findById(member.getUserId()).orElse(null);
 
-            // Calculate contribution (sum by creator)
-            BigDecimal contribution = transactionRepository.sumAmountByEventIdAndCreatedBy(eventId, member.getUserId());
-            if (contribution == null) contribution = BigDecimal.ZERO;
+            // Calculate contribution
+            BigDecimal contribution = BigDecimal.ZERO;
+            long txCount = 0;
 
-            long txCount = transactionRepository.countByEventIdAndCreatedByAndDeletedAtIsNull(eventId, member.getUserId());
+            BigDecimal sum = transactionRepository.sumAmountByEventIdAndCreatedBy(eventId, member.getUserId());
+            if (sum != null) contribution = sum;
+            txCount = transactionRepository.countByEventIdAndCreatedByAndDeletedAtIsNull(eventId, member.getUserId());
+
             BigDecimal balance = contribution.subtract(perPersonShare);
 
-            responses.add(new EventMemberResponse(
-                member.getId(),
-                member.getEventId(),
-                member.getUserId(),
-                user != null ? user.getFullName() : "Unknown",
-                null, // avatar
-                member.getRole().name(),
-                member.getJoinedAt(),
+            responses.add(EventMemberResponse.from(
+                member,
+                user,
                 contribution,
                 (int) txCount,
                 balance
@@ -235,6 +236,149 @@ public class EventService {
         }
 
         return responses;
+    }
+
+    // ==================== MEMBER CRUD (OWNER only) ====================
+
+    @Transactional
+    public EventMemberResponse addMember(UUID eventId, AddMemberRequest request, UUID actorUserId) {
+        Event event = findEventById(eventId);
+
+        if (!isUserOwnerOfEvent(actorUserId, eventId)) {
+            throw new IllegalArgumentException("Chỉ OWNER mới có quyền thêm thành viên");
+        }
+
+        if (!event.isActive()) {
+            throw new IllegalArgumentException("Event đã kết toán hoặc archive, không thể thêm thành viên");
+        }
+
+        String email = request.getGuestEmail().trim().toLowerCase();
+
+        // Check if user exists
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            // Create shadow user
+            user = new User();
+            user.setEmail(email);
+            user.setFullName(request.getGuestName().trim());
+            user.setPasswordHash("shadow"); // dummy password
+            user.setProvider("local");
+            user.setIsGuest(true);
+            user.setIsVerified(false);
+            user = userRepository.save(user);
+        }
+
+        // Check if already in event
+        if (eventMemberRepository.existsByEventIdAndUserIdAndDeletedAtIsNull(eventId, user.getUserId())) {
+            throw new IllegalArgumentException("Người này đã là thành viên trong event");
+        }
+
+        EventMember member = new EventMember();
+        member.setEventId(eventId);
+        member.setUserId(user.getUserId());
+        member.setRole(EventMemberRole.MEMBER);
+        member.setJoinedAt(Instant.now());
+        member.setInvitedBy(actorUserId);
+
+        member = eventMemberRepository.save(member);
+
+        // Build response với contribution/balance = 0 (mới tạo, chưa có transaction)
+        return EventMemberResponse.from(member, user, BigDecimal.ZERO, 0, BigDecimal.ZERO);
+    }
+
+    @Transactional
+    public EventMemberResponse updateMember(UUID eventId, UUID memberId, UpdateMemberRequest request, UUID actorUserId) {
+        Event event = findEventById(eventId);
+
+        if (!isUserOwnerOfEvent(actorUserId, eventId)) {
+            throw new IllegalArgumentException("Chỉ OWNER mới có quyền sửa thành viên");
+        }
+
+        EventMember member = eventMemberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thành viên"));
+
+        if (!member.getEventId().equals(eventId)) {
+            throw new IllegalArgumentException("Thành viên không thuộc event này");
+        }
+
+        // OWNER không thể tự hạ role của mình
+        if (request.getRole() != null
+            && member.getUserId().equals(actorUserId)
+            && request.getRole() != EventMemberRole.OWNER) {
+            throw new IllegalArgumentException("OWNER không thể tự hạ role của mình");
+        }
+
+        User user = userRepository.findById(member.getUserId())
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
+
+        // Only allow updating email/name if they are a shadow guest user
+        if (Boolean.TRUE.equals(user.getIsGuest())) {
+            if (request.getGuestEmail() != null && !request.getGuestEmail().isBlank()) {
+                String newEmail = request.getGuestEmail().trim().toLowerCase();
+                if (!newEmail.equals(user.getEmail())) {
+                    if (userRepository.existsByEmail(newEmail)) {
+                        throw new IllegalArgumentException("Email này đã có người sử dụng");
+                    }
+                    user.setEmail(newEmail);
+                    if (request.getDisplayName() == null || request.getDisplayName().isBlank()) {
+                        user.setFullName(newEmail);
+                    }
+                }
+            }
+            if (request.getDisplayName() != null && !request.getDisplayName().isBlank()) {
+                user.setFullName(request.getDisplayName().trim());
+            }
+            userRepository.save(user);
+        } else {
+            if (request.getGuestEmail() != null && !request.getGuestEmail().isBlank()) {
+                throw new IllegalArgumentException("Không thể đổi email cho user thật");
+            }
+        }
+
+        if (request.getRole() != null) {
+            member.setRole(request.getRole());
+        }
+
+        member = eventMemberRepository.save(member);
+
+        BigDecimal contribution = BigDecimal.ZERO;
+        long txCount = 0;
+        BigDecimal sum = transactionRepository.sumAmountByEventIdAndCreatedBy(eventId, member.getUserId());
+        if (sum != null) contribution = sum;
+        txCount = transactionRepository.countByEventIdAndCreatedByAndDeletedAtIsNull(eventId, member.getUserId());
+
+        BigDecimal totalSpent = transactionRepository.sumAmountByEventId(eventId);
+        int memberCount = (int) eventMemberRepository.countByEventIdAndDeletedAtIsNull(eventId);
+        BigDecimal perPersonShare = memberCount > 0
+            ? totalSpent.divide(BigDecimal.valueOf(memberCount), 2, java.math.RoundingMode.HALF_UP)
+            : BigDecimal.ZERO;
+        BigDecimal balance = contribution.subtract(perPersonShare);
+
+        return EventMemberResponse.from(member, user, contribution, (int) txCount, balance);
+    }
+
+    @Transactional
+    public void removeMember(UUID eventId, UUID memberId, UUID actorUserId) {
+        Event event = findEventById(eventId);
+
+        if (!isUserOwnerOfEvent(actorUserId, eventId)) {
+            throw new IllegalArgumentException("Chỉ OWNER mới có quyền xoá thành viên");
+        }
+
+        EventMember member = eventMemberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thành viên"));
+
+        if (!member.getEventId().equals(eventId)) {
+            throw new IllegalArgumentException("Thành viên không thuộc event này");
+        }
+
+        if (member.getUserId() != null && member.getUserId().equals(actorUserId)) {
+            throw new IllegalArgumentException("OWNER không thể tự xoá. Hãy chuyển quyền trước");
+        }
+
+        // Soft-delete — transactions cũ vẫn giữ nguyên
+        member.setDeletedAt(Instant.now());
+        eventMemberRepository.save(member);
     }
 
     // ==================== GUEST TRANSACTIONS ====================
@@ -259,11 +403,47 @@ public class EventService {
 
         UUID ownerId = event.getCreatedBy();
 
+        String email = request.getCreatorEmail() != null
+            ? request.getCreatorEmail().trim().toLowerCase()
+            : "guest_" + UUID.randomUUID().toString() + "@moneytracker.local";
+
+        String guestName = request.getCreatorName().trim();
+
+        // Check if user exists
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            // Create shadow user
+            user = new User();
+            user.setEmail(email);
+            user.setFullName(guestName);
+            user.setPasswordHash("shadow"); // dummy password
+            user.setProvider("local");
+            user.setIsGuest(true);
+            user.setIsVerified(false);
+            user = userRepository.save(user);
+        } else if (Boolean.TRUE.equals(user.getIsGuest())) {
+            // Update guest name if changed
+            if (!guestName.equals(user.getFullName())) {
+                user.setFullName(guestName);
+                user = userRepository.save(user);
+            }
+        }
+
+        // Check if member exists, else create
+        if (!eventMemberRepository.existsByEventIdAndUserIdAndDeletedAtIsNull(eventId, user.getUserId())) {
+            EventMember m = new EventMember();
+            m.setEventId(eventId);
+            m.setUserId(user.getUserId());
+            m.setRole(EventMemberRole.MEMBER);
+            m.setJoinedAt(Instant.now());
+            eventMemberRepository.save(m);
+        }
+
         List<Category> ownerCategories = categoryRepository.findAccessibleCategories(ownerId).stream()
                 .filter(c -> "EXPENSE".equals(c.getType()))
                 .toList();
         Category category = null;
-        
+
         if (request.getCategoryIcon() != null && !ownerCategories.isEmpty()) {
             category = ownerCategories.stream()
                 .filter(c -> request.getCategoryIcon().equals(c.getIcon()))
@@ -284,13 +464,12 @@ public class EventService {
 
         Transaction tx = new Transaction();
         tx.setEventId(eventId);
-        tx.setCreatedBy(null);
+        tx.setCreatedBy(user.getUserId());
         tx.setWalletId(null);
-        tx.setGuestName(request.getCreatorName());
         tx.setAmount(request.getAmount());
         tx.setCategory(category);
         tx.setCategoryId(category.getCategoryId());
-        tx.setNote("[Khách: " + request.getCreatorName() + "] " + (request.getNote() != null ? request.getNote() : ""));
+        tx.setNote("[Khách: " + guestName + "] " + (request.getNote() != null ? request.getNote() : ""));
         tx.setType(com.examples.moneytracker.transaction.model.TransactionType.EXPENSE);
         tx.setDate(request.getDate() != null ? request.getDate().atZone(java.time.ZoneId.systemDefault()).toLocalDate() : LocalDate.now());
 
@@ -332,6 +511,14 @@ public class EventService {
 
         tx = transactionRepository.save(tx);
 
+        // Cập nhật wallet balance (fix bug: trước đây không gọi → ví không đổi khi tạo transaction event)
+        if (tx.getWalletId() != null) {
+            Wallet wallet = walletRepository.findById(tx.getWalletId()).orElse(null);
+            if (wallet != null && wallet.getUserId().equals(userId)) {
+                walletBalanceService.applyTransactionCreate(wallet, tx);
+            }
+        }
+
         results.add(toEventTransactionResponse(tx));
 
         return results;
@@ -366,6 +553,10 @@ public class EventService {
             throw new IllegalArgumentException("Event is not modifiable");
         }
 
+        // Snapshot giá trị CŨ trước khi mutate để tính delta wallet balance
+        java.math.BigDecimal oldAmount = tx.getAmount();
+        var oldType = tx.getType();
+
         if (request.getAmount() != null) {
             tx.setAmount(request.getAmount());
         }
@@ -380,6 +571,15 @@ public class EventService {
         }
 
         tx = transactionRepository.save(tx);
+
+        // Update wallet balance — chỉ khi walletId != null và là owner của ví
+        if (tx.getWalletId() != null) {
+            Wallet wallet = walletRepository.findById(tx.getWalletId()).orElse(null);
+            if (wallet != null && wallet.getUserId().equals(userId)) {
+                walletBalanceService.applyTransactionUpdate(wallet, oldAmount, oldType, tx.getAmount(), tx.getType());
+            }
+        }
+
         return toEventTransactionResponse(tx);
     }
 
@@ -397,6 +597,14 @@ public class EventService {
 
         if (!event.isModifiable()) {
             throw new IllegalArgumentException("Event is not modifiable");
+        }
+
+        // Hoàn lại wallet balance TRƯỚC khi soft-delete (tránh trường hợp rollback)
+        if (tx.getWalletId() != null) {
+            Wallet wallet = walletRepository.findById(tx.getWalletId()).orElse(null);
+            if (wallet != null && wallet.getUserId().equals(userId)) {
+                walletBalanceService.applyTransactionDelete(wallet, tx);
+            }
         }
 
         tx.setDeletedAt(Instant.now());
@@ -491,11 +699,6 @@ public class EventService {
         if (tx.getCreatedBy() != null) {
             creator = userRepository.findById(tx.getCreatedBy()).orElse(null);
         }
-        
-        String finalGuestName = tx.getGuestName();
-        if (tx.getCreatedBy() == null && tx.getGuestName() == null) {
-             finalGuestName = "Guest";
-        }
 
         return new EventTransactionResponse(
             tx.getTransactionId(),
@@ -503,7 +706,6 @@ public class EventService {
             tx.getCreatedBy(),
             creator != null ? creator.getFullName() : "Unknown",
             null, // creator avatar
-            finalGuestName,
             tx.getWalletId(),
             tx.getAmount(),
             tx.getCategory().getCategoryId(),
@@ -527,13 +729,17 @@ public class EventService {
 
         // Calculate balances
         List<MemberBalance> memberBalances = new ArrayList<>();
-        for (EventMember member : members) {
-            User user = userRepository.findById(member.getUserId()).orElse(null);
+        List<Object[]> payerSums = transactionRepository.sumAmountByPayer(eventId);
 
+        for (EventMember member : members) {
+            String userName;
             BigDecimal contribution = BigDecimal.ZERO;
-            List<Object[]> payerSums = transactionRepository.sumAmountByPayer(eventId);
+
+            User user = userRepository.findById(member.getUserId()).orElse(null);
+            userName = user != null ? user.getFullName() : "Unknown";
+
             for (Object[] row : payerSums) {
-                if (row[0].equals(member.getUserId())) {
+                if (row[0] != null && row[0].equals(member.getUserId())) {
                     contribution = (BigDecimal) row[1];
                     break;
                 }
@@ -543,7 +749,7 @@ public class EventService {
 
             memberBalances.add(new MemberBalance(
                 member.getUserId(),
-                user != null ? user.getFullName() : "Unknown",
+                userName,
                 contribution,
                 balance
             ));

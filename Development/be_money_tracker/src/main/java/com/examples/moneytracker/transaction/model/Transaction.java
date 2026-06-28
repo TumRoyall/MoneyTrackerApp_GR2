@@ -28,9 +28,6 @@ public class Transaction {
     @Column(name = "event_id")
     private UUID eventId;
 
-    @Column(name = "guest_name")
-    private String guestName;
-
     // Support both UUID (user categories) and String (default categories)
     @Column(name = "category_id", nullable = false)
     private UUID categoryId;

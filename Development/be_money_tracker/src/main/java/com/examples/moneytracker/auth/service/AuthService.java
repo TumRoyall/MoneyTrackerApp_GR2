@@ -28,16 +28,26 @@ public class AuthService {
 
     public void register(RegisterRequest req) {
 
-        if (userRepository.existsByEmail(req.getEmail())) {
-            throw new RuntimeException("Email này đã tồn tại");
+        User user = userRepository.findByEmail(req.getEmail()).orElse(null);
+        if (user != null) {
+            if (!Boolean.TRUE.equals(user.getIsGuest())) {
+                throw new RuntimeException("Email này đã tồn tại");
+            }
+            // Upgrade shadow user
+            user.setFullName(req.getFullname());
+            user.setPasswordHash(encoder.encode(req.getPassword()));
+            user.setProvider("local");
+            user.setIsVerified(false);
+            user.setIsGuest(false);
+        } else {
+            user = new User();
+            user.setEmail(req.getEmail());
+            user.setFullName(req.getFullname());
+            user.setPasswordHash(encoder.encode(req.getPassword()));
+            user.setProvider("local"); // đăng nhặp bằng tài khoản mật khẩu cơ bản
+            user.setIsVerified(false);
+            user.setIsGuest(false);
         }
-
-        User user = new User();
-        user.setEmail(req.getEmail());
-        user.setFullName(req.getFullname());
-        user.setPasswordHash(encoder.encode(req.getPassword()));
-        user.setProvider("local"); // đăng nhặp bằng tài khoản mật khẩu cơ bản
-        user.setIsVerified(false);
 
         // Tạo token để xác thực email
         String token = generateVerificationToken();

@@ -28,10 +28,14 @@ export interface EventDetail extends Event {
 export interface EventMember {
   id: string;
   eventId: string;
-  userId: string;
+  userId: string | null;
   displayName: string;
+  guestName?: string;
+  guestEmail?: string;
   avatarUrl?: string;
   role: EventMemberRole;
+  isOwner: boolean;
+  isGuest: boolean;
   joinedAt: string;
   contribution: number;
   transactionCount: number;
@@ -122,4 +126,21 @@ export interface UpdateEventTransactionInput {
   note?: string;
   amount?: number;
   categoryId?: string;
+}
+
+// ==================== MEMBER MANAGEMENT (mới) ====================
+
+export interface AddMemberInput {
+  guestName: string;
+  guestEmail: string;
+}
+
+export interface UpdateMemberInput {
+  displayName?: string;
+  role?: EventMemberRole;
+  /**
+   * Chỉ áp dụng cho guest member. Khi update email mà không kèm displayName,
+   * server sẽ tự động đặt guestName = email mới.
+   */
+  guestEmail?: string;
 }

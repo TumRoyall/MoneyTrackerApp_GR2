@@ -98,6 +98,37 @@ public class EventController {
         return ResponseEntity.ok(ApiResponse.of(members));
     }
 
+    @PostMapping("/{eventId}/members")
+    public ResponseEntity<ApiResponse<EventMemberResponse>> addMember(
+            @PathVariable UUID eventId,
+            @RequestBody @Valid AddMemberRequest request,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        EventMemberResponse response = eventService.addMember(eventId, request, user.getId());
+        return ResponseEntity.ok(ApiResponse.of(response));
+    }
+
+    @PutMapping("/{eventId}/members/{memberId}")
+    public ResponseEntity<ApiResponse<EventMemberResponse>> updateMember(
+            @PathVariable UUID eventId,
+            @PathVariable UUID memberId,
+            @RequestBody @Valid UpdateMemberRequest request,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        EventMemberResponse response = eventService.updateMember(eventId, memberId, request, user.getId());
+        return ResponseEntity.ok(ApiResponse.of(response));
+    }
+
+    @DeleteMapping("/{eventId}/members/{memberId}")
+    public ResponseEntity<Void> removeMember(
+            @PathVariable UUID eventId,
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        eventService.removeMember(eventId, memberId, user.getId());
+        return ResponseEntity.noContent().build();
+    }
+
     // ==================== TRANSACTIONS ====================
 
     @GetMapping("/{eventId}/transactions")

@@ -9,6 +9,8 @@ import type {
   UpdateEventInput,
   CreateEventTransactionInput,
   UpdateEventTransactionInput,
+  AddMemberInput,
+  UpdateMemberInput,
 } from '@/modules/event/models/event.types';
 
 export const useEventUsecases = () => {
@@ -52,6 +54,22 @@ export const useEventUsecases = () => {
 
   const getEventMembers = async (eventId: string): Promise<EventMember[]> => {
     return eventRemoteDataSource.getEventMembers(eventId);
+  };
+
+  const addMember = async (eventId: string, input: AddMemberInput): Promise<EventMember> => {
+    return eventRemoteDataSource.addMember(eventId, input);
+  };
+
+  const updateMember = async (
+    eventId: string,
+    memberId: string,
+    input: UpdateMemberInput
+  ): Promise<EventMember> => {
+    return eventRemoteDataSource.updateMember(eventId, memberId, input);
+  };
+
+  const removeMember = async (eventId: string, memberId: string): Promise<void> => {
+    return eventRemoteDataSource.removeMember(eventId, memberId);
   };
 
   // ==================== TRANSACTIONS ====================
@@ -106,6 +124,9 @@ export const useEventUsecases = () => {
     getGuestEventInfo,
     // Members
     getEventMembers,
+    addMember,
+    updateMember,
+    removeMember,
     // Transactions
     getEventTransactions,
     addEventTransaction,

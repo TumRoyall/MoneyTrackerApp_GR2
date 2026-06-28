@@ -29,14 +29,8 @@ public class EventMember {
     /**
      * User who is a member of the event
      */
-    @Column(name = "user_id", nullable = true)
+    @Column(name = "user_id", nullable = false)
     private UUID userId;
-
-    /**
-     * Guest name if user_id is null
-     */
-    @Column(name = "guest_name")
-    private String guestName;
 
     /**
      * Role in the event

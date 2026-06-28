@@ -14,10 +14,12 @@ import java.util.UUID;
 public class EventMemberResponse {
     private UUID id;
     private UUID eventId;
-    private UUID userId;
-    private String displayName;
+    private UUID userId;            // luôn có
+    private String displayName;     // user.fullName
     private String avatarUrl;
-    private String role;
+    private String role;            // OWNER / MEMBER
+    private boolean isOwner;        // = role == OWNER
+    private boolean isGuest;        // = user.isGuest == true
     private Instant joinedAt;
     private BigDecimal contribution;
     private Integer transactionCount;
@@ -35,5 +37,34 @@ public class EventMemberResponse {
         if (cmp > 0) return "CREDITOR";  // should receive
         if (cmp < 0) return "DEBTOR";     // owes money
         return "EVEN";
+    }
+
+    /**
+     * Factory: build response từ EventMember entity + contribution/txCount/balance đã tính.
+     */
+    public static EventMemberResponse from(
+        EventMember member,
+        com.examples.moneytracker.user.model.User user,
+        BigDecimal contribution,
+        int transactionCount,
+        BigDecimal balance
+    ) {
+        boolean isGuest = user != null && Boolean.TRUE.equals(user.getIsGuest());
+        String displayName = user != null ? user.getFullName() : "Unknown";
+
+        return new EventMemberResponse(
+            member.getId(),
+            member.getEventId(),
+            member.getUserId(),
+            displayName,
+            null,                       // avatar (TODO)
+            member.getRole().name(),
+            member.getRole() == EventMemberRole.OWNER,
+            isGuest,
+            member.getJoinedAt(),
+            contribution,
+            transactionCount,
+            balance
+        );
     }
 }

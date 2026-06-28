@@ -10,6 +10,8 @@ import type {
   UpdateEventInput,
   CreateEventTransactionInput,
   UpdateEventTransactionInput,
+  AddMemberInput,
+  UpdateMemberInput,
 } from '@/modules/event/models/event.types';
 
 export class EventRemoteDataSource {
@@ -56,6 +58,30 @@ export class EventRemoteDataSource {
   async getEventMembers(eventId: string): Promise<EventMember[]> {
     const response = await httpClient.get<ApiResponse<EventMember[]>>(`/api/events/${eventId}/members`);
     return response.data.data;
+  }
+
+  async addMember(eventId: string, payload: AddMemberInput): Promise<EventMember> {
+    const response = await httpClient.post<ApiResponse<EventMember>>(
+      `/api/events/${eventId}/members`,
+      payload
+    );
+    return response.data.data;
+  }
+
+  async updateMember(
+    eventId: string,
+    memberId: string,
+    payload: UpdateMemberInput
+  ): Promise<EventMember> {
+    const response = await httpClient.put<ApiResponse<EventMember>>(
+      `/api/events/${eventId}/members/${memberId}`,
+      payload
+    );
+    return response.data.data;
+  }
+
+  async removeMember(eventId: string, memberId: string): Promise<void> {
+    await httpClient.delete(`/api/events/${eventId}/members/${memberId}`);
   }
 
   async getEventTransactions(eventId: string): Promise<EventTransaction[]> {

@@ -20,8 +20,14 @@ import { useEventUsecases } from '@/modules/event/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { Button, BackButton, FAB, colors, spacing, CategoryPickerModal } from '@/components/common';
-import type { EventDetail, EventMember, EventTransaction, Settlement, CreateEventTransactionInput, UpdateEventTransactionInput } from '@/modules/event/models/event.types';
+import type { EventDetail, EventMember, EventTransaction, Settlement, CreateEventTransactionInput, UpdateEventTransactionInput, AddMemberInput, UpdateMemberInput } from '@/modules/event/models/event.types';
 import { formatCurrency, parseMoneyInput, formatMoneyInput } from '@/shared/utils/money';
+import {
+  buildEqualSplitParticipants,
+  calculateEqualSplit,
+  formatEqualSplitReport,
+  type EqualSplitParticipant,
+} from '@/modules/event/utils/equalSplit';
 
 export default function EventDetailScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
@@ -35,7 +41,10 @@ export default function EventDetailScreen() {
     settleEvent,
     addEventTransaction,
     updateEventTransaction,
-    deleteEventTransaction
+    deleteEventTransaction,
+    addMember,
+    updateMember,
+    removeMember,
   } = useEventUsecases();
   const { getCategories } = useCategoryUsecases();
   const { getWallets } = useWalletUsecases();
@@ -45,6 +54,9 @@ export default function EventDetailScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [showEqualSplitModal, setShowEqualSplitModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
 
   // Form state
   const [amount, setAmount] = useState('');
@@ -61,6 +73,19 @@ export default function EventDetailScreen() {
   const [editingTxId, setEditingTxId] = useState<string | null>(null);
   const [showTxOptionsModal, setShowTxOptionsModal] = useState(false);
   const [selectedTx, setSelectedTx] = useState<EventTransaction | null>(null);
+
+  // Equal-Split state
+  const [paidOverrides, setPaidOverrides] = useState<Record<string, string>>({});
+  const [receivedOverrides, setReceivedOverrides] = useState<Record<string, string>>({});
+
+  // Add Member form state — chỉ cần email, name = email mặc định
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+
+  // Edit Member form state (admin có thể sửa cả email + name cho guest)
+  const [showEditMemberModal, setShowEditMemberModal] = useState(false);
+  const [editingMember, setEditingMember] = useState<EventMember | null>(null);
+  const [editingMemberName, setEditingMemberName] = useState('');
+  const [editingMemberEmail, setEditingMemberEmail] = useState('');
 
   useEffect(() => {
     SecureStore.getItemAsync('display_username').then(name => {
@@ -162,6 +187,48 @@ export default function EventDetailScreen() {
     },
     onError: () => {
       Alert.alert('Lỗi', 'Không thể xoá giao dịch. Vui lòng thử lại.');
+    },
+  });
+
+  // Member CRUD mutations
+  const addMemberMutation = useMutation({
+    mutationFn: (input: AddMemberInput) => addMember(eventId!, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-members', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      setShowAddMemberModal(false);
+      setNewMemberEmail('');
+      Alert.alert('Thành công', 'Đã thêm thành viên!');
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error?.message || 'Không thể thêm thành viên.';
+      Alert.alert('Lỗi', msg);
+    },
+  });
+
+  const updateMemberMutation = useMutation({
+    mutationFn: ({ memberId, input }: { memberId: string; input: UpdateMemberInput }) =>
+      updateMember(eventId!, memberId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-members', eventId] });
+      Alert.alert('Thành công', 'Đã cập nhật thành viên!');
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error?.message || 'Không thể cập nhật thành viên.';
+      Alert.alert('Lỗi', msg);
+    },
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: (memberId: string) => removeMember(eventId!, memberId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-members', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      Alert.alert('Thành công', 'Đã xoá thành viên!');
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error?.message || 'Không thể xoá thành viên.';
+      Alert.alert('Lỗi', msg);
     },
   });
 
@@ -295,6 +362,129 @@ export default function EventDetailScreen() {
     );
   };
 
+  // ==================== EQUAL-SPLIT (chia đều kể cả khách) ====================
+
+  const isOwner = !!event && !!currentUserId && event.createdBy === currentUserId;
+
+  /**
+   * Build participants + apply user overrides (paid, received).
+   * Recalc mỗi khi members/transactions/overrides thay đổi.
+   */
+  const equalSplitParticipants: EqualSplitParticipant[] = (() => {
+    if (!members || !transactions) return [];
+    const base = buildEqualSplitParticipants(members, transactions);
+    return base.map((p) => ({
+      ...p,
+      isCurrentUser: members.find((m) => m.id === p.id)?.userId === currentUserId,
+      paid: paidOverrides[p.id] !== undefined ? parseMoneyInput(paidOverrides[p.id]) : p.paid,
+      received: parseMoneyInput(receivedOverrides[p.id] ?? '0'),
+    }));
+  })();
+
+  const equalSplitResult = (() => {
+    if (!event || equalSplitParticipants.length === 0) return null;
+    return calculateEqualSplit(equalSplitParticipants, event.totalSpent || 0);
+  })();
+
+  const handleCopyEqualSplitReport = async () => {
+    if (!event || !equalSplitResult) return;
+    try {
+      const text = formatEqualSplitReport(event.name, equalSplitResult);
+      await Clipboard.setStringAsync(text);
+      Alert.alert('Đã copy', 'Báo cáo chia đều đã được copy!');
+    } catch {
+      Alert.alert('Lỗi', 'Không thể copy báo cáo.');
+    }
+  };
+
+  const resetEqualSplitOverrides = () => {
+    setPaidOverrides({});
+    setReceivedOverrides({});
+  };
+
+  // ==================== MEMBER MANAGEMENT ====================
+
+  const handleAddMember = () => {
+    if (!newMemberEmail.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập email.');
+      return;
+    }
+    const email = newMemberEmail.trim().toLowerCase();
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Lỗi', 'Email không hợp lệ.');
+      return;
+    }
+    // Name mặc định = email. Admin có thể sửa sau qua "Sửa tên".
+    addMemberMutation.mutate({
+      guestName: email,
+      guestEmail: email,
+    });
+  };
+
+  const handleRemoveMember = (member: EventMember) => {
+    if (member.userId === currentUserId) {
+      Alert.alert('Lỗi', 'OWNER không thể tự xoá. Hãy chuyển quyền trước.');
+      return;
+    }
+    Alert.alert(
+      'Xoá thành viên',
+      `Bạn có chắc chắn muốn xoá ${member.displayName}? Lịch sử giao dịch của họ sẽ được giữ lại.`,
+      [
+        { text: 'Huỷ', style: 'cancel' },
+        {
+          text: 'Xoá',
+          style: 'destructive',
+          onPress: () => removeMemberMutation.mutate(member.id),
+        },
+      ]
+    );
+  };
+
+  const handleEditMemberName = (member: EventMember) => {
+    if (!member.isGuest) {
+      Alert.alert('Thông báo', 'Không thể sửa thông tin của thành viên là user thật.');
+      return;
+    }
+    setEditingMember(member);
+    setEditingMemberName(member.displayName);
+    setEditingMemberEmail(member.guestEmail || '');
+    setShowEditMemberModal(true);
+  };
+
+  const handleSaveMemberName = () => {
+    if (!editingMember) return;
+    if (!editingMemberName.trim()) {
+      Alert.alert('Lỗi', 'Tên không được để trống.');
+      return;
+    }
+    if (!editingMemberEmail.trim()) {
+      Alert.alert('Lỗi', 'Email không được để trống.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editingMemberEmail.trim())) {
+      Alert.alert('Lỗi', 'Email không hợp lệ.');
+      return;
+    }
+    updateMemberMutation.mutate(
+      {
+        memberId: editingMember.id,
+        input: {
+          displayName: editingMemberName.trim(),
+          guestEmail: editingMemberEmail.trim().toLowerCase(),
+        },
+      },
+      {
+        onSuccess: () => {
+          setShowEditMemberModal(false);
+          setEditingMember(null);
+        },
+      }
+    );
+  };
+
   if (eventLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -321,6 +511,11 @@ export default function EventDetailScreen() {
           <Text style={styles.eventName}>{event.name}</Text>
         </View>
         <View style={styles.headerActions}>
+          {isOwner && (
+            <Pressable style={styles.headerIconBtn} onPress={() => setShowMembersModal(true)}>
+              <Ionicons name="people-outline" size={22} color="#1f1f1f" />
+            </Pressable>
+          )}
           <Pressable style={styles.headerIconBtn} onPress={() => setShowShareModal(true)}>
             <Ionicons name="share-outline" size={22} color="#1f1f1f" />
           </Pressable>
@@ -580,7 +775,7 @@ export default function EventDetailScreen() {
             </View>
 
             {settlement ? (
-              <>
+              <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.settlementSummary}>
                   <View style={styles.settlementRow}>
                     <Text style={styles.settlementLabel}>Tổng chi</Text>
@@ -588,16 +783,373 @@ export default function EventDetailScreen() {
                   </View>
                 </View>
 
-                {event.status === 'ACTIVE' && (
-                  <Button
-                    title="Hoàn thành kết toán"
-                    onPress={handleSettle}
-                    variant="primary"
-                  />
+                <Text style={[styles.label, { marginTop: 8 }]}>Chọn chế độ kết toán</Text>
+
+                <Pressable
+                  style={styles.modeCard}
+                  onPress={() => {
+                    setShowSettlementModal(false);
+                    resetEqualSplitOverrides();
+                    setShowEqualSplitModal(true);
+                  }}
+                >
+                  <Ionicons name="pie-chart-outline" size={28} color="#29bcc8" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.modeCardTitle}>Chia đều (kể cả khách)</Text>
+                    <Text style={styles.modeCardSubtitle}>
+                      Tính tiền cho từng người dựa trên đã chi & đã nhận
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#8b8b8b" />
+                </Pressable>
+
+                <View
+                  style={[styles.modeCard, { borderColor: '#29bcc8', borderWidth: 1, backgroundColor: '#f0fdfd' }]}
+                >
+                  <Ionicons name="swap-horizontal-outline" size={28} color="#1f6681" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.modeCardTitle}>Kết toán tối ưu (user)</Text>
+                    <Text style={styles.modeCardSubtitle}>
+                      Tối ưu số lệnh chuyển — chỉ tính cho thành viên user
+                    </Text>
+                  </View>
+                  <Ionicons name="checkmark-circle" size={20} color="#29bcc8" />
+                </View>
+
+                {settlement.memberBalances.length > 0 && (
+                  <View style={{ marginTop: 12, gap: 8 }}>
+                    <Text style={styles.label}>Cân đối (chỉ user)</Text>
+                    {settlement.memberBalances.map((mb) => (
+                      <View key={mb.userId} style={styles.balanceRow}>
+                        <Text style={styles.balanceName}>{mb.userName}</Text>
+                        <Text style={styles.balanceAmount}>
+                          {mb.balance >= 0 ? '+' : ''}{formatCurrency(mb.balance, 'VND')}
+                        </Text>
+                      </View>
+                    ))}
+                    {settlement.settlements.length > 0 && (
+                      <>
+                        <Text style={[styles.label, { marginTop: 8 }]}>Lệnh chuyển</Text>
+                        {settlement.settlements.map((s, idx) => (
+                          <View key={idx} style={styles.balanceRow}>
+                            <Text style={styles.balanceName}>
+                              {s.fromUserName} → {s.toUserName}
+                            </Text>
+                            <Text style={styles.balanceAmount}>
+                              {formatCurrency(s.amount, 'VND')}
+                            </Text>
+                          </View>
+                        ))}
+                      </>
+                    )}
+                  </View>
                 )}
-              </>
+
+                {isOwner && event.status === 'ACTIVE' && (
+                  <View style={{ marginTop: 16 }}>
+                    <Button
+                      title="Hoàn thành kết toán"
+                      onPress={handleSettle}
+                      variant="primary"
+                    />
+                  </View>
+                )}
+              </ScrollView>
             ) : (
               <ActivityIndicator size="large" color="#29bcc8" />
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Manage Members Modal (OWNER only) */}
+      <Modal visible={showMembersModal} animationType="slide" transparent onRequestClose={() => setShowMembersModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Quản lý thành viên ({members?.length ?? 0})</Text>
+              <Pressable onPress={() => setShowMembersModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: '70%' }}>
+              {members?.map((member) => (
+                <View key={member.id} style={styles.memberManageRow}>
+                  <View style={styles.memberAvatar}>
+                    <Text style={styles.memberAvatarText}>
+                      {member.displayName.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.memberManageName}>{member.displayName}</Text>
+                      {member.isOwner && (
+                        <View style={styles.ownerBadge}>
+                          <Text style={styles.ownerBadgeText}>OWNER</Text>
+                        </View>
+                      )}
+                      {member.isGuest && (
+                        <View style={styles.guestBadge}>
+                          <Text style={styles.guestBadgeText}>Khách</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.memberManageEmail}>
+                      {member.guestEmail || (member.userId ? `User ID: ${member.userId.slice(0, 8)}...` : '')}
+                    </Text>
+                  </View>
+                  <Pressable
+                    style={styles.memberActionBtn}
+                    onPress={() => handleEditMemberName(member)}
+                    disabled={!member.isGuest}
+                  >
+                    <Ionicons name="pencil-outline" size={20} color={member.isGuest ? '#29bcc8' : '#ccc'} />
+                  </Pressable>
+                  <Pressable
+                    style={styles.memberActionBtn}
+                    onPress={() => handleRemoveMember(member)}
+                    disabled={member.userId === currentUserId}
+                  >
+                    <Ionicons
+                      name="trash-outline"
+                      size={20}
+                      color={member.userId === currentUserId ? '#ccc' : '#f36e79'}
+                    />
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+
+            {event.status === 'ACTIVE' && (
+              <Button
+                title="＋ Thêm thành viên"
+                onPress={() => setShowAddMemberModal(true)}
+                variant="primary"
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add Member Modal */}
+      <Modal visible={showAddMemberModal} animationType="slide" transparent onRequestClose={() => setShowAddMemberModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Thêm thành viên</Text>
+              <Pressable onPress={() => setShowAddMemberModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            <Text style={styles.label}>Email <Text style={{ color: '#f36e79' }}>*</Text></Text>
+            <TextInput
+              style={styles.input}
+              placeholder="VD: hung@example.com"
+              placeholderTextColor="#8b8b8b"
+              value={newMemberEmail}
+              onChangeText={setNewMemberEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <Text style={styles.helperText}>
+              Email dùng để định danh duy nhất khách trong event này.{'\n'}
+              Tên hiển thị mặc định = email — bạn có thể sửa sau qua nút ✏️.
+            </Text>
+
+            <Button
+              title="Thêm"
+              onPress={handleAddMember}
+              variant="primary"
+              loading={addMemberMutation.isPending}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Member Modal (admin sửa email + name cho guest) */}
+      <Modal visible={showEditMemberModal} animationType="slide" transparent onRequestClose={() => setShowEditMemberModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Sửa thông tin thành viên</Text>
+              <Pressable onPress={() => setShowEditMemberModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            {editingMember && (
+              <>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editingMemberEmail}
+                  onChangeText={setEditingMemberEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+
+                <Text style={styles.label}>Tên hiển thị</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editingMemberName}
+                  onChangeText={setEditingMemberName}
+                />
+
+                <Text style={styles.helperText}>
+                  Đổi email sẽ dùng làm định danh mới. Nếu bạn không đổi tên, hệ thống sẽ tự đặt tên = email.
+                </Text>
+
+                <Button
+                  title="Lưu"
+                  onPress={handleSaveMemberName}
+                  variant="primary"
+                  loading={updateMemberMutation.isPending}
+                />
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Equal-Split Modal (chia đều kể cả khách) */}
+      <Modal visible={showEqualSplitModal} animationType="slide" transparent onRequestClose={() => setShowEqualSplitModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Pressable onPress={() => {
+                  setShowEqualSplitModal(false);
+                  setShowSettlementModal(true);
+                }}>
+                  <Ionicons name="arrow-back" size={24} color="#333" />
+                </Pressable>
+                <Text style={styles.modalTitle}>
+                  Chia đều{equalSplitResult ? ` • ${equalSplitResult.participantCount} người` : ''}
+                </Text>
+              </View>
+              <Pressable onPress={() => setShowEqualSplitModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            {equalSplitResult && equalSplitResult.participantCount > 0 ? (
+              <>
+                <View style={styles.settlementSummary}>
+                  <View style={styles.settlementRow}>
+                    <Text style={styles.settlementLabel}>Tổng chi</Text>
+                    <Text style={styles.settlementValue}>
+                      {formatCurrency(equalSplitResult.totalSpent, 'VND')}
+                    </Text>
+                  </View>
+                  <View style={styles.settlementRow}>
+                    <Text style={styles.settlementLabel}>Mỗi người</Text>
+                    <Text style={styles.settlementValue}>
+                      {formatCurrency(equalSplitResult.perPersonShare, 'VND')}
+                    </Text>
+                  </View>
+                </View>
+
+                <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+                  {equalSplitResult.rows.map((row) => {
+                    const p = row.participant;
+                    const isPositive = row.net > 0;
+                    const isNegative = row.net < 0;
+                    const netColor = isPositive ? '#34a795' : isNegative ? '#f36e79' : '#8b8b8b';
+                    return (
+                      <View key={p.id} style={styles.equalSplitRow}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Ionicons
+                            name={p.isGuest ? 'person-outline' : 'person'}
+                            size={18}
+                            color={p.isGuest ? '#1f6681' : '#1f1f1f'}
+                          />
+                          <Text style={styles.equalSplitName}>
+                            {p.name}
+                            {p.isCurrentUser ? ' (Bạn)' : ''}
+                          </Text>
+                          {p.isGuest && (
+                            <View style={styles.guestBadge}>
+                              <Text style={styles.guestBadgeText}>Khách</Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <View style={styles.equalSplitInputs}>
+                          <View style={styles.equalSplitInputCol}>
+                            <Text style={styles.equalSplitInputLabel}>Đã chi</Text>
+                            <TextInput
+                              style={styles.equalSplitInput}
+                              value={paidOverrides[p.id] ?? formatMoneyInput(p.paid)}
+                              onChangeText={(text) => setPaidOverrides((prev) => ({ ...prev, [p.id]: text }))}
+                              keyboardType="numeric"
+                              placeholder="0"
+                              placeholderTextColor="#8b8b8b"
+                            />
+                          </View>
+                          <View style={styles.equalSplitInputCol}>
+                            <Text style={styles.equalSplitInputLabel}>Đã nhận</Text>
+                            <TextInput
+                              style={styles.equalSplitInput}
+                              value={receivedOverrides[p.id] ?? ''}
+                              onChangeText={(text) => setReceivedOverrides((prev) => ({ ...prev, [p.id]: text }))}
+                              keyboardType="numeric"
+                              placeholder="0"
+                              placeholderTextColor="#8b8b8b"
+                            />
+                          </View>
+                        </View>
+
+                        <View style={styles.equalSplitNet}>
+                          <Text style={[styles.equalSplitNetText, { color: netColor }]}>
+                            {isPositive ? '+' : ''}{formatCurrency(row.net, 'VND')}
+                          </Text>
+                          <Text style={styles.equalSplitNetSub}>
+                            {isPositive ? 'được nhận' : isNegative ? 'phải trả' : 'cân bằng'}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+
+                {equalSplitResult.transfers.length > 0 && (
+                  <View style={{ marginTop: 8 }}>
+                    <Text style={styles.label}>Lệnh chuyển</Text>
+                    <View style={{ gap: 6 }}>
+                      {equalSplitResult.transfers.map((t, idx) => (
+                        <View key={idx} style={styles.transferRow}>
+                          <Text style={styles.transferText}>
+                            {t.fromName} → {t.toName}
+                          </Text>
+                          <Text style={styles.transferAmount}>
+                            {formatCurrency(t.amount, 'VND')}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                <View style={{ marginTop: 12 }}>
+                  <Button
+                    title="📋 Copy báo cáo"
+                    onPress={handleCopyEqualSplitReport}
+                    variant="primary"
+                  />
+                </View>
+              </>
+            ) : (
+              <View style={styles.emptyState}>
+                <Ionicons name="calculator-outline" size={48} color="#ccc" />
+                <Text style={styles.emptyText}>
+                  Chưa có dữ liệu để chia đều. Hãy thêm giao dịch trước.
+                </Text>
+              </View>
             )}
           </View>
         </View>
@@ -1108,5 +1660,167 @@ const styles = StyleSheet.create({
   txOptionText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+
+  // ==================== Settlement mode cards ====================
+  modeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    backgroundColor: '#f0f7f9',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#d8eff3',
+  },
+  modeCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1f1f1f',
+  },
+  modeCardSubtitle: {
+    fontSize: 13,
+    color: '#5f6b75',
+    marginTop: 2,
+  },
+  balanceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#fafbfc',
+    borderRadius: 10,
+  },
+  balanceName: {
+    fontSize: 14,
+    color: '#1f1f1f',
+  },
+  balanceAmount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1f6681',
+  },
+
+  // ==================== Member Management ====================
+  memberManageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f3f5',
+  },
+  memberManageName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1f1f1f',
+  },
+  memberManageEmail: {
+    fontSize: 13,
+    color: '#5f6b75',
+    marginTop: 2,
+  },
+  memberActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0f2f4',
+  },
+  guestBadge: {
+    backgroundColor: '#eef7f8',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#b6e3ea',
+  },
+  guestBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#1f6681',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#8b8b8b',
+    marginBottom: 12,
+  },
+
+  // ==================== Equal-Split ====================
+  equalSplitRow: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f3f5',
+    gap: 8,
+  },
+  equalSplitName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1f1f1f',
+  },
+  equalSplitInputs: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  equalSplitInputCol: {
+    flex: 1,
+  },
+  equalSplitInputLabel: {
+    fontSize: 12,
+    color: '#5f6b75',
+    marginBottom: 4,
+  },
+  equalSplitInput: {
+    minHeight: 40,
+    borderWidth: 1,
+    borderColor: '#d8dde3',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#1f1f1f',
+    backgroundColor: '#fff',
+  },
+  equalSplitNet: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  equalSplitNetText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  equalSplitNetSub: {
+    fontSize: 12,
+    color: '#8b8b8b',
+  },
+  transferRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#fffbe6',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ffe58f',
+  },
+  transferText: {
+    fontSize: 14,
+    color: '#1f1f1f',
+  },
+  transferAmount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#d48806',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 12,
   },
 });

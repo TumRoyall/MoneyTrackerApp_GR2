@@ -18,7 +18,6 @@ public class EventTransactionResponse {
     private UUID creatorId;
     private String creatorName;
     private String creatorAvatar;
-    private String guestName;
     private UUID walletId;
     private BigDecimal amount;
     private UUID categoryId;

@@ -38,11 +38,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
 
     long countByEventIdAndDeletedAtIsNull(UUID eventId);
 
-    @Query("SELECT t.createdBy, COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.eventId = :eventId AND t.deletedAt IS NULL AND t.createdBy IS NOT NULL GROUP BY t.createdBy")
+    @Query("SELECT t.createdBy, COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.eventId = :eventId AND t.deletedAt IS NULL GROUP BY t.createdBy")
     List<Object[]> sumAmountByPayer(@Param("eventId") UUID eventId);
-
-    @Query("SELECT t.guestName, COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.eventId = :eventId AND t.deletedAt IS NULL AND t.guestName IS NOT NULL GROUP BY t.guestName")
-    List<Object[]> sumAmountByGuestPayer(@Param("eventId") UUID eventId);
 
     List<Transaction> findByEventIdAndCreatedByAndDeletedAtIsNull(UUID eventId, UUID createdBy);
 
@@ -54,5 +51,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
     java.math.BigDecimal sumAmountByEventIdAndCreatedBy(@Param("eventId") UUID eventId, @Param("createdBy") UUID createdBy);
 
     long countByEventIdAndCreatedByAndDeletedAtIsNull(UUID eventId, UUID createdBy);
+
+
 }
 

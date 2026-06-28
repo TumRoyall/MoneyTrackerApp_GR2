@@ -339,7 +339,14 @@ export const BudgetToolScreen = () => {
         <View style={styles.headerRow}>
           <BackButton to="/(tabs)/tools" />
           <Text style={styles.title}>Ngân sách</Text>
-          <View style={{ width: 24 }} />
+          <Pressable
+            style={styles.aiHeaderButton}
+            onPress={() => router.push('/(tabs)/tools/budgets/ai-create')}
+            hitSlop={8}
+          >
+            <Ionicons name="sparkles" size={16} color="#0f8c95" />
+            <Text style={styles.aiHeaderButtonText}>Tạo bằng AI</Text>
+          </Pressable>
         </View>
 
         <View style={styles.walletToggleRow}>
@@ -516,20 +523,11 @@ export const BudgetToolScreen = () => {
         )}
       </ScrollView>
 
-      <View style={styles.fabRow}>
-        <Pressable
-          style={styles.aiFab}
-          onPress={() => router.push('/(tabs)/tools/budgets/ai-create')}
-        >
-          <Ionicons name="sparkles" size={18} color="#0f8c95" />
-          <Text style={styles.aiFabText}>Tạo bằng AI</Text>
-        </Pressable>
-        <FAB
-          icon={<Ionicons name="add" size={24} color="#fff" />}
-          label="Thêm ngân sách"
-          onPress={() => setShowCreateModal(true)}
-        />
-      </View>
+      <FAB
+        icon={<Ionicons name="add" size={24} color="#fff" />}
+        label="Thêm ngân sách"
+        onPress={() => setShowCreateModal(true)}
+      />
 
       <Modal visible={showCreateModal} transparent animationType="slide" onRequestClose={() => setShowCreateModal(false)}>
         <View style={styles.modalOverlay}>
@@ -811,9 +809,26 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   title: {
+    flex: 1,
     fontSize: typography.sizes['3xl'],
     fontWeight: typography.weights.bold,
     color: colors.textPrimary,
+  },
+  aiHeaderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#e9fbfd',
+    borderWidth: 1,
+    borderColor: '#29bcc8',
+  },
+  aiHeaderButtonText: {
+    color: '#0f8c95',
+    fontSize: 13,
+    fontWeight: '700',
   },
   walletToggleRow: {
     flexDirection: 'row',

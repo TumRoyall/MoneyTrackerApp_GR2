@@ -19,6 +19,7 @@ public interface EventMemberRepository extends JpaRepository<EventMember, UUID> 
      */
     Optional<EventMember> findByEventIdAndUserIdAndDeletedAtIsNull(UUID eventId, UUID userId);
 
+
     /**
      * Check if user is member of event
      */
