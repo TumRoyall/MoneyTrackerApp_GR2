@@ -1,1 +1,1 @@
-export {};
+export { AnalysisModal } from './AnalysisModal';

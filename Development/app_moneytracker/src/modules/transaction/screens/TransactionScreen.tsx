@@ -26,6 +26,8 @@ import { useTransactionUsecases } from '@/modules/transaction/usecases';
 import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { formatMoneyInput, parseMoneyInput, formatVndAmount } from '@/shared/utils/money';
 import { Button, EmptyState, FAB, colors, CategoryPickerModal } from '@/components/common';
+import { AnalysisModal } from '../components/AnalysisModal';
+import { exportTransactionsByMonthToCSV, TransactionForExport } from '@/shared/utils/exportCSV';
 
 type CategoryType = 'EXPENSE' | 'INCOME';
 
@@ -282,6 +284,7 @@ export const TransactionScreen = () => {
   const [showCategoryPickerModal, setShowCategoryPickerModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
 
 
   const [formCategoryId, setFormCategoryId] = useState('');
@@ -489,6 +492,44 @@ export const TransactionScreen = () => {
     setCustomStartDate(tempCustomStartDate);
     setCustomEndDate(tempCustomEndDate);
     setShowRangePickerModal(false);
+  };
+
+  const handleExportReport = async () => {
+    if (transactions.length === 0) {
+      Alert.alert('Không có dữ liệu', 'Không có giao dịch nào để xuất báo cáo.');
+      return;
+    }
+
+    Alert.alert(
+      'Xuất báo cáo',
+      'Bạn có muốn xuất báo cáo dưới dạng file CSV theo tháng không?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xuất',
+          onPress: async () => {
+            try {
+              const transactionsForExport: TransactionForExport[] = transactions.map((tx) => {
+                const category = categories.find((c) => c.categoryId === tx.categoryId);
+                return {
+                  date: tx.date,
+                  categoryName: category?.name || 'Danh mục',
+                  type: category?.type?.toUpperCase() === 'INCOME' ? 'INCOME' : 'EXPENSE',
+                  amount: tx.amount,
+                  note: tx.note,
+                  walletName: currentWallet?.name,
+                };
+              });
+              await exportTransactionsByMonthToCSV(transactionsForExport);
+              Alert.alert('Thành công', 'Báo cáo đã được xuất thành công!');
+            } catch (error) {
+              console.error('Export error:', error);
+              Alert.alert('Lỗi', 'Không thể xuất báo cáo. Vui lòng thử lại.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const changeFormCategoryType = (nextType: CategoryType) => {
@@ -784,7 +825,12 @@ export const TransactionScreen = () => {
             <Pressable onPress={() => setShowSearchModal(true)}>
               <Ionicons name="search" size={24} color="#1f1f1f" />
             </Pressable>
-            <Ionicons name="calendar" size={22} color="#1f1f1f" />
+            <Pressable onPress={() => setShowAnalysisModal(true)}>
+              <Ionicons name="analytics" size={24} color="#1f1f1f" />
+            </Pressable>
+            <Pressable onPress={handleExportReport}>
+              <Ionicons name="download-outline" size={24} color="#1f1f1f" />
+            </Pressable>
             <Pressable onPress={() => router.push('/ai-companion')}>
               <Ionicons name="sparkles" size={22} color="#1f1f1f" />
             </Pressable>
@@ -1400,6 +1446,14 @@ export const TransactionScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <AnalysisModal
+        visible={showAnalysisModal}
+        onClose={() => setShowAnalysisModal(false)}
+        transactions={transactions}
+        categories={categories}
+        onExportReport={handleExportReport}
+      />
 
     </View>
   );

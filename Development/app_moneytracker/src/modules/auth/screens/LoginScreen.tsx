@@ -17,13 +17,13 @@ export const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   // DEV ONLY: AUTO LOGIN
-  // useEffect(() => {
-  //   const autoLogin = async () => {
-  //     await run({ email: 'nguyenkimngochtm@gmail.com', password: 'admin' });
-  //     router.replace('/(tabs)/wallets');
-  //   };
-  //   autoLogin();
-  // }, []);
+  useEffect(() => {
+    const autoLogin = async () => {
+      await run({ email: 'nguyenkimngochtm@gmail.com', password: 'admin' });
+      router.replace('/(tabs)/wallets');
+    };
+    autoLogin();
+  }, []);
 
   const { control, handleSubmit } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),

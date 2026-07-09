@@ -25,6 +25,8 @@ import { useStreakUsecases } from '@/modules/streak/usecases/useStreakUsecases';
 import { formatCurrency } from '@/shared/utils/money';
 import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/money';
 import { StreakScreen } from '@/modules/streak/screens';
+import { AnalysisModal } from '@/modules/transaction/components/AnalysisModal';
+import { exportTransactionsByMonthToCSV, TransactionForExport } from '@/shared/utils/exportCSV';
 
 type CategoryType = 'EXPENSE' | 'INCOME';
 type TimeMode = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
@@ -208,6 +210,7 @@ export const WalletHomeScreen = () => {
   const [balance, setBalance] = useState('0');
 
   const [showStreakModal, setShowStreakModal] = useState(false);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const { recordActivity } = useStreakUsecases();
 
   useEffect(() => {
@@ -600,6 +603,44 @@ export const WalletHomeScreen = () => {
     );
   };
 
+  const handleExportReport = async () => {
+    if (transactions.length === 0) {
+      Alert.alert('Không có dữ liệu', 'Không có giao dịch nào để xuất báo cáo.');
+      return;
+    }
+
+    Alert.alert(
+      'Xuất báo cáo',
+      'Bạn có muốn xuất báo cáo dưới dạng file CSV theo tháng không?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xuất',
+          onPress: async () => {
+            try {
+              const transactionsForExport: TransactionForExport[] = transactions.map((tx) => {
+                const category = categories.find((c) => c.categoryId === tx.categoryId);
+                return {
+                  date: tx.date,
+                  categoryName: category?.name || 'Danh mục',
+                  type: category?.type?.toUpperCase() === 'INCOME' ? 'INCOME' : 'EXPENSE',
+                  amount: tx.amount,
+                  note: tx.note,
+                  walletName: currentWallet?.name,
+                };
+              });
+              await exportTransactionsByMonthToCSV(transactionsForExport);
+              Alert.alert('Thành công', 'Báo cáo đã được xuất thành công!');
+            } catch (error) {
+              console.error('Export error:', error);
+              Alert.alert('Lỗi', 'Không thể xuất báo cáo. Vui lòng thử lại.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -613,12 +654,15 @@ export const WalletHomeScreen = () => {
             </View>
             <Text style={styles.quickCardText}>Những cột mốc</Text>
           </Pressable>
-          <View style={[styles.quickCard, styles.analysisCard]}>
+          <Pressable 
+            style={[styles.quickCard, styles.analysisCard]}
+            onPress={() => setShowAnalysisModal(true)}
+          >
             <View style={[styles.quickCardIcon, styles.analysisIcon]}>
               <Ionicons name="bar-chart" size={22} color="#4da6c4" />
             </View>
             <Text style={styles.quickCardText}>Phân tích thêm</Text>
-          </View>
+          </Pressable>
         </View>
 
         <View style={styles.botWrap}>
@@ -1114,6 +1158,13 @@ export const WalletHomeScreen = () => {
       <StreakScreen 
         visible={showStreakModal}
         onClose={() => setShowStreakModal(false)}
+      />
+      <AnalysisModal
+        visible={showAnalysisModal}
+        onClose={() => setShowAnalysisModal(false)}
+        transactions={transactions}
+        categories={categories}
+        onExportReport={handleExportReport}
       />
     </View>
   );
