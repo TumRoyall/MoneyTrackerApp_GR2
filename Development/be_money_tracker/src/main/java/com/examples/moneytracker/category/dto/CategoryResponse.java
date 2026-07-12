@@ -14,6 +14,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CategoryResponse {
     private UUID categoryId;
+    private String groupId;
     private String name;
     private String icon;
     private String color;

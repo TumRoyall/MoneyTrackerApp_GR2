@@ -16,6 +16,7 @@ const CURSOR_KEY = 'lastCursor';
 
 export class SyncService {
   private initialized = false;
+  private isSyncing = false;
 
   constructor(
     private readonly remote: SyncRemoteDataSource,
@@ -52,9 +53,15 @@ export class SyncService {
   }
 
   async syncOnce() {
-    await this.ensureInitialized();
-    await this.pushOutbox();
-    await this.pullChanges();
+    if (this.isSyncing) return;
+    this.isSyncing = true;
+    try {
+      await this.ensureInitialized();
+      await this.pushOutbox();
+      await this.pullChanges();
+    } finally {
+      this.isSyncing = false;
+    }
   }
 
   async syncInBackground() {
@@ -125,6 +132,10 @@ export class SyncService {
           result.serverVersion ?? null,
           result.serverData ? JSON.stringify(result.serverData) : null,
         );
+        continue;
+      }
+      if (result.status === 'error' && result.error?.includes('baseVersion is required for update/delete')) {
+        await this.outboxStore.markOk(result.outboxId);
         continue;
       }
       console.error('SYNC ERROR:', result);

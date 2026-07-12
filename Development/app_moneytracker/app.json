@@ -29,6 +29,13 @@
     },
     "android": {
       "package": "com.tumroyal.moneytrackermobile"
+    },
+    "ios": {
+      "bundleIdentifier": "com.tumroyal.moneytracker",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     }
   }
 }

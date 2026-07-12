@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import * as LucideIcons from 'lucide-react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -27,16 +28,32 @@ import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { formatMoneyInput, parseMoneyInput, formatVndAmount } from '@/shared/utils/money';
 import { Button, EmptyState, FAB, colors, CategoryPickerModal } from '@/components/common';
 import { AnalysisModal } from '../components/AnalysisModal';
+import { AutoAddTransactionModal } from '../components/AutoAddTransactionModal';
 import { exportTransactionsByMonthToCSV, TransactionForExport } from '@/shared/utils/exportCSV';
+import { parseTransaction } from '../utils/transactionClassifier';
 
 type CategoryType = 'EXPENSE' | 'INCOME';
 
 type TimeMode = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
 type CalendarTarget = 'day' | 'customStart' | 'customEnd' | 'formDate';
 
+// Helper to render dynamic Lucide icon
+const CategoryIcon = ({ icon, size, color }: { icon?: string | null; size: number; color: string }) => {
+  if (!icon) {
+    const FallbackIcon = LucideIcons.HelpCircle;
+    return <FallbackIcon name="HelpCircle" size={size} color={color} />;
+  }
+  const IconComponent = (LucideIcons as any)[icon];
+  if (IconComponent) {
+    return <IconComponent name={icon} size={size} color={color} />;
+  }
+  const FallbackIcon = LucideIcons.HelpCircle;
+  return <FallbackIcon name="HelpCircle" size={size} color={color} />;
+};
+
 const defaultCategoryIconByType: Record<CategoryType, string> = {
-  EXPENSE: 'food-fork-drink',
-  INCOME: 'briefcase',
+  EXPENSE: 'UtensilsCrossed',
+  INCOME: 'Wallet',
 };
 
 const timeModeLabel: Record<TimeMode, string> = {
@@ -285,6 +302,7 @@ export const TransactionScreen = () => {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [showAutoAddModal, setShowAutoAddModal] = useState(false);
 
 
   const [formCategoryId, setFormCategoryId] = useState('');
@@ -590,6 +608,37 @@ export const TransactionScreen = () => {
 
   const calendarCells = useMemo(() => buildCalendarMatrix(calendarMonth), [calendarMonth]);
 
+  const handleAutoAddSubmit = (text: string) => {
+    setShowAutoAddModal(false);
+    const parsed = parseTransaction(text);
+    
+    // Check if categoryId exists directly (rare if UUID)
+    let finalCategoryId = parsed.categoryId;
+    const categoryByExactId = categories.find((c) => c.categoryId === parsed.categoryId);
+    
+    if (categoryByExactId) {
+      finalCategoryId = categoryByExactId.categoryId;
+    } else {
+      // Try finding by groupId (which matches 'food', 'shopping' from the ML model)
+      const categoryByGroupId = categories.find((c) => c.groupId === parsed.categoryId);
+      if (categoryByGroupId) {
+        finalCategoryId = categoryByGroupId.categoryId;
+      } else {
+        // Fallback
+        const defaultFallbackId = parsed.type === 'INCOME' ? 'uncategorized_income' : 'uncategorized';
+        const defaultCategory = categories.find((c) => c.groupId === defaultFallbackId || c.categoryId === defaultFallbackId);
+        finalCategoryId = defaultCategory ? defaultCategory.categoryId : defaultFallbackId;
+      }
+    }
+
+    openCreateTransactionModal({
+      amount: parsed.amount.toString(),
+      categoryId: finalCategoryId,
+      note: parsed.originalText,
+      date: formatIsoDate(new Date()),
+    });
+  };
+
   const openCreateTransactionModal = (draft?: {
     walletId?: string;
     categoryId?: string;
@@ -825,14 +874,11 @@ export const TransactionScreen = () => {
             <Pressable onPress={() => setShowSearchModal(true)}>
               <Ionicons name="search" size={24} color="#1f1f1f" />
             </Pressable>
-            <Pressable onPress={() => setShowAnalysisModal(true)}>
-              <Ionicons name="analytics" size={24} color="#1f1f1f" />
-            </Pressable>
             <Pressable onPress={handleExportReport}>
               <Ionicons name="download-outline" size={24} color="#1f1f1f" />
             </Pressable>
-            <Pressable onPress={() => router.push('/ai-companion')}>
-              <Ionicons name="sparkles" size={22} color="#1f1f1f" />
+            <Pressable onPress={() => setShowAutoAddModal(true)}>
+              <Ionicons name="flash-outline" size={24} color="#1f1f1f" />
             </Pressable>
           </View>
         </View>
@@ -910,7 +956,7 @@ export const TransactionScreen = () => {
                 return (
                   <Pressable key={item.transactionId} style={styles.transactionCard} onPress={() => openEditTransactionModal(item)}>
                     <View style={[styles.transactionIconWrap, { backgroundColor: catColor + '20' }]}>
-                      <MaterialCommunityIcons name={(category?.icon as any) || (isIncome ? 'briefcase' : 'cart')} size={24} color={catColor} />
+                      <CategoryIcon icon={category?.icon} size={24} color={catColor} />
                     </View>
 
                     <View style={styles.transactionInfo}>
@@ -969,7 +1015,7 @@ export const TransactionScreen = () => {
             >
               <View style={styles.categoryPickerValueWrap}>
                 <View style={styles.categoryPickerIconWrap}>
-                  <MaterialCommunityIcons name={(categories.find((item) => item.categoryId === formCategoryId)?.icon as any) || 'help'} size={18} color="#29bcc8" />
+                  <CategoryIcon icon={categories.find((item) => item.categoryId === formCategoryId)?.icon} size={18} color="#29bcc8" />
                 </View>
                 <Text style={styles.categoryPickerValueText}>
                   {categories.find((item) => item.categoryId === formCategoryId)?.name || 'Chọn danh mục'}
@@ -986,6 +1032,28 @@ export const TransactionScreen = () => {
               value={formAmount}
               onChangeText={(text) => setFormAmount(formatMoneyInput(text))}
             />
+
+            {/* Quick amount buttons */}
+            <View style={styles.quickAmountRow}>
+              {[50000, 100000, 200000, 500000, 1000000, 2000000].map((amount) => {
+                const label = amount >= 1000000
+                  ? `${amount / 1000000}M`
+                  : `${amount / 1000}K`;
+                const currentAmount = parseMoneyInput(formAmount);
+                const isSelected = currentAmount === amount;
+                return (
+                  <Pressable
+                    key={amount}
+                    style={[styles.quickAmountBtn, isSelected ? styles.quickAmountBtnActive : null]}
+                    onPress={() => setFormAmount(formatMoneyInput(String(amount)))}
+                  >
+                    <Text style={[styles.quickAmountBtnText, isSelected ? styles.quickAmountBtnTextActive : null]}>
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
 
             <Text style={styles.modalLabel}>Ngày</Text>
             <Pressable
@@ -1418,7 +1486,7 @@ export const TransactionScreen = () => {
                           }}
                         >
                           <View style={styles.searchResultIcon}>
-                            <MaterialCommunityIcons name={(category?.icon as any) || 'help'} size={20} color="#29bcc8" />
+                            <CategoryIcon icon={category?.icon} size={20} color="#29bcc8" />
                           </View>
                           <View style={styles.searchResultContent}>
                             <Text style={styles.searchResultCategory}>{category?.name || 'Danh mục'}</Text>
@@ -1455,6 +1523,11 @@ export const TransactionScreen = () => {
         onExportReport={handleExportReport}
       />
 
+      <AutoAddTransactionModal
+        visible={showAutoAddModal}
+        onClose={() => setShowAutoAddModal(false)}
+        onSubmit={handleAutoAddSubmit}
+      />
     </View>
   );
 };
@@ -2086,6 +2159,32 @@ const styles = StyleSheet.create({
   inputDisabled: {
     color: '#667179',
     backgroundColor: '#f5f7fa',
+  },
+  quickAmountRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 4,
+  },
+  quickAmountBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#eef1f5',
+    borderWidth: 1,
+    borderColor: '#d5dde3',
+  },
+  quickAmountBtnActive: {
+    backgroundColor: '#29bcc8',
+    borderColor: '#29bcc8',
+  },
+  quickAmountBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#3a464e',
+  },
+  quickAmountBtnTextActive: {
+    color: '#fff',
   },
   categoryPickerInput: {
     minHeight: 56,

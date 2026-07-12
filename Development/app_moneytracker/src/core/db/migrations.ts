@@ -10,7 +10,7 @@ type Migration = {
 // Fixed namespace for deriving deterministic default-category IDs. Must
 // match the server's DefaultCategoriesSeeder.CategoryGroups.NAMESPACE so
 // client and server compute the same UUID for each (groupId, icon) tuple.
-const DEFAULT_CATEGORY_NAMESPACE = 'moneytracker-default-category-v2';
+const DEFAULT_CATEGORY_NAMESPACE = 'moneytracker-default-category-v3';
 
 /**
  * Derive a deterministic UUID for a default category from (groupId, icon).
@@ -156,13 +156,12 @@ const migrations: Migration[] = [
     ]
   },
   {
-    // Hardcode ~139 system categories from categoryIconGroups and drop all
+    // Hardcode system categories from categoryIconGroups and drop all
     // local transactions. This is a one-time reset:
     //   - Categories are no longer synced. Client + server both seed the
-    //     same 139 rows with deterministic UUIDs derived from (groupId, icon)
-    //     using namespace 'moneytracker-default-category-v2'.
-    //   - Old transactions reference categoryId from the 19-row v1/v2/v3
-    //     schema, which doesn't match the new v4 IDs (different namespace).
+    //     same rows with deterministic UUIDs derived from (groupId, icon)
+    //     using namespace 'moneytracker-default-category-v3'.
+    //   - Old transactions reference categoryId from old namespace.
     //     Wiping transactions is the safe way to keep the local DB consistent.
     //   - We disable foreign_keys while dropping transactions and categories
     //     because the FK from transactions.categoryId would otherwise block
@@ -194,6 +193,32 @@ const migrations: Migration[] = [
       { sql: 'PRAGMA foreign_keys = ON' },
     ],
   },
+  {
+    // Migration v5: Reduce default categories from 139 subIcons down to 17 root groups.
+    // To prevent data loss, we first remap any transactions pointing to the old subIcons
+    // to point to the new root group category ID.
+    // Then we delete all existing default categories and let the seeder re-run with the 17 groups.
+    version: 5,
+    statements: (() => {
+      const stmts: { sql: string; params?: any[] }[] = [];
+      // Turn off foreign keys temporarily so we can migrate
+      stmts.push({ sql: 'PRAGMA foreign_keys = OFF' });
+      
+      for (const group of categoryGroups) {
+        // We will derive the new group-level categoryId here in the statement generation
+        // using a placeholder, but actually we need it resolved. Since statements can't be async here,
+        // we do the update via a joined query: we know the old categories have `groupId`.
+        // Wait, we can't derive UUIDv5 in pure SQLite.
+        // Instead of doing it in the array, let's execute the updates in the runner, OR we can
+        // just delete categories, and any orphaned transaction will not have a category until
+        // the user fixes it. Wait! We CAN do it here by calling deriveDefaultCategoryId inside the migration logic?
+        // Let's add a special logic for v5 in runMigrations.
+        // So here we just define empty statements, and handle v5 logic in `runMigrations`.
+      }
+      stmts.push({ sql: 'PRAGMA foreign_keys = ON' });
+      return stmts;
+    })(),
+  },
 ];
 
 const getUserVersion = async () => {
@@ -206,24 +231,16 @@ const setUserVersion = async (version: number) => {
 };
 
 /**
- * Flatten categoryGroups into 1 row per subIcon. Each (groupId, icon) becomes
- * one Category row. Type is INCOME only for the dedicated `income` group;
- * every other group is EXPENSE. The `debt` group was added in this release
- * (it used to be created at runtime by DebtDetailScreen) — keeping the same
- * groupId here so DebtDetail can look it up via groupId='debt'.
+ * Flatten categoryGroups into 1 row per Group. Each group becomes
+ * one Category row.
  *
  * Skip the synthetic `incomeGroups` (salary/bonus/investment/freelance/gift)
- * defined alongside `categoryGroups` — those are just UI hints; the source of
- * truth is `categoryGroups[].subIcons` only. Otherwise we would double-seed
- * entries like "Lương" (income.subIcons[0] vs salary.subIcons[0]).
+ * defined alongside `categoryGroups` — those are just UI hints.
  */
 const flattenCategoryGroups = (): { groupId: string; type: 'EXPENSE' | 'INCOME'; icon: string; label: string; color: string }[] => {
   const rows: { groupId: string; type: 'EXPENSE' | 'INCOME'; icon: string; label: string; color: string }[] = [];
   for (const group of categoryGroups) {
-    const type: 'EXPENSE' | 'INCOME' = group.id === 'income' ? 'INCOME' : 'EXPENSE';
-    for (const sub of group.subIcons) {
-      rows.push({ groupId: group.id, type, icon: sub.icon, label: sub.label, color: sub.color });
-    }
+    rows.push({ groupId: group.id, type: group.type, icon: group.icon, label: group.name, color: group.color });
   }
   return rows;
 };
@@ -249,13 +266,36 @@ export const runMigrations = async () => {
   let shouldSeedCategories = false;
 
   for (const migration of pending) {
-    if (migration.statements.length > 0) {
+    // Special logic for v5 data migration (mapping subIcon categories to root group category)
+    if (migration.version === 5) {
+      await executeSql('PRAGMA foreign_keys = OFF');
+      
+      // For each group, we derive the new root category ID, and update all transactions 
+      // that currently point to any category in this groupId.
+      for (const group of categoryGroups) {
+        const newRootCategoryId = await deriveDefaultCategoryId(group.id, group.icon);
+        await executeSql(
+          `UPDATE transactions 
+           SET categoryId = ? 
+           WHERE categoryId IN (
+             SELECT categoryId FROM categories WHERE groupId = ? AND isDefault = 1
+           )`,
+          [newRootCategoryId, group.id]
+        );
+      }
+      
+      // Delete all old default categories
+      await executeSql('DELETE FROM categories WHERE isDefault = 1');
+      await executeSql("DELETE FROM outbox WHERE entity = 'categories'");
+      await executeSql('PRAGMA foreign_keys = ON');
+    } else if (migration.statements.length > 0) {
       await executeBatch(migration.statements);
     }
+    
     await setUserVersion(migration.version);
 
     // If any migration touches categories, we flag it to re-seed once at the end.
-    if (migration.version === 1 || migration.version === 4) {
+    if (migration.version === 1 || migration.version === 4 || migration.version === 5) {
       shouldSeedCategories = true;
     }
   }

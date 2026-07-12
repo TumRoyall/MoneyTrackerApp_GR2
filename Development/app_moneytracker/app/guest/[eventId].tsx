@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, Alert, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 import { useQuery } from '@tanstack/react-query';
 import { useEventUsecases } from '@/modules/event/usecases/eventUsecases';
 import { CategoryPickerModal } from '@/components/common';
@@ -178,7 +179,7 @@ export default function GuestPortalScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               {selectedCategoryIcon ? (
                 <View style={[styles.avatarEditIconWrap, { position: 'relative', right: 0, bottom: 0, backgroundColor: selectedCategoryColor + '20', width: 32, height: 32 }]}>
-                  <MaterialCommunityIcons name={selectedCategoryIcon as any} size={20} color={selectedCategoryColor} />
+                  <CategoryIcon icon={selectedCategoryIcon} size={20} color={selectedCategoryColor} />
                 </View>
               ) : (
                 <Ionicons name="grid-outline" size={24} color="#6c737a" />

@@ -11,7 +11,20 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { Camera, Edit3 } from 'lucide-react-native';
+
+// Helper to render Lucide icon by name
+const LucideIconByName = ({ name, size, color }: { name: string; size: number; color: string }) => {
+  switch (name) {
+    case 'photo-camera':
+      return <Camera size={size} color={color} />;
+    case 'edit':
+      return <Edit3 size={size} color={color} />;
+    default:
+      return <Edit3 size={size} color={color} />;
+  }
+};
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -79,7 +92,7 @@ export default function SettingsScreen() {
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.5,
@@ -204,7 +217,7 @@ export default function SettingsScreen() {
                 <Text style={styles.avatarText}>{username.charAt(0).toUpperCase()}</Text>
               )}
               <View style={styles.avatarEditIcon}>
-                <MaterialIcons name="photo-camera" size={12} color="#fff" />
+                <LucideIconByName name="photo-camera" size={12} color="#fff" />
               </View>
             </Pressable>
             <View style={styles.userInfo}>
@@ -235,7 +248,7 @@ export default function SettingsScreen() {
                     }}
                     style={styles.editBtn}
                   >
-                    <MaterialIcons name="edit" size={18} color="#2bbcc5" />
+                    <LucideIconByName name="edit" size={18} color="#2bbcc5" />
                   </Pressable>
                 </View>
               )}

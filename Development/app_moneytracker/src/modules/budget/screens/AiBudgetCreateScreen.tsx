@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as LucideIcons from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import {
@@ -205,11 +205,11 @@ export const AiBudgetCreateScreen = () => {
                       onPress={() => setSelectedWalletId(w.walletId)}
                       style={[styles.walletChip, selected ? styles.walletChipActive : null]}
                     >
-                      <MaterialCommunityIcons
-                        name={((w as { icon?: string }).icon ?? 'wallet') as any}
-                        size={16}
-                        color={selected ? '#0f8c95' : '#3a464e'}
-                      />
+                      {(() => {
+                        const iconName = ((w as { icon?: string }).icon ?? 'Wallet');
+                        const Icon = (LucideIcons as any)[iconName] || LucideIcons.HelpCircle;
+                        return <Icon name={iconName} size={16} color={selected ? '#0f8c95' : '#3a464e'} />;
+                      })()}
                       <Text
                         style={[
                           styles.walletChipText,

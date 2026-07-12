@@ -13,4 +13,8 @@ public class UpdateDebtRequest {
     private BigDecimal targetAmount;
     private LocalDate startDate;
     private LocalDate targetDate;
+    private String paymentType;
+    private String periodUnit;
+    private BigDecimal interestRate;
+    private String interestType;
 }

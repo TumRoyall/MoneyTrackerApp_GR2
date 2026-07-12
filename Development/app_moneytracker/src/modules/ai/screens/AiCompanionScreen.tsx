@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { UtensilsCrossed, MinusCircle, PieChart, Lightbulb, GraduationCap } from 'lucide-react-native';
+// Lucide icons imported for structured preview components
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 
@@ -444,7 +446,7 @@ export const AiCompanionScreen = () => {
       return (
         <View style={styles.previewRow}>
           <View style={styles.previewIcon}>
-            <MaterialCommunityIcons name={(category?.icon as any) || 'food'} size={20} color={(category as any)?.color || '#ff6b6b'} />
+            <UtensilsCrossed size={20} color={(category as any)?.color || '#ff6b6b'} />
           </View>
           <View style={styles.previewInfo}>
             <Text style={styles.previewTitle}>{category?.name || 'Giao dịch mới'}</Text>
@@ -465,7 +467,7 @@ export const AiCompanionScreen = () => {
       return (
         <View style={styles.previewRow}>
           <View style={[styles.previewIcon, styles.previewIconExpense]}>
-            <MaterialCommunityIcons name="cash-minus" size={18} color="#c94b4b" />
+            <MinusCircle size={18} color="#c94b4b" />
           </View>
           <View style={styles.previewInfo}>
             <Text style={styles.previewTitle}>{summaryData.topCategoryName}</Text>
@@ -482,7 +484,7 @@ export const AiCompanionScreen = () => {
       return (
         <View style={styles.previewRow}>
           <View style={[styles.previewIcon, styles.previewIconBudget]}>
-            <MaterialCommunityIcons name="chart-donut" size={18} color="#256b65" />
+            <PieChart size={18} color="#256b65" />
           </View>
           <View style={styles.previewInfo}>
             <Text style={styles.previewTitle}>{category?.name || 'Ngân sách'}</Text>
@@ -501,7 +503,7 @@ export const AiCompanionScreen = () => {
       return (
         <View style={styles.previewRow}>
           <View style={[styles.previewIcon, styles.previewIconInsight]}>
-            <MaterialCommunityIcons name="lightbulb-on" size={18} color="#7a5c2e" />
+            <Lightbulb size={18} color="#7a5c2e" />
           </View>
           <View style={styles.previewInfo}>
             <Text style={styles.previewTitle}>Gợi ý mới</Text>
@@ -519,7 +521,7 @@ export const AiCompanionScreen = () => {
       return (
         <View style={styles.previewRow}>
           <View style={[styles.previewIcon, { backgroundColor: '#e8f5e9' }]}>
-            <MaterialCommunityIcons name="school" size={18} color="#2e7d32" />
+            <GraduationCap size={18} color="#2e7d32" />
           </View>
           <View style={styles.previewInfo}>
             <Text style={styles.previewTitle}>Lời khuyên tài chính</Text>

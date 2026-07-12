@@ -22,6 +22,13 @@ public class Category {
     @Column(name = "user_id")
     private UUID userId;
 
+    /**
+     * Group ID for organizing categories (e.g., food, shopping, travel).
+     * Default categories have groupId, custom categories default to "custom".
+     */
+    @Column(name = "group_id")
+    private String groupId;
+
     @Column(nullable = false)
     private String name;
 

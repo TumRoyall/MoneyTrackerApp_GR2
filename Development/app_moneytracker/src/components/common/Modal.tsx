@@ -8,6 +8,7 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   showClose?: boolean;
+  children?: ReactNode;
 }
 
 export const Modal = ({
@@ -15,6 +16,7 @@ export const Modal = ({
   onClose,
   title,
   showClose = true,
+  children,
 }: ModalProps) => {
   return (
     <RNModal
@@ -36,7 +38,7 @@ export const Modal = ({
               )}
             </View>
           )}
-          <View style={styles.content}>{/* Content handled by children */}</View>
+          <View style={styles.content}>{children}</View>
         </View>
       </View>
     </RNModal>

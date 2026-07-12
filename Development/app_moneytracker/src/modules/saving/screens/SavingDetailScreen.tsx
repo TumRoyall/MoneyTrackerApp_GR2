@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { X, Plus, Wallet, Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -53,9 +53,12 @@ const formatPeriodChip = (unit: SavingPeriodUnit, anchor: Date) => {
 
 const formatPeriodLabel = (unit: SavingPeriodUnit) => (unit === 'yearly' ? 'hàng năm' : 'hàng tháng');
 
-const sumSignedAmount = (items: Array<{ categoryId: string; amount: number }>, categoryMap: Map<string, { type?: string }>) =>
+const sumSignedAmount = (items: Array<{ categoryId: string; amount: number; type?: string }>, categoryMap: Map<string, { type?: string }>) =>
   items.reduce((sum, item) => {
-    const type = normalizeCategoryType(categoryMap.get(item.categoryId)?.type);
+    const type = normalizeCategoryType(categoryMap.get(item.categoryId)?.type || item.type);
+    if (!type) {
+      console.warn('sumSignedAmount: transaction type is undefined/empty, defaulting to INCOME treatment');
+    }
     if (type === 'EXPENSE') {
       return sum - Number(item.amount || 0);
     }
@@ -136,7 +139,7 @@ export const SavingDetailScreen = () => {
   const queryClient = useQueryClient();
 
   const { getSaving } = useSavingUsecases();
-  const { getCategories } = useCategoryUsecases();
+  const { getCategories, createCategory } = useCategoryUsecases();
   const { getTransactions, createTransaction, updateTransaction, deleteTransaction } = useTransactionUsecases();
   const { getWallets } = useWalletUsecases();
 
@@ -177,6 +180,13 @@ export const SavingDetailScreen = () => {
   const [editingTransferWalletId, setEditingTransferWalletId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'activity' | 'stats'>('activity');
 
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawTargetWalletId, setWithdrawTargetWalletId] = useState<string | null>(null);
+  const [withdrawNote, setWithdrawNote] = useState('');
+  const [withdrawDate, setWithdrawDate] = useState(toIsoDate(new Date()));
+  const [showWithdrawDatePicker, setShowWithdrawDatePicker] = useState(false);
+
   const savingType = normalizeSavingType(saving?.type);
   const periodUnit = normalizePeriodUnit(saving?.periodUnit);
   const periodRange = getPeriodRange(periodUnit, periodAnchor);
@@ -209,7 +219,8 @@ export const SavingDetailScreen = () => {
   });
   const activityItems = activityQuery.data ?? [];
   const periodSaved = savingType === 'periodic' ? sumSignedAmount(transactions, categoryMap) : 0;
-  const totalSaved = Number(saving?.currentBalance || 0);
+  const savingWallet = wallets.find((w) => w.walletId === saving?.walletId);
+  const totalSaved = savingWallet ? Number(savingWallet.currentBalance || 0) : Number(saving?.currentBalance || 0);
   const targetAmount = saving?.targetAmount ?? 0;
   const progressValue = savingType === 'periodic' ? periodSaved : totalSaved;
   const percent = targetAmount > 0 ? Math.min((progressValue / targetAmount) * 100, 100) : 0;
@@ -223,9 +234,9 @@ export const SavingDetailScreen = () => {
 
   const chartData = useMemo(() => {
     if (savingType !== 'periodic' || activeTab !== 'stats') return [];
-    
+
     const buckets: { label: string; total: number; fullDate: string }[] = [];
-    
+
     if (periodUnit === 'monthly') {
       const anchor = new Date();
       for (let i = 5; i >= 0; i--) {
@@ -243,7 +254,7 @@ export const SavingDetailScreen = () => {
         buckets.push({ label, total: 0, fullDate: key });
       }
     }
-    
+
     activityItems.forEach(item => {
       if (!item.date) return;
       let key = '';
@@ -252,7 +263,7 @@ export const SavingDetailScreen = () => {
       } else {
         key = item.date.substring(0, 4);
       }
-      
+
       const bucket = buckets.find(b => b.fullDate === key);
       if (bucket) {
         const type = normalizeCategoryType(categoryMap.get(item.categoryId)?.type || item.type);
@@ -264,7 +275,7 @@ export const SavingDetailScreen = () => {
         }
       }
     });
-    
+
     return buckets;
   }, [activityItems, categoryMap, periodUnit, savingType, activeTab]);
 
@@ -302,6 +313,107 @@ export const SavingDetailScreen = () => {
     setEditingTransferWalletId(null);
   };
 
+  const resetWithdrawForm = () => {
+    setWithdrawAmount('');
+    setWithdrawTargetWalletId(null);
+    setWithdrawNote('');
+    setWithdrawDate(toIsoDate(new Date()));
+  };
+
+  const ensureWithdrawCategoryId = async () => {
+    const type = 'INCOME';
+    const name = 'Rút tiết kiệm';
+    const existing = categories.find(
+      (item) => normalizeCategoryType(item.type) === type && item.name.trim().toLowerCase() === name.toLowerCase(),
+    );
+    if (existing) {
+      return existing.categoryId;
+    }
+    
+    try {
+      const created = await createCategory({
+        name,
+        icon: 'PiggyBank',
+        color: '#4CAF50',
+        type,
+      });
+      return created.categoryId;
+    } catch (e) {
+      const fallback = categories.find(c => normalizeCategoryType(c.type) === type);
+      if (fallback) return fallback.categoryId;
+      throw new Error('Fallback failed');
+    }
+  };
+
+  const openWithdrawModal = () => {
+    resetWithdrawForm();
+    setShowWithdrawModal(true);
+  };
+
+  const submitWithdraw = async () => {
+    if (!saving?.walletId) {
+      Alert.alert('Thiếu ví', 'Không tìm thấy ví tiết kiệm.');
+      return;
+    }
+
+    const amountValue = parseMoneyInput(withdrawAmount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      Alert.alert('Số tiền không hợp lệ', 'Vui lòng nhập số tiền lớn hơn 0.');
+      return;
+    }
+
+    if (amountValue > totalSaved) {
+      Alert.alert('Số tiền không hợp lệ', 'Số tiền rút không được lớn hơn tổng đã tiết kiệm.');
+      return;
+    }
+
+    if (!withdrawTargetWalletId) {
+      Alert.alert('Thiếu ví nhận', 'Vui lòng chọn ví để nhận tiền.');
+      return;
+    }
+
+    try {
+      const expenseCategoryId = await ensureSavingCategoryId('EXPENSE');
+      const incomeCategoryId = await ensureWithdrawCategoryId();
+      const baseNote = withdrawNote.trim() || 'Rút tiền tiết kiệm';
+      const dateValue = withdrawDate || toIsoDate(new Date());
+
+      const transferNote = buildTransferNote(baseNote, withdrawTargetWalletId);
+
+      await createTransaction({
+        walletId: saving.walletId,
+        categoryId: expenseCategoryId,
+        amount: amountValue,
+        type: 'EXPENSE',
+        note: transferNote,
+        date: dateValue,
+      });
+
+      await createTransaction({
+        walletId: withdrawTargetWalletId,
+        categoryId: incomeCategoryId,
+        amount: amountValue,
+        type: 'INCOME',
+        note: transferNote,
+        date: dateValue,
+      });
+
+      await queryClient.invalidateQueries({ queryKey: ['saving', savingId] });
+      await queryClient.invalidateQueries({ queryKey: ['savings'] });
+      await queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      await queryClient.invalidateQueries({ queryKey: ['saving-transactions', savingId] });
+      await queryClient.invalidateQueries({ queryKey: ['saving-period-transactions'] });
+      await queryClient.invalidateQueries({ queryKey: ['saving-activity', savingId] });
+
+      resetWithdrawForm();
+      setShowWithdrawModal(false);
+      Alert.alert('Thành công', 'Đã rút tiền thành công.');
+    } catch {
+      Alert.alert('Lỗi', 'Không thể rút tiền. Vui lòng thử lại.');
+    }
+  };
+
   const isSavingCategoryName = (value: string) => {
     const normalized = value.trim().toLowerCase();
     return normalized === 'tiết kiệm' || normalized === 'tiet kiem';
@@ -323,7 +435,21 @@ export const SavingDetailScreen = () => {
     if (byGroup) {
       return byGroup.categoryId;
     }
-    throw new Error('Saving category not seeded — please reinstall the app');
+    
+    // Auto-create if missing
+    try {
+      const created = await createCategory({
+        name: 'Tiết kiệm',
+        icon: 'PiggyBank',
+        color: '#F59E0B',
+        type,
+      });
+      return created.categoryId;
+    } catch (e) {
+      const fallback = categories.find(c => normalizeCategoryType(c.type) === type);
+      if (fallback) return fallback.categoryId;
+      throw new Error('Saving category not seeded and fallback failed');
+    }
   };
 
   const openCreateRecordModal = () => {
@@ -524,7 +650,7 @@ export const SavingDetailScreen = () => {
           <BackButton to="/(tabs)/tools/savings" />
           <Text style={styles.title}>{saving?.title || 'Tiết kiệm'}</Text>
           <Pressable onPress={() => router.replace('/(tabs)/tools/savings')}>
-            <Ionicons name="close" size={22} color="#1f1f1f" />
+            <X size={22} color="#1f1f1f" />
           </Pressable>
         </View>
 
@@ -553,13 +679,13 @@ export const SavingDetailScreen = () => {
           {savingType === 'periodic' ? (
             <View style={styles.periodNavRow}>
               <Pressable style={styles.navBtn} onPress={() => movePeriod(-1)}>
-                <Ionicons name="chevron-back" size={18} color="#5a6770" />
+                <ChevronLeft size={18} color="#5a6770" />
               </Pressable>
               <View style={styles.periodChip}>
                 <Text style={styles.periodChipText}>{formatPeriodChip(periodUnit, periodAnchor)}</Text>
               </View>
               <Pressable style={styles.navBtn} onPress={() => movePeriod(1)}>
-                <Ionicons name="chevron-forward" size={18} color="#5a6770" />
+                <ChevronRight size={18} color="#5a6770" />
               </Pressable>
             </View>
           ) : null}
@@ -597,7 +723,7 @@ export const SavingDetailScreen = () => {
         </View>
 
         <View style={styles.totalCard}>
-          <Ionicons name="wallet" size={18} color="#2bb6c2" />
+          <Wallet size={18} color="#2bb6c2" />
           <Text style={styles.totalText}>Tổng đã tiết kiệm (toàn thời gian)</Text>
           <Text style={styles.totalAmount}>{formatVndAmount(totalSaved)}</Text>
         </View>
@@ -632,7 +758,7 @@ export const SavingDetailScreen = () => {
                 <Text style={styles.sectionCount}>{activityItems.length} mục</Text>
               </View>
             )}
-            
+
             {activityItems.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>Chưa có hồ sơ nào. Nhấn + để thêm giao dịch của bạn.</Text>
@@ -668,7 +794,7 @@ export const SavingDetailScreen = () => {
                       <Text style={styles.activityTitle}>{noteValue}</Text>
                       {meta?.walletId ? (
                         <View style={styles.activitySubRow}>
-                          <Ionicons name="wallet-outline" size={14} color="#7b8891" />
+                          <Wallet size={14} color="#7b8891" />
                           <Text style={styles.activitySubtitle}>{sourceWallet?.name || 'Ví khác'}</Text>
                         </View>
                       ) : null}
@@ -691,7 +817,7 @@ export const SavingDetailScreen = () => {
         {savingType === 'periodic' && activeTab === 'stats' && (
           <View style={styles.chartCard}>
             <Text style={styles.chartTitle}>Tiến độ theo kỳ</Text>
-            
+
             <View style={styles.chartContainer}>
               {chartData.map((data, index) => {
                 const heightPercent = maxChartValue > 0 ? Math.max(0, Math.min((data.total / maxChartValue) * 100, 100)) : 0;
@@ -731,10 +857,21 @@ export const SavingDetailScreen = () => {
         )}
       </ScrollView>
 
-      <Pressable style={styles.addRecordButton} onPress={openCreateRecordModal}>
-        <Ionicons name="add" size={18} color="#fff" />
-        <Text style={styles.addRecordButtonText}>Thêm bản ghi</Text>
-      </Pressable>
+      <View style={{ position: 'absolute', right: 16, bottom: 18, flexDirection: 'column', gap: 12, alignItems: 'flex-end' }}>
+        <Pressable
+          style={[styles.addRecordButton, { position: 'relative', right: 0, bottom: 0, backgroundColor: '#e57373' }]}
+          onPress={openWithdrawModal}
+        >
+          <Text style={styles.addRecordButtonText}>Rút tiền</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.addRecordButton, { position: 'relative', right: 0, bottom: 0 }]}
+          onPress={openCreateRecordModal}
+        >
+          <Plus size={18} color="#fff" />
+          <Text style={styles.addRecordButtonText}>Thêm bản ghi</Text>
+        </Pressable>
+      </View>
 
       <Modal
         visible={showAddRecordModal}
@@ -742,14 +879,18 @@ export const SavingDetailScreen = () => {
         animationType="slide"
         onRequestClose={() => setShowAddRecordModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }} 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {recordModalMode === 'edit' ? 'Chỉnh sửa hồ sơ tiết kiệm' : 'Thêm hồ sơ tiết kiệm'}
               </Text>
               <Pressable onPress={() => setShowAddRecordModal(false)}>
-                <Ionicons name="close" size={24} color="#333" />
+                <X size={24} color="#333" />
               </Pressable>
             </View>
 
@@ -783,34 +924,12 @@ export const SavingDetailScreen = () => {
               <Text style={{ fontSize: 15, color: recordModalMode === 'edit' ? colors.textSecondary : colors.textPrimary }}>
                 {formDate}
               </Text>
-              <Ionicons name="calendar-outline" size={18} color={recordModalMode === 'edit' ? colors.textSecondary : '#3a464e'} />
+              <Calendar size={18} color={recordModalMode === 'edit' ? colors.textSecondary : '#3a464e'} />
             </Pressable>
 
             {recordModalMode === 'create' ? (
               <>
-                <Text style={styles.modalLabel}>Bạn có muốn chuyển hồ sơ tiết kiệm này từ ví không?</Text>
-                <View style={styles.toggleRow}>
-                  <Pressable
-                    style={[styles.toggleButton, transferFromWallet ? styles.toggleButtonActive : null]}
-                    onPress={() => setTransferFromWallet(true)}
-                  >
-                    <Text style={[styles.toggleButtonText, transferFromWallet ? styles.toggleButtonTextActive : null]}>
-                      Có
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.toggleButton, !transferFromWallet ? styles.toggleButtonActive : null]}
-                    onPress={() => setTransferFromWallet(false)}
-                  >
-                    <Text style={[styles.toggleButtonText, !transferFromWallet ? styles.toggleButtonTextActive : null]}>
-                      Không
-                    </Text>
-                  </Pressable>
-                </View>
-
-                {transferFromWallet ? (
-                  <>
-                    <Text style={styles.modalLabel}>Từ ví</Text>
+                <Text style={styles.modalLabel}>Từ ví (bắt buộc)</Text>
                     <View style={styles.walletChipRow}>
                       {regularWallets.length === 0 ? (
                         <View style={styles.emptyWalletChip}>
@@ -833,8 +952,6 @@ export const SavingDetailScreen = () => {
                         })
                       )}
                     </View>
-                  </>
-                ) : null}
               </>
             ) : null}
 
@@ -867,6 +984,7 @@ export const SavingDetailScreen = () => {
             ) : null}
           </View>
         </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <DatePickerModal
@@ -878,6 +996,105 @@ export const SavingDetailScreen = () => {
           setShowDatePicker(false);
         }}
         onCancel={() => setShowDatePicker(false)}
+      />
+
+      <Modal
+        visible={showWithdrawModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowWithdrawModal(false)}
+      >
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }} 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Rút tiền tiết kiệm</Text>
+              <Pressable onPress={() => setShowWithdrawModal(false)}>
+                <X size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            <Text style={styles.modalSubtitle}>Rút tiền từ quỹ tiết kiệm về ví của bạn.</Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Ghi chú (Tùy chọn)"
+              value={withdrawNote}
+              onChangeText={setWithdrawNote}
+            />
+            
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="Số tiền"
+                keyboardType="numeric"
+                value={withdrawAmount}
+                onChangeText={(value) => setWithdrawAmount(formatMoneyInput(value))}
+              />
+              <Button
+                title="Rút toàn bộ"
+                onPress={() => setWithdrawAmount(formatMoneyInput(totalSaved))}
+                variant="secondary"
+              />
+            </View>
+
+            <Text style={styles.modalLabel}>Ngày rút</Text>
+            <Pressable
+              style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+              onPress={() => setShowWithdrawDatePicker(true)}
+            >
+              <Text style={{ fontSize: 15, color: colors.textPrimary }}>
+                {withdrawDate}
+              </Text>
+              <Calendar size={18} color="#3a464e" />
+            </Pressable>
+
+            <Text style={styles.modalLabel}>Rút về ví (bắt buộc)</Text>
+            <View style={styles.walletChipRow}>
+              {regularWallets.length === 0 ? (
+                <View style={styles.emptyWalletChip}>
+                  <Text style={styles.emptyWalletText}>Chưa có ví thường để nhận.</Text>
+                </View>
+              ) : (
+                regularWallets.map((wallet) => {
+                  const selected = wallet.walletId === withdrawTargetWalletId;
+                  return (
+                    <Pressable
+                      key={wallet.walletId}
+                      style={[styles.walletChip, selected ? styles.walletChipActive : null]}
+                      onPress={() => setWithdrawTargetWalletId(wallet.walletId)}
+                    >
+                      <Text style={[styles.walletChipText, selected ? styles.walletChipTextActive : null]}>
+                        {wallet.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })
+              )}
+            </View>
+
+            <Button
+              title="Xác nhận rút"
+              onPress={submitWithdraw}
+              variant="primary"
+            />
+          </View>
+        </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <DatePickerModal
+        visible={showWithdrawDatePicker}
+        value={new Date(withdrawDate)}
+        title="Chọn ngày rút"
+        onConfirm={(date) => {
+          setWithdrawDate(toIsoDate(date));
+          setShowWithdrawDatePicker(false);
+        }}
+        onCancel={() => setShowWithdrawDatePicker(false)}
       />
     </View>
   );

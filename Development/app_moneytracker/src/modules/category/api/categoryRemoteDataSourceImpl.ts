@@ -1,7 +1,7 @@
 import { httpClient } from '@/core/api/httpClient';
 import { ApiResponse } from '@/core/types/api.types';
 import { Category } from '@/modules/category/models/category.types';
-import { CategoryRemoteDataSource } from '@/modules/category/api/categoryRemoteDataSource';
+import { CategoryRemoteDataSource, CreateCategoryInput } from '@/modules/category/api/categoryRemoteDataSource';
 
 export class CategoryRemoteDataSourceImpl implements CategoryRemoteDataSource {
   async getCategories(): Promise<Category[]> {
@@ -11,6 +11,11 @@ export class CategoryRemoteDataSourceImpl implements CategoryRemoteDataSource {
 
   async getCategory(categoryId: string): Promise<Category | null> {
     const response = await httpClient.get<ApiResponse<Category>>(`/api/categories/${categoryId}`);
+    return response.data.data;
+  }
+
+  async createCategory(input: CreateCategoryInput): Promise<Category> {
+    const response = await httpClient.post<ApiResponse<Category>>('/api/categories', input);
     return response.data.data;
   }
 }

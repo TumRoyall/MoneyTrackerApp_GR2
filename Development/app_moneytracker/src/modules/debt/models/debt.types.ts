@@ -8,6 +8,10 @@ export interface Debt {
   targetAmount: number;
   startDate?: string | null;
   targetDate?: string | null;
+  paymentType?: string | null;
+  periodUnit?: string | null;
+  interestRate?: number | null;
+  interestType?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -18,6 +22,10 @@ export interface DebtCreateInput {
   currency: string;
   startDate?: string;
   targetDate?: string;
+  paymentType?: string;
+  periodUnit?: string;
+  interestRate?: number;
+  interestType?: string;
 }
 
 export interface DebtUpdateInput {
@@ -25,4 +33,8 @@ export interface DebtUpdateInput {
   targetAmount?: number;
   startDate?: string;
   targetDate?: string;
+  paymentType?: string;
+  periodUnit?: string;
+  interestRate?: number;
+  interestType?: string;
 }

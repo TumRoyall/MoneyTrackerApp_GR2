@@ -1,4 +1,4 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as LucideIcons from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 import { PercentAdjuster } from './PercentAdjuster';
 
@@ -11,6 +11,12 @@ export interface PercentAdjusterRowProps {
   disabled?: boolean;
   onChange: (next: number) => void;
 }
+
+const CategoryIconComponent = ({ icon, size, color }: { icon?: string; size: number; color: string }) => {
+  if (!icon) return null;
+  const Icon = (LucideIcons as any)[icon] || LucideIcons.HelpCircle;
+  return <Icon name={icon} size={size} color={color} />;
+};
 
 export function PercentAdjusterRow({
   categoryIcon,
@@ -26,11 +32,7 @@ export function PercentAdjusterRow({
       <View style={styles.headerRow}>
         <View style={styles.nameGroup}>
           {categoryIcon ? (
-            <MaterialCommunityIcons
-              name={categoryIcon as any}
-              size={20}
-              color="#179ea9"
-            />
+            <CategoryIconComponent icon={categoryIcon} size={20} color="#179ea9" />
           ) : null}
           <Text style={styles.name}>{categoryName}</Text>
           {disabled ? <Text style={styles.autoBadge}>🔒 auto</Text> : null}

@@ -8,7 +8,8 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import * as LucideIcons from 'lucide-react-native';
 import { Transaction } from '@/modules/transaction/models/transaction.types';
 import { Category } from '@/modules/category/models/category.types';
 import { formatVndAmount } from '@/shared/utils/money';
@@ -25,7 +26,7 @@ type AnalysisOption = {
   id: string;
   title: string;
   description: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon: keyof typeof LucideIcons | string;
   iconColor: string;
 };
 
@@ -200,7 +201,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
             onPress={() => setCurrentView(option.id as AnalysisView)}
           >
             <View style={[styles.optionIcon, { backgroundColor: option.iconColor + '20' }]}>
-              <MaterialCommunityIcons name={option.icon} size={28} color={option.iconColor} />
+              <LucideIcons name={option.icon} size={28} color={option.iconColor} />
             </View>
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>{option.title}</Text>
@@ -213,7 +214,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
         <View style={styles.exportSection}>
           <Text style={styles.exportTitle}>Xuất báo cáo</Text>
           <Pressable style={styles.exportButton} onPress={onExportReport}>
-            <MaterialCommunityIcons name="file-export" size={24} color="#fff" />
+            <LucideIcons name="file-export" size={24} color="#fff" />
             <Text style={styles.exportButtonText}>Xuất CSV theo tháng</Text>
           </Pressable>
         </View>
@@ -235,7 +236,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
       <ScrollView style={styles.analysisContent} showsVerticalScrollIndicator={false}>
         {expenseByCategory.length === 0 ? (
           <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="chart-pie" size={48} color="#ccc" />
+            <LucideIcons name="chart-pie" size={48} color="#ccc" />
             <Text style={styles.emptyText}>Không có dữ liệu chi tiêu</Text>
           </View>
         ) : (
@@ -252,7 +253,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
                     { backgroundColor: (item.category?.color || '#29bcc8') + '20' },
                   ]}
                 >
-                  <MaterialCommunityIcons
+                  <LucideIcons
                     name={(item.category?.icon as any) || 'help'}
                     size={20}
                     color={item.category?.color || '#29bcc8'}
@@ -298,7 +299,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
       <ScrollView style={styles.analysisContent} showsVerticalScrollIndicator={false}>
         {topExpenses.length === 0 ? (
           <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="trending-up" size={48} color="#ccc" />
+            <LucideIcons name="trending-up" size={48} color="#ccc" />
             <Text style={styles.emptyText}>Không có giao dịch chi</Text>
           </View>
         ) : (
@@ -368,7 +369,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
       <ScrollView style={styles.analysisContent} showsVerticalScrollIndicator={false}>
         {monthlyTrend.length === 0 ? (
           <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="chart-line" size={48} color="#ccc" />
+            <LucideIcons name="chart-line" size={48} color="#ccc" />
             <Text style={styles.emptyText}>Không có dữ liệu</Text>
           </View>
         ) : (
@@ -472,7 +473,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
         <ScrollView style={styles.analysisContent} showsVerticalScrollIndicator={false}>
           {monthlyTrend.length < 2 ? (
             <View style={styles.emptyState}>
-              <MaterialCommunityIcons name="compare" size={48} color="#ccc" />
+              <LucideIcons name="compare" size={48} color="#ccc" />
               <Text style={styles.emptyText}>Cần ít nhất 2 tháng dữ liệu để so sánh</Text>
             </View>
           ) : (
@@ -511,7 +512,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
                 </View>
 
                 <View style={styles.changeIndicator}>
-                  <MaterialCommunityIcons
+                  <LucideIcons
                     name={incomeChange >= 0 ? 'arrow-up-circle' : 'arrow-down-circle'}
                     size={20}
                     color={incomeChange >= 0 ? '#27ae60' : '#e74c3c'}
@@ -559,7 +560,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
                 </View>
 
                 <View style={styles.changeIndicator}>
-                  <MaterialCommunityIcons
+                  <LucideIcons
                     name={expenseChange <= 0 ? 'arrow-down-circle' : 'arrow-up-circle'}
                     size={20}
                     color={expenseChange <= 0 ? '#27ae60' : '#e74c3c'}

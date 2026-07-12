@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
+import { X, Plus, Wallet, Calendar, Clock, Flag } from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 
-import { Button, BackButton, colors, spacing } from '@/components/common';
+import { Button, BackButton, colors, spacing, DatePickerModal } from '@/components/common';
 import { useDebtUsecases } from '@/modules/debt/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
@@ -43,18 +44,52 @@ const formatDisplayDate = (value?: string | null) => {
   return `${day} thg ${month}, ${year}`;
 };
 
-const calculateDaysRemaining = (value?: string | null) => {
-  if (!value) {
-    return null;
+const calculateDaysRemaining = (targetDate: Date | null) => {
+  if (!targetDate) return null;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const diffMs = targetDate.getTime() - now.getTime();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+};
+
+const getNextDueDate = (paymentType?: string | null, periodUnit?: string | null, targetDateStr?: string | null) => {
+  if (!targetDateStr) return null;
+  const [year, month, day] = targetDateStr.split('-').map(Number);
+  let current = new Date(year, month - 1, day);
+  
+  if (paymentType === 'PERIODIC' && periodUnit) {
+    const now = new Date();
+    now.setHours(0,0,0,0);
+    // Safety check to prevent infinite loops if targetDate is very old
+    let iterations = 0;
+    while (current < now && iterations < 1000) {
+      if (periodUnit === 'WEEKLY') current.setDate(current.getDate() + 7);
+      else if (periodUnit === 'MONTHLY') current.setMonth(current.getMonth() + 1);
+      else if (periodUnit === 'YEARLY') current.setFullYear(current.getFullYear() + 1);
+      else break;
+      iterations++;
+    }
   }
-  const [year, month, day] = value.split('-').map((item) => Number(item));
-  if (!year || !month || !day) {
-    return null;
+  return current;
+};
+
+const calculateInterest = (debt: any) => {
+  if (!debt || !debt.interestType || debt.interestType === 'NONE' || !debt.interestRate) return 0;
+  if (!debt.startDate) return 0;
+  
+  const [year, month, day] = debt.startDate.split('-').map(Number);
+  const start = new Date(year, month - 1, day);
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const daysPassed = Math.max(0, Math.ceil((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+  
+  const rate = debt.interestRate / 100;
+  if (debt.interestType === 'SIMPLE') {
+    return debt.targetAmount * rate * (daysPassed / 365);
+  } else if (debt.interestType === 'COMPOUND') {
+    return debt.targetAmount * Math.pow(1 + rate, daysPassed / 365) - debt.targetAmount;
   }
-  const target = new Date(year, month - 1, day);
-  const diffMs = target.getTime() - new Date().setHours(0, 0, 0, 0);
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  return Math.max(diffDays, 0);
+  return 0;
 };
 
 const transferMetaRegex = /\[debt-payment:walletId=([^;\]]+);debtId=([^\]]+)\]/;
@@ -116,7 +151,7 @@ export const DebtDetailScreen = () => {
   const queryClient = useQueryClient();
 
   const { getDebt } = useDebtUsecases();
-  const { getCategories } = useCategoryUsecases();
+  const { getCategories, createCategory } = useCategoryUsecases();
   const { getTransactions, createTransaction, updateTransaction, deleteTransaction } = useTransactionUsecases();
   const { getWallets } = useWalletUsecases();
 
@@ -146,7 +181,7 @@ export const DebtDetailScreen = () => {
   );
 
   const [showAddRecordModal, setShowAddRecordModal] = useState(false);
-  const [transferFromWallet, setTransferFromWallet] = useState(true);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedSourceWalletId, setSelectedSourceWalletId] = useState<string | null>(null);
   const [formNote, setFormNote] = useState('');
   const [formAmount, setFormAmount] = useState('');
@@ -169,14 +204,23 @@ export const DebtDetailScreen = () => {
 
   const activityItems = transactionsQuery.data ?? [];
 
-  const totalPaid = Number(debt?.currentBalance || 0);
+  const debtWallet = wallets.find((w) => w.walletId === debt?.walletId);
+  const totalPaid = debtWallet ? Number(debtWallet.currentBalance || 0) : Number(debt?.currentBalance || 0);
   const targetAmount = debt?.targetAmount ?? 0;
   const percent = targetAmount > 0 ? Math.min((totalPaid / targetAmount) * 100, 100) : 0;
   const remainingAmount = Math.max(targetAmount - totalPaid, 0);
 
   const startDateValue = debt?.startDate || debt?.createdAt?.slice(0, 10) || null;
   const targetDateValue = debt?.targetDate || null;
-  const remainingDays = calculateDaysRemaining(targetDateValue);
+  
+  const nextDueDate = useMemo(() => getNextDueDate(debt?.paymentType, debt?.periodUnit, targetDateValue), [debt?.paymentType, debt?.periodUnit, targetDateValue]);
+  const remainingDays = calculateDaysRemaining(nextDueDate);
+  
+  const isPeriodic = debt?.paymentType === 'PERIODIC';
+  const warningThreshold = isPeriodic ? 3 : 7;
+  const showWarning = remainingDays !== null && remainingDays <= warningThreshold;
+  
+  const accruedInterest = useMemo(() => calculateInterest(debt), [debt]);
 
   const regularWallets = useMemo(
     () =>
@@ -191,7 +235,6 @@ export const DebtDetailScreen = () => {
   );
 
   const resetRecordForm = () => {
-    setTransferFromWallet(true);
     setSelectedSourceWalletId(null);
     setFormNote('');
     setFormAmount('');
@@ -223,7 +266,26 @@ export const DebtDetailScreen = () => {
     if (byGroup) {
       return byGroup.categoryId;
     }
-    throw new Error('Debt category not seeded — please reinstall the app');
+    
+    // If not found, create it
+    try {
+      const res = await createCategory({
+        name: type === 'EXPENSE' ? 'Trả nợ' : 'Đi vay',
+        type: type,
+        icon: 'banknote',
+        color: type === 'EXPENSE' ? '#ef4444' : '#10b981',
+        groupId: 'debt',
+      });
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
+      // @ts-ignore
+      return res?.categoryId || res?.id;
+    } catch (err) {
+      throw new Error('Debt category not seeded and failed to create');
+    }
+  };
+
+  const buildTransferNote = (baseNote: string, walletId: string, dId: string) => {
+    return `${baseNote.trim()} [debt-payment:walletId=${walletId};debtId=${dId}]`;
   };
 
   const openCreateRecordModal = () => {
@@ -284,13 +346,13 @@ export const DebtDetailScreen = () => {
       return;
     }
 
-    if (transferFromWallet && !selectedSourceWalletId) {
+    if (!selectedSourceWalletId) {
       Alert.alert('Thiếu ví nguồn', 'Vui lòng chọn ví để thanh toán nợ.');
       return;
     }
 
     const sourceWallet = wallets.find((wallet) => wallet.walletId === selectedSourceWalletId) || null;
-    if (transferFromWallet && sourceWallet) {
+    if (sourceWallet) {
       const isDebtWallet = String(sourceWallet.type || '').toUpperCase() === 'DEBT';
       let projectedBalance = (sourceWallet.currentBalance ?? 0) - amountValue;
 
@@ -313,13 +375,14 @@ export const DebtDetailScreen = () => {
 
       if (recordModalMode === 'edit' && editingRecord) {
         const metaWalletId = editingTransferWalletId;
-        const noteValue = baseNote || null;
+        const sourceWalletId = metaWalletId || (await resolvePairedSourceWalletId(editingRecord, baseNote || ''));
+        const noteWithMeta = sourceWalletId ? buildTransferNote(baseNote || debt?.title || '', sourceWalletId, debtId) : (baseNote || null);
+
         await updateTransaction(editingRecord.transactionId, {
           amount: amountValue,
-          note: noteValue,
+          note: noteWithMeta,
         });
 
-        const sourceWalletId = metaWalletId || (await resolvePairedSourceWalletId(editingRecord, noteValue || ''));
         if (sourceWalletId) {
           const sourceTransactions = await getTransactions({
             walletId: sourceWalletId,
@@ -335,21 +398,22 @@ export const DebtDetailScreen = () => {
           if (paired) {
             await updateTransaction(paired.transactionId, {
               amount: amountValue,
-              note: noteValue,
+              note: noteWithMeta,
             });
           }
         }
       } else {
         const dateValue = formDate || toIsoDate(new Date());
         const cleanNote = baseNote.trim() || debt?.title?.trim() || 'Thanh toán nợ';
+        const noteWithMeta = selectedSourceWalletId ? buildTransferNote(cleanNote, selectedSourceWalletId, debtId) : cleanNote;
 
-        if (transferFromWallet && selectedSourceWalletId) {
+        if (selectedSourceWalletId) {
           const expenseCategoryId = await ensureDebtCategoryId('EXPENSE');
           await createTransaction({
             walletId: selectedSourceWalletId,
             categoryId: expenseCategoryId,
             amount: amountValue,
-            note: cleanNote,
+            note: noteWithMeta,
             date: dateValue,
           });
         }
@@ -358,7 +422,7 @@ export const DebtDetailScreen = () => {
           walletId: debt.walletId,
           categoryId: incomeCategoryId,
           amount: amountValue,
-          note: cleanNote,
+          note: noteWithMeta,
           date: dateValue,
         });
       }
@@ -434,7 +498,7 @@ export const DebtDetailScreen = () => {
           <BackButton to="/(tabs)/tools/debts" />
           <Text style={styles.title}>{debt?.title || 'Món nợ'}</Text>
           <Pressable onPress={() => router.replace('/(tabs)/tools/debts')}>
-            <Ionicons name="close" size={22} color="#1f1f1f" />
+            <X size={22} color="#1f1f1f" />
           </Pressable>
         </View>
 
@@ -467,22 +531,49 @@ export const DebtDetailScreen = () => {
 
         <View style={styles.dateRow}>
           <View style={styles.dateChip}>
-            <Ionicons name="flag-outline" size={14} color="#6c7a84" />
+            <Flag size={14} color="#6c7a84" />
             <Text style={styles.dateLabel}>Đã bắt đầu</Text>
             <Text style={styles.dateValue}>{formatDisplayDate(startDateValue)}</Text>
           </View>
           <View style={styles.dateChip}>
-            <Ionicons name="calendar-outline" size={14} color="#6c7a84" />
-            <Text style={styles.dateLabel}>Mục tiêu</Text>
-            <Text style={styles.dateValue}>{formatDisplayDate(targetDateValue)}</Text>
+            <Calendar size={14} color="#6c7a84" />
+            <Text style={styles.dateLabel}>{isPeriodic ? 'Kỳ tiếp theo' : 'Mục tiêu'}</Text>
+            <Text style={styles.dateValue}>{nextDueDate ? formatDisplayDate(toIsoDate(nextDueDate)) : 'Chưa đặt'}</Text>
           </View>
         </View>
 
         <View style={styles.dateChipWide}>
-          <Ionicons name="time-outline" size={16} color="#6c7a84" />
+          <Clock size={16} color="#6c7a84" />
           <Text style={styles.dateLabel}>Số ngày còn lại</Text>
-          <Text style={styles.dateValue}>{remainingDays == null ? '--' : remainingDays}</Text>
+          <Text style={[styles.dateValue, showWarning && remainingDays !== null && remainingDays < 0 ? { color: '#ef4444' } : {}]}>
+            {remainingDays == null ? '--' : remainingDays < 0 ? `Quá hạn ${-remainingDays} ngày` : remainingDays}
+          </Text>
         </View>
+        
+        {showWarning && (
+          <View style={styles.warningBanner}>
+            <Ionicons name="warning" size={20} color="#f59e0b" />
+            <Text style={styles.warningText}>
+              {remainingDays !== null && remainingDays < 0 
+                ? 'Đã quá hạn thanh toán!' 
+                : remainingDays === 0 ? 'Đến hạn thanh toán hôm nay!' : `Sắp đến hạn thanh toán (${remainingDays} ngày)!`}
+            </Text>
+          </View>
+        )}
+        
+        {debt?.interestType && debt.interestType !== 'NONE' && (
+          <View style={styles.interestCard}>
+            <Text style={styles.interestTitle}>Lãi suất ({debt.interestRate}%/năm - {debt.interestType === 'SIMPLE' ? 'Lãi đơn' : 'Lãi kép'})</Text>
+            <View style={styles.interestRow}>
+              <Text style={styles.interestLabel}>Lãi dự tính đã sinh:</Text>
+              <Text style={styles.interestAmount}>{formatVndAmount(accruedInterest)}</Text>
+            </View>
+            <View style={styles.interestRow}>
+              <Text style={styles.interestLabel}>Tổng nợ + Lãi:</Text>
+              <Text style={styles.interestTotalAmount}>{formatVndAmount(targetAmount + accruedInterest)}</Text>
+            </View>
+          </View>
+        )}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Hoạt động</Text>
@@ -525,7 +616,7 @@ export const DebtDetailScreen = () => {
                         <Text style={styles.activityTitle}>{noteValue}</Text>
                         {meta?.walletId ? (
                           <View style={styles.activitySubRow}>
-                            <Ionicons name="wallet-outline" size={14} color="#7b8891" />
+                            <Wallet size={14} color="#7b8891" />
                             <Text style={styles.activitySubtitle}>{sourceWallet?.name || 'Ví khác'}</Text>
                           </View>
                         ) : null}
@@ -548,7 +639,7 @@ export const DebtDetailScreen = () => {
       </ScrollView>
 
       <Pressable style={styles.addRecordButton} onPress={openCreateRecordModal}>
-        <Ionicons name="add" size={18} color="#fff" />
+        <Plus size={18} color="#fff" />
         <Text style={styles.addRecordButtonText}>Thêm bản ghi</Text>
       </Pressable>
 
@@ -565,7 +656,7 @@ export const DebtDetailScreen = () => {
                 {recordModalMode === 'edit' ? 'Chỉnh sửa thanh toán nợ' : 'Thêm thanh toán nợ'}
               </Text>
               <Pressable onPress={() => setShowAddRecordModal(false)}>
-                <Ionicons name="close" size={24} color="#333" />
+                <X size={24} color="#333" />
               </Pressable>
             </View>
 
@@ -588,65 +679,40 @@ export const DebtDetailScreen = () => {
             />
 
             <Text style={styles.modalLabel}>Ngày</Text>
-            <TextInput
-              style={[styles.input, recordModalMode === 'edit' ? styles.inputDisabled : null]}
-              placeholder="YYYY-MM-DD"
-              value={formDate}
-              onChangeText={setFormDate}
-              editable={recordModalMode !== 'edit'}
-            />
+            <Pressable
+              style={[styles.input, recordModalMode === 'edit' ? styles.inputDisabled : null, { justifyContent: 'center' }]}
+              onPress={() => recordModalMode !== 'edit' && setShowDatePicker(true)}
+            >
+              <Text style={{ color: formDate ? '#1f1f1f' : '#6c7a84' }}>
+                {formDate ? formatDisplayDate(formDate) : 'Chọn ngày'}
+              </Text>
+            </Pressable>
 
             {recordModalMode === 'create' ? (
               <>
-                <Text style={styles.modalLabel}>Thanh toán nợ từ ví khác?</Text>
-                <View style={styles.toggleRow}>
-                  <Pressable
-                    style={[styles.toggleButton, transferFromWallet ? styles.toggleButtonActive : null]}
-                    onPress={() => setTransferFromWallet(true)}
-                  >
-                    <Text style={[styles.toggleButtonText, transferFromWallet ? styles.toggleButtonTextActive : null]}>
-                      Có
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.toggleButton, !transferFromWallet ? styles.toggleButtonActive : null]}
-                    onPress={() => setTransferFromWallet(false)}
-                  >
-                    <Text
-                      style={[styles.toggleButtonText, !transferFromWallet ? styles.toggleButtonTextActive : null]}
-                    >
-                      Không
-                    </Text>
-                  </Pressable>
-                </View>
-
-                {transferFromWallet ? (
-                  <>
-                    <Text style={styles.modalLabel}>Từ ví</Text>
-                    <View style={styles.walletChipRow}>
-                      {regularWallets.length === 0 ? (
-                        <View style={styles.emptyWalletChip}>
-                          <Text style={styles.emptyWalletText}>Chưa có ví thường để chuyển.</Text>
-                        </View>
-                      ) : (
-                        regularWallets.map((wallet) => {
-                          const selected = wallet.walletId === selectedSourceWalletId;
-                          return (
-                            <Pressable
-                              key={wallet.walletId}
-                              style={[styles.walletChip, selected ? styles.walletChipActive : null]}
-                              onPress={() => setSelectedSourceWalletId(wallet.walletId)}
-                            >
-                              <Text style={[styles.walletChipText, selected ? styles.walletChipTextActive : null]}>
-                                {wallet.name}
-                              </Text>
-                            </Pressable>
-                          );
-                        })
-                      )}
+                <Text style={styles.modalLabel}>Từ ví</Text>
+                <View style={styles.walletChipRow}>
+                  {regularWallets.length === 0 ? (
+                    <View style={styles.emptyWalletChip}>
+                      <Text style={styles.emptyWalletText}>Chưa có ví thường để chuyển.</Text>
                     </View>
-                  </>
-                ) : null}
+                  ) : (
+                    regularWallets.map((wallet) => {
+                      const selected = wallet.walletId === selectedSourceWalletId;
+                      return (
+                        <Pressable
+                          key={wallet.walletId}
+                          style={[styles.walletChip, selected ? styles.walletChipActive : null]}
+                          onPress={() => setSelectedSourceWalletId(wallet.walletId)}
+                        >
+                          <Text style={[styles.walletChipText, selected ? styles.walletChipTextActive : null]}>
+                            {wallet.name}
+                          </Text>
+                        </Pressable>
+                      );
+                    })
+                  )}
+                </View>
               </>
             ) : null}
 
@@ -679,6 +745,17 @@ export const DebtDetailScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <DatePickerModal
+        visible={showDatePicker}
+        value={formDate ? new Date(formDate) : new Date()}
+        title="Chọn ngày thanh toán"
+        onConfirm={(date) => {
+          setFormDate(toIsoDate(date));
+          setShowDatePicker(false);
+        }}
+        onCancel={() => setShowDatePicker(false)}
+      />
     </View>
   );
 };
@@ -985,7 +1062,55 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   activityAmountIncome: {
-    color: colors.success,
+    color: '#10b981',
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fffbeb',
+    borderColor: '#fcd34d',
+    borderWidth: 1,
+    padding: 12,
+    borderRadius: 12,
+  },
+  warningText: {
+    fontSize: 14,
+    color: '#b45309',
+    fontWeight: '600',
+    flex: 1,
+  },
+  interestCard: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#bfdbfe',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    gap: 8,
+  },
+  interestTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1d4ed8',
+  },
+  interestRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  interestLabel: {
+    fontSize: 13,
+    color: '#3b82f6',
+  },
+  interestAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1d4ed8',
+  },
+  interestTotalAmount: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1e3a8a',
   },
   activityAmountExpense: {
     color: colors.error,

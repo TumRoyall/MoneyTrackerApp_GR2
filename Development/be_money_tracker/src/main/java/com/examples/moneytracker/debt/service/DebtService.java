@@ -59,6 +59,10 @@ public class DebtService {
         debt.setTargetAmount(request.getTargetAmount());
         debt.setStartDate(resolveStartDate(request.getStartDate()));
         debt.setTargetDate(request.getTargetDate());
+        debt.setPaymentType(request.getPaymentType());
+        debt.setPeriodUnit(request.getPeriodUnit());
+        debt.setInterestRate(request.getInterestRate());
+        debt.setInterestType(request.getInterestType());
 
         debtRepository.save(debt);
         return DebtResponse.from(debt, wallet);
@@ -117,6 +121,19 @@ public class DebtService {
 
         if (request.getTargetDate() != null) {
             debt.setTargetDate(request.getTargetDate());
+        }
+
+        if (request.getPaymentType() != null) {
+            debt.setPaymentType(request.getPaymentType());
+        }
+        if (request.getPeriodUnit() != null) {
+            debt.setPeriodUnit(request.getPeriodUnit());
+        }
+        if (request.getInterestRate() != null) {
+            debt.setInterestRate(request.getInterestRate());
+        }
+        if (request.getInterestType() != null) {
+            debt.setInterestType(request.getInterestType());
         }
 
         walletRepository.save(wallet);

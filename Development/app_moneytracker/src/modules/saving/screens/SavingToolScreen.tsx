@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { X, Plus, Wallet, ChevronUp, ChevronDown, Calendar, Pencil, PiggyBank } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -24,11 +24,10 @@ import {
   Switch,
   DatePickerModal,
   colors,
-  spacing,
   typography,
 } from '@/components/common';
 import { useSavingUsecases } from '@/modules/saving/usecases';
-import { Saving, SavingPeriodUnit, SavingType } from '@/modules/saving/models/saving.types';
+import { SavingPeriodUnit, SavingType } from '@/modules/saving/models/saving.types';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
 import { formatMoneyInput, formatVndAmount, parseMoneyInput } from '@/shared/utils/money';
@@ -74,9 +73,12 @@ const toIsoDate = (value: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const sumSignedAmount = (items: Array<{ categoryId: string; amount: number }>, categoryMap: Map<string, { type?: string }>) =>
+const sumSignedAmount = (items: Array<{ categoryId: string; amount: number; type?: string }>, categoryMap: Map<string, { type?: string }>) =>
   items.reduce((sum, item) => {
-    const type = normalizeCategoryType(categoryMap.get(item.categoryId)?.type);
+    const type = normalizeCategoryType(categoryMap.get(item.categoryId)?.type || item.type);
+    if (!type) {
+      console.warn('sumSignedAmount: transaction type is undefined/empty, defaulting to INCOME treatment');
+    }
     if (type === 'EXPENSE') {
       return sum - Number(item.amount || 0);
     }
@@ -208,7 +210,10 @@ export const SavingToolScreen = () => {
                 title: 'Nhắc nhở Tiết kiệm',
                 body: `Mục tiêu "${titleInput.trim()}" của bạn sắp đến hạn vào ngày ${toIsoDate(targetDate)}. Bạn đã đạt mục tiêu chưa?`,
               },
-              trigger: triggerDate,
+              trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: triggerDate,
+              },
             });
          }
       }
@@ -247,7 +252,7 @@ export const SavingToolScreen = () => {
         </View>
 
         <Card variant="elevated" style={styles.totalSummaryCard}>
-          <Ionicons name="wallet" size={18} color="#2bb6c2" />
+          <Wallet size={18} color="#2bb6c2" />
           <Text style={styles.totalSummaryText}>Tổng đã tiết kiệm</Text>
           <Text style={styles.totalSummaryAmount}>{formatVndAmount(totalSavedAllTime)}</Text>
         </Card>
@@ -258,7 +263,8 @@ export const SavingToolScreen = () => {
           </View>
         ) : filteredSavings.length === 0 ? (
           <EmptyState
-            icon="analytics-outline"
+            icon="PiggyBank"
+            iconLibrary="lucide"
             title="Chưa có mục tiêu tiết kiệm"
             description="Hãy tạo mục tiêu tiết kiệm đầu tiên của bạn."
             action={{
@@ -272,13 +278,13 @@ export const SavingToolScreen = () => {
             const unit = normalizePeriodUnit(saving.periodUnit);
             const totalSavedAllTime = Number(saving.currentBalance || 0);
             const progressTarget = saving.targetAmount;
-            
+
             let progressValue = totalSavedAllTime;
             if (type === 'periodic') {
               const transactions = transactionsBySavingId.get(saving.savingId) ?? [];
               progressValue = sumSignedAmount(transactions, categoryMap);
             }
-            
+
             const percent = progressTarget > 0 ? Math.max(0, Math.min((progressValue / progressTarget) * 100, 100)) : 0;
 
             let isOverdue = false;
@@ -315,12 +321,12 @@ export const SavingToolScreen = () => {
                     }}
                     style={styles.editButton}
                   >
-                    <Ionicons name="pencil" size={16} color="#1f1f1f" />
+                    <Pencil size={16} color="#1f1f1f" />
                   </Pressable>
                 </View>
 
                 <View style={styles.amountRow}>
-                  <Ionicons name="wallet" size={20} color={type === 'periodic' ? '#2bb6c2' : '#f9a826'} style={{ marginRight: 2 }} />
+                  <Wallet size={20} color={type === 'periodic' ? '#2bb6c2' : '#f9a826'} style={{ marginRight: 2 }} />
                   <Text style={[styles.amountPrimary, { color: type === 'periodic' ? '#2bb6c2' : '#f9a826' }]}>{formatVndAmount(progressValue)}</Text>
                   <Text style={styles.amountSecondary}>/ {formatVndAmount(progressTarget)}</Text>
                 </View>
@@ -367,7 +373,7 @@ export const SavingToolScreen = () => {
         )}
       </ScrollView>
 
-      <FAB icon={<Ionicons name="add" />} label="Thêm mục tiêu" onPress={() => setShowCreateModal(true)} />
+      <FAB icon={<Plus />} label="Thêm mục tiêu" onPress={() => setShowCreateModal(true)} />
 
       <Modal visible={showCreateModal} transparent animationType="slide" onRequestClose={() => setShowCreateModal(false)}>
         <View style={styles.modalOverlay}>
@@ -375,7 +381,7 @@ export const SavingToolScreen = () => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Tạo mục tiêu tiết kiệm</Text>
               <Pressable onPress={() => setShowCreateModal(false)}>
-                <Ionicons name="close" size={24} color="#333" />
+                <X size={24} color="#333" />
               </Pressable>
             </View>
 
@@ -405,7 +411,7 @@ export const SavingToolScreen = () => {
                   <Text style={styles.dropdownText}>
                     {periodUnit === 'monthly' ? 'Hàng tháng' : 'Hàng năm'}
                   </Text>
-                  <Ionicons name={showPeriodDropdown ? 'chevron-up' : 'chevron-down'} size={18} color="#3a464e" />
+                  {showPeriodDropdown ? <ChevronUp size={18} color="#3a464e" /> : <ChevronDown size={18} color="#3a464e" />}
                 </Pressable>
                 {showPeriodDropdown ? (
                   <View style={styles.dropdownMenu}>
@@ -435,7 +441,7 @@ export const SavingToolScreen = () => {
                   onPress={() => setShowDatePicker(true)}
                 >
                   <Text style={styles.dropdownText}>{toIsoDate(targetDate)}</Text>
-                  <Ionicons name="calendar-outline" size={18} color="#3a464e" />
+                  <Calendar size={18} color="#3a464e" />
                 </Pressable>
               </View>
             )}
@@ -460,7 +466,7 @@ export const SavingToolScreen = () => {
                 onPress={() => setShowCurrencyDropdown((current) => !current)}
               >
                 <Text style={styles.dropdownText}>Tiền tệ - {currency}</Text>
-                <Ionicons name={showCurrencyDropdown ? 'chevron-up' : 'chevron-down'} size={18} color="#3a464e" />
+                {showCurrencyDropdown ? <ChevronUp size={18} color="#3a464e" /> : <ChevronDown size={18} color="#3a464e" />}
               </Pressable>
               {showCurrencyDropdown ? (
                 <View style={styles.dropdownMenu}>
@@ -716,5 +722,22 @@ const styles = StyleSheet.create({
   noteText: {
     fontSize: 12,
     color: '#6b7680',
+  },
+  emptyCard: {
+    borderRadius: 16,
+    backgroundColor: colors.backgroundPrimary,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#e4edf0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  saveBtn: {
+    marginTop: 8,
   },
 });

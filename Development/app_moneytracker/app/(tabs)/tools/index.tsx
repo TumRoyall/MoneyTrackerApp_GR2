@@ -1,4 +1,5 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { PieChart, PiggyBank, CreditCard, Calendar } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -6,8 +7,23 @@ type ToolItem = {
   id: string;
   title: string;
   description: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  IconComponent: React.ComponentType<{ size: number; color: string }>;
   onPress: () => void;
+};
+
+const ToolIcon = ({ id, size, color }: { id: string; size: number; color: string }) => {
+  switch (id) {
+    case 'budgets':
+      return <PieChart size={size} color={color} />;
+    case 'saving':
+      return <PiggyBank size={size} color={color} />;
+    case 'debt':
+      return <CreditCard size={size} color={color} />;
+    case 'events':
+      return <Calendar size={size} color={color} />;
+    default:
+      return <PieChart size={size} color={color} />;
+  }
 };
 
 export default function ToolsScreen() {
@@ -18,28 +34,28 @@ export default function ToolsScreen() {
       id: 'budgets',
       title: 'Ngân sách',
       description: 'Đặt ngân sách hằng ngày, hằng tuần hoặc hằng tháng để theo dõi chi tiêu của bạn',
-      icon: 'chart-pie',
+      IconComponent: PieChart,
       onPress: () => router.push('/tools/budgets'),
     },
     {
       id: 'saving',
       title: 'Tiết kiệm',
       description: 'Đặt mục tiêu tiết kiệm và theo dõi tiến trình tiết kiệm của bạn!',
-      icon: 'piggy-bank',
+      IconComponent: PiggyBank,
       onPress: () => router.push('/tools/savings'),
     },
     {
       id: 'debt',
       title: 'Món nợ',
       description: 'Theo dõi các khoản nợ của bạn và nỗ lực trả hết chúng!',
-      icon: 'card-bulleted-off',
+      IconComponent: CreditCard,
       onPress: () => router.push('/tools/debts'),
     },
     {
       id: 'events',
       title: 'Sự kiện',
       description: 'Cùng bạn bè ghi nhận chi tiêu chung cho các sự kiện: cầu lông, sinh nhật, du lịch...',
-      icon: 'calendar-outline',
+      IconComponent: Calendar,
       onPress: () => router.push('/tools/events'),
     },
   ];
@@ -53,7 +69,7 @@ export default function ToolsScreen() {
         {tools.map((tool) => (
           <Pressable key={tool.id} style={styles.card} onPress={tool.onPress}>
             <View style={styles.iconWrap}>
-              <MaterialCommunityIcons name={tool.icon} size={30} color="#fff" />
+              <tool.IconComponent size={30} color="#fff" />
             </View>
 
             <View style={styles.cardContent}>

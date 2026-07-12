@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import * as LucideIcons from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -27,6 +28,7 @@ import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/money';
 import { StreakScreen } from '@/modules/streak/screens';
 import { AnalysisModal } from '@/modules/transaction/components/AnalysisModal';
 import { exportTransactionsByMonthToCSV, TransactionForExport } from '@/shared/utils/exportCSV';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 
 type CategoryType = 'EXPENSE' | 'INCOME';
 type TimeMode = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
@@ -39,6 +41,12 @@ const walletTypeLabels: Record<string, string> = {
   DEBT: 'Nợ',
   INVEST: 'Đầu tư',
   EVENT: 'Sự kiện',
+};
+
+// Helper for dynamic Lucide icons
+const LucideIcon = ({ name, size, color }: { name: string; size: number; color: string }) => {
+  const Icon = (LucideIcons as any)[name] || LucideIcons.Circle;
+  return <Icon name={name} size={size} color={color} />;
 };
 
 const currencyOptions = ['VND', 'USD', 'EUR'];
@@ -825,7 +833,7 @@ export const WalletHomeScreen = () => {
                         key={marker.key}
                         style={[styles.donutMarker, { left: x, top: y, borderColor: marker.color }]}
                       >
-                        <MaterialCommunityIcons name={(marker.icon as any) || 'dots-horizontal'} size={16} color={marker.color} />
+                        <CategoryIcon icon={marker.icon} size={16} color={marker.color} />
                       </View>
                     );
                   })}
@@ -843,7 +851,7 @@ export const WalletHomeScreen = () => {
                 {categoryBreakdown.map((item) => (
                   <View key={item.category.categoryId} style={styles.categoryRow}>
                     <View style={styles.categoryIcon}>
-                      <MaterialCommunityIcons name={(item.category.icon as any) || 'dots-horizontal'} size={26} color={item.color} />
+                      <CategoryIcon icon={item.category.icon} size={26} color={item.color} />
                     </View>
                     <View style={styles.categoryInfo}>
                       <View style={styles.categoryHeaderRow}>

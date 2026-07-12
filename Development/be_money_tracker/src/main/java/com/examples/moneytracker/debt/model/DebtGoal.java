@@ -35,6 +35,18 @@ public class DebtGoal {
     @Column(name = "target_date")
     private LocalDate targetDate;
 
+    @Column(name = "payment_type")
+    private String paymentType;
+
+    @Column(name = "period_unit")
+    private String periodUnit;
+
+    @Column(name = "interest_rate", precision = 5, scale = 2)
+    private BigDecimal interestRate;
+
+    @Column(name = "interest_type")
+    private String interestType;
+
     @Column(name = "deleted_at")
     private Instant deletedAt;
 

@@ -1,4 +1,4 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -20,6 +20,7 @@ import { useEventUsecases } from '@/modules/event/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { Button, BackButton, FAB, colors, spacing, CategoryPickerModal } from '@/components/common';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 import type { EventDetail, EventMember, EventTransaction, Settlement, CreateEventTransactionInput, UpdateEventTransactionInput, AddMemberInput, UpdateMemberInput } from '@/modules/event/models/event.types';
 import { formatCurrency, parseMoneyInput, formatMoneyInput } from '@/shared/utils/money';
 import {
@@ -617,7 +618,7 @@ export default function EventDetailScreen() {
                 }}
               >
                 <View style={[styles.txIcon, { backgroundColor: catColor + '20' }]}>
-                  <MaterialCommunityIcons name={displayIcon as any} size={20} color={catColor} />
+                  <CategoryIcon icon={displayIcon} size={20} color={catColor} />
                 </View>
                 <View style={styles.txInfo}>
                   <Text style={[styles.txNote, canEdit && { color: colors.textPrimary, fontWeight: '600' }]}>
@@ -673,7 +674,7 @@ export default function EventDetailScreen() {
             <Pressable style={styles.selectBtn} onPress={() => setShowCategoryModal(true)}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {selectedCategoryIcon ? (
-                  <MaterialCommunityIcons name={selectedCategoryIcon as any} size={20} color={selectedCategoryColor || '#1f1f1f'} />
+                  <CategoryIcon icon={selectedCategoryIcon} size={20} color={selectedCategoryColor || '#1f1f1f'} />
                 ) : null}
                 <Text style={styles.selectBtnText}>
                   {selectedCategoryName || 'Chọn danh mục'}

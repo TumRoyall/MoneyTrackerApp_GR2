@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 
 import { Button, BackButton, ProgressBar, colors, spacing } from '@/components/common';
 import { useBudgetUsecases } from '@/modules/budget/usecases';
@@ -174,7 +174,7 @@ export const BudgetDetailScreen = () => {
               ) : (
                 categoriesForBudget.map((item) => (
                   <View key={item.categoryId} style={styles.categoryPill}>
-                    <MaterialCommunityIcons name={(item.icon as any) || 'cash'} size={16} color={(item as any).color || '#29bcc8'} />
+                    <CategoryIcon icon={item.icon} color={(item as any).color || '#29bcc8'} size={16} />
                     <Text style={styles.categoryPillText}>{item.name}</Text>
                   </View>
                 ))

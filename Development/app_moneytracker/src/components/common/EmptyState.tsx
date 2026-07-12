@@ -2,8 +2,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from './theme';
 
+type IoniconsIconName = React.ComponentProps<typeof Ionicons>['name'];
+type LucideIconComponent = React.ComponentType<{ size?: number; color?: string }>;
+
 interface EmptyStateProps {
-  icon: React.ComponentProps<typeof Ionicons>['name'];
+  icon: IoniconsIconName | string;
+  iconLibrary?: 'ionicons' | 'lucide';
   title: string;
   description: string;
   action?: {
@@ -13,10 +17,17 @@ interface EmptyStateProps {
   };
 }
 
-export const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => (
+export const EmptyState = ({ icon, iconLibrary = 'ionicons', title, description, action }: EmptyStateProps) => (
   <View style={styles.container}>
     <View style={styles.iconWrap}>
-      <Ionicons name={icon} size={56} color="#b0bec5" />
+      {iconLibrary === 'lucide' ? (
+        (() => {
+          const LucideIcon = require('lucide-react-native')[icon as string] as LucideIconComponent;
+          return LucideIcon ? <LucideIcon size={56} color="#b0bec5" /> : <Text style={styles.iconText}>{icon}</Text>;
+        })()
+      ) : (
+        <Ionicons name={icon as IoniconsIconName} size={56} color="#b0bec5" />
+      )}
     </View>
     <Text style={styles.title}>{title}</Text>
     <Text style={styles.description}>{description}</Text>

@@ -22,6 +22,10 @@ public class DebtResponse {
     private BigDecimal targetAmount;
     private LocalDate startDate;
     private LocalDate targetDate;
+    private String paymentType;
+    private String periodUnit;
+    private BigDecimal interestRate;
+    private String interestType;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -36,6 +40,10 @@ public class DebtResponse {
                 debt.getTargetAmount(),
                 debt.getStartDate(),
                 debt.getTargetDate(),
+                debt.getPaymentType(),
+                debt.getPeriodUnit(),
+                debt.getInterestRate(),
+                debt.getInterestType(),
                 debt.getCreatedAt(),
                 debt.getUpdatedAt()
         );

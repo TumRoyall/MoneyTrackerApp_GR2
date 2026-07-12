@@ -13,9 +13,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing, typography } from '@/components/common';
+import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, DatePickerModal, colors, spacing, typography } from '@/components/common';
 import { useDebtUsecases } from '@/modules/debt/usecases';
 import { Debt } from '@/modules/debt/models/debt.types';
+import { useWalletUsecases } from '@/modules/wallet/usecases';
+import { Wallet } from '@/modules/wallet/models/wallet.types';
 import { formatMoneyInput, formatVndAmount, parseMoneyInput } from '@/shared/utils/money';
 
 const currencyOptions = ['VND', 'USD', 'EUR'];
@@ -38,8 +40,9 @@ const formatDisplayDate = (value?: string | null) => {
   return `${day} thg ${month}, ${year}`;
 };
 
-const buildProgress = (debt: Debt) => {
-  const totalPaid = Number(debt.currentBalance || 0);
+const buildProgress = (debt: Debt, wallets: Wallet[]) => {
+  const wallet = wallets.find(w => w.walletId === debt.walletId);
+  const totalPaid = wallet ? Number(wallet.currentBalance || 0) : Number(debt.currentBalance || 0);
   const target = Number(debt.targetAmount || 0);
   const percent = target > 0 ? Math.min((totalPaid / target) * 100, 100) : 0;
   return { totalPaid, target, percent };
@@ -49,12 +52,20 @@ export const DebtToolScreen = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { getDebts, createDebt } = useDebtUsecases();
+  const { getWallets } = useWalletUsecases();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const [targetInput, setTargetInput] = useState('');
   const [currency, setCurrency] = useState('VND');
   const [targetDateInput, setTargetDateInput] = useState(toIsoDate(new Date()));
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [paymentTypeInput, setPaymentTypeInput] = useState('ONE_TIME');
+  const [periodUnitInput, setPeriodUnitInput] = useState('MONTHLY');
+  const [enableInterest, setEnableInterest] = useState(false);
+  const [interestTypeInput, setInterestTypeInput] = useState('SIMPLE');
+  const [interestRateInput, setInterestRateInput] = useState('');
+  
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
 
@@ -63,11 +74,20 @@ export const DebtToolScreen = () => {
     queryFn: getDebts,
   });
 
+  const walletsQuery = useQuery({
+    queryKey: ['wallets'],
+    queryFn: getWallets,
+  });
+
   const debts = debtsQuery.data ?? [];
+  const wallets = walletsQuery.data ?? [];
 
   const totalPaidAllTime = useMemo(
-    () => debts.reduce((sum, debt) => sum + Number(debt.currentBalance || 0), 0),
-    [debts],
+    () => debts.reduce((sum, debt) => {
+      const wallet = wallets.find(w => w.walletId === debt.walletId);
+      return sum + (wallet ? Number(wallet.currentBalance || 0) : Number(debt.currentBalance || 0));
+    }, 0),
+    [debts, wallets],
   );
 
   const filteredDebts = useMemo(() => {
@@ -75,10 +95,11 @@ export const DebtToolScreen = () => {
       return debts;
     }
     return debts.filter((debt) => {
-      const paid = Number(debt.currentBalance || 0);
+      const wallet = wallets.find(w => w.walletId === debt.walletId);
+      const paid = wallet ? Number(wallet.currentBalance || 0) : Number(debt.currentBalance || 0);
       return paid < debt.targetAmount;
     });
-  }, [debts, hideCompleted]);
+  }, [debts, hideCompleted, wallets]);
 
   const createDebtHandler = async () => {
     const targetAmount = parseMoneyInput(targetInput);
@@ -102,6 +123,10 @@ export const DebtToolScreen = () => {
         currency,
         startDate: toIsoDate(new Date()),
         targetDate: targetDateInput.trim(),
+        paymentType: paymentTypeInput,
+        periodUnit: paymentTypeInput === 'PERIODIC' ? periodUnitInput : undefined,
+        interestRate: enableInterest && interestRateInput ? parseFloat(interestRateInput) : undefined,
+        interestType: enableInterest ? interestTypeInput : 'NONE',
       });
       await queryClient.invalidateQueries({ queryKey: ['debts'] });
       setShowCreateModal(false);
@@ -109,6 +134,11 @@ export const DebtToolScreen = () => {
       setTargetInput('');
       setCurrency('VND');
       setTargetDateInput(toIsoDate(new Date()));
+      setPaymentTypeInput('ONE_TIME');
+      setPeriodUnitInput('MONTHLY');
+      setEnableInterest(false);
+      setInterestTypeInput('SIMPLE');
+      setInterestRateInput('');
       Alert.alert('Thành công', 'Đã tạo món nợ mới.');
     } catch {
       Alert.alert('Lỗi', 'Không thể tạo món nợ. Vui lòng thử lại.');
@@ -155,7 +185,7 @@ export const DebtToolScreen = () => {
           />
         ) : (
           filteredDebts.map((debt) => {
-            const { totalPaid, target, percent } = buildProgress(debt);
+            const { totalPaid, target, percent } = buildProgress(debt, wallets);
             const remaining = Math.max(target - totalPaid, 0);
 
             return (
@@ -267,12 +297,87 @@ export const DebtToolScreen = () => {
               onChangeText={(value) => setTargetInput(formatMoneyInput(value))}
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Ngày mục tiêu (YYYY-MM-DD)"
-              value={targetDateInput}
-              onChangeText={setTargetDateInput}
-            />
+            <Pressable
+              style={[styles.input, { justifyContent: 'center' }]}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={{ color: targetDateInput ? colors.text : colors.textSecondary }}>
+                {targetDateInput ? formatDisplayDate(targetDateInput) : 'Ngày mục tiêu'}
+              </Text>
+            </Pressable>
+
+            <View style={styles.optionGroup}>
+              <Text style={styles.optionLabel}>Hình thức trả nợ</Text>
+              <View style={styles.radioRow}>
+                <Pressable
+                  style={[styles.radioBtn, paymentTypeInput === 'ONE_TIME' && styles.radioBtnActive]}
+                  onPress={() => setPaymentTypeInput('ONE_TIME')}
+                >
+                  <Text style={[styles.radioText, paymentTypeInput === 'ONE_TIME' && styles.radioTextActive]}>Trả 1 lần</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.radioBtn, paymentTypeInput === 'PERIODIC' && styles.radioBtnActive]}
+                  onPress={() => setPaymentTypeInput('PERIODIC')}
+                >
+                  <Text style={[styles.radioText, paymentTypeInput === 'PERIODIC' && styles.radioTextActive]}>Trả góp (kỳ)</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {paymentTypeInput === 'PERIODIC' && (
+              <View style={styles.optionGroup}>
+                <Text style={styles.optionLabel}>Chu kỳ trả nợ</Text>
+                <View style={styles.radioRow}>
+                  {['WEEKLY', 'MONTHLY', 'YEARLY'].map((unit) => (
+                    <Pressable
+                      key={unit}
+                      style={[styles.radioBtn, periodUnitInput === unit && styles.radioBtnActive]}
+                      onPress={() => setPeriodUnitInput(unit)}
+                    >
+                      <Text style={[styles.radioText, periodUnitInput === unit && styles.radioTextActive]}>
+                        {unit === 'WEEKLY' ? 'Tuần' : unit === 'MONTHLY' ? 'Tháng' : 'Năm'}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            <View style={styles.optionGroup}>
+              <View style={[styles.radioRow, { justifyContent: 'space-between', paddingVertical: 8 }]}>
+                <Text style={styles.optionLabel}>Tính lãi suất</Text>
+                <Switch value={enableInterest} onValueChange={setEnableInterest} />
+              </View>
+            </View>
+
+            {enableInterest && (
+              <>
+                <View style={styles.optionGroup}>
+                  <Text style={styles.optionLabel}>Loại lãi suất</Text>
+                  <View style={styles.radioRow}>
+                    <Pressable
+                      style={[styles.radioBtn, interestTypeInput === 'SIMPLE' && styles.radioBtnActive]}
+                      onPress={() => setInterestTypeInput('SIMPLE')}
+                    >
+                      <Text style={[styles.radioText, interestTypeInput === 'SIMPLE' && styles.radioTextActive]}>Lãi đơn</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.radioBtn, interestTypeInput === 'COMPOUND' && styles.radioBtnActive]}
+                      onPress={() => setInterestTypeInput('COMPOUND')}
+                    >
+                      <Text style={[styles.radioText, interestTypeInput === 'COMPOUND' && styles.radioTextActive]}>Lãi kép</Text>
+                    </Pressable>
+                  </View>
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Lãi suất (% / năm)"
+                  keyboardType="numeric"
+                  value={interestRateInput}
+                  onChangeText={setInterestRateInput}
+                />
+              </>
+            )}
 
             <Text style={styles.noteText}>Ví nợ sẽ được tạo tự động với tên món nợ.</Text>
 
@@ -280,6 +385,17 @@ export const DebtToolScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <DatePickerModal
+        visible={showDatePicker}
+        value={targetDateInput ? new Date(targetDateInput) : new Date()}
+        title="Chọn ngày mục tiêu"
+        onConfirm={(date) => {
+          setTargetDateInput(toIsoDate(date));
+          setShowDatePicker(false);
+        }}
+        onCancel={() => setShowDatePicker(false)}
+      />
     </View>
   );
 };
@@ -468,5 +584,40 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     marginTop: spacing.xs,
+  },
+  optionGroup: {
+    gap: 8,
+  },
+  optionLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  radioRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  radioBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  radioBtnActive: {
+    borderColor: colors.primary,
+    backgroundColor: '#eff6ff',
+  },
+  radioText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  radioTextActive: {
+    color: colors.primary,
+    fontWeight: '600',
   },
 });

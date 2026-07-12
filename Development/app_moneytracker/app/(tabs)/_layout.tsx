@@ -1,5 +1,11 @@
 import { Tabs } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { Coins } from 'lucide-react-native';
+import { Platform } from 'react-native';
+
+// Kiểm tra nếu có thanh navigation ở dưới (Android có thanh 3 nút)
+// Thêm padding để tránh trùng với thanh hệ thống
+const BOTTOM_SAFE_AREA = Platform.OS === 'android' ? 24 : 0;
 
 export default function TabsLayout() {
   return (
@@ -14,8 +20,9 @@ export default function TabsLayout() {
           marginBottom: 4,
         },
         tabBarStyle: {
-          height: 72,
+          height: 72 + BOTTOM_SAFE_AREA,
           paddingTop: 6,
+          paddingBottom: BOTTOM_SAFE_AREA,
         },
       }}
     >
@@ -38,7 +45,7 @@ export default function TabsLayout() {
         options={{
           title: 'Công cụ tiền tệ',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="cash-multiple" size={size} color={color} />
+            <Coins size={size} color={color} />
           ),
         }}
       />

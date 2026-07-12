@@ -1,7 +1,7 @@
 import { Category } from '@/modules/category/models/category.types';
 import { CategoryRepository } from '@/modules/category/repository/categoryRepository';
 import { CategoryLocalDataSource } from '@/modules/category/local/categoryLocalDataSource';
-import { CategoryRemoteDataSource } from '@/modules/category/api/categoryRemoteDataSource';
+import { CategoryRemoteDataSource, CreateCategoryInput } from '@/modules/category/api/categoryRemoteDataSource';
 import { SyncService } from '@/modules/sync/service/syncService';
 
 export class CategoryRepositoryLocalFirst implements CategoryRepository {
@@ -19,7 +19,7 @@ export class CategoryRepositoryLocalFirst implements CategoryRepository {
     }
 
     // First-boot fallback: pull the system categories from the server seed.
-    // After migration v4 the local DB should always have the 139 hardcoded
+    // After migration the local DB should always have the hardcoded
     // categories, so this branch is a safety net for installs that bypass
     // the migration (e.g. debug build that deletes the local DB).
     try {
@@ -47,5 +47,14 @@ export class CategoryRepositoryLocalFirst implements CategoryRepository {
     } catch {
       return localCategory;
     }
+  }
+
+  async createCategory(input: CreateCategoryInput): Promise<Category> {
+    await this.syncService.ensureInitialized();
+    // Create on server first
+    const created = await this.remote.createCategory(input);
+    // Save locally for offline access
+    await this.local.upsert(created);
+    return created;
   }
 }
