@@ -10,20 +10,27 @@ import { LoginFormValues } from '@/modules/auth/models/auth.types';
 import { useAuthAction } from '@/modules/auth/screens/useAuthAction';
 import { useAuthUsecases } from '@/modules/auth/usecases';
 import { loginSchema } from '@/modules/auth/validation';
+import { onboardingStorage } from '@/modules/onboarding/storage/onboardingStorage';
 
 export const LoginScreen = () => {
   const { login } = useAuthUsecases();
   const { run, loading, error, success } = useAuthAction(login);
   const [showPassword, setShowPassword] = useState(false);
 
-  // // DEV ONLY: AUTO LOGIN
-  // useEffect(() => {
-  //   const autoLogin = async () => {
-  //     await run({ email: 'nguyenkimngochtm@gmail.com', password: 'admin' });
-  //     router.replace('/(tabs)/wallets');
-  //   };
-  //   autoLogin();
-  // }, []);
+  // DEV ONLY: AUTO LOGIN
+  useEffect(() => {
+    const autoLogin = async () => {
+      await run({ email: 'nguyenkimngochtm@gmail.com', password: 'admin' });
+      // Check onboarding status after login
+      const isOnboardingCompleted = await onboardingStorage.isCompleted();
+      if (isOnboardingCompleted) {
+        router.replace('/(tabs)/wallets');
+      } else {
+        router.replace('/onboarding');
+      }
+    };
+    autoLogin();
+  }, []);
 
   const { control, handleSubmit } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -35,7 +42,13 @@ export const LoginScreen = () => {
 
   const onSubmit = handleSubmit(async (values) => {
     await run(values);
-    router.replace('/(tabs)/wallets');
+    // Check onboarding status after login
+    const isOnboardingCompleted = await onboardingStorage.isCompleted();
+    if (isOnboardingCompleted) {
+      router.replace('/(tabs)/wallets');
+    } else {
+      router.replace('/onboarding');
+    }
   });
 
   return (

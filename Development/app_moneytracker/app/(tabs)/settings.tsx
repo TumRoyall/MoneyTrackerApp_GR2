@@ -34,6 +34,7 @@ import { queryAll, executeSql } from '@/core/db/sqlite';
 import { useAuthUsecases } from '@/modules/auth/usecases';
 import { Button, colors } from '@/components/common';
 import { useQueryClient } from '@tanstack/react-query';
+import { onboardingStorage } from '@/modules/onboarding/storage/onboardingStorage';
 
 const USERNAME_KEY = 'display_username';
 
@@ -162,6 +163,23 @@ export default function SettingsScreen() {
     ]);
   };
 
+  const handleResetOnboarding = () => {
+    Alert.alert(
+      '🔄 Thiết lập lại thông tin',
+      'Bạn sẽ được chuyển đến trang thiết lập lại thông tin cá nhân. Tiếp tục?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Tiếp tục',
+          onPress: async () => {
+            await onboardingStorage.reset();
+            router.replace('/onboarding');
+          },
+        },
+      ]
+    );
+  };
+
   const handleExecuteQuery = async () => {
     if (!devQuery.trim()) return;
     setIsQuerying(true);
@@ -273,6 +291,8 @@ export default function SettingsScreen() {
               {renderSettingItem('notifications-outline', 'Thông báo', () => {})}
               <View style={styles.divider} />
               {renderSettingItem('help-circle-outline', 'Trợ giúp & Hỗ trợ', () => {})}
+              <View style={styles.divider} />
+              {renderSettingItem('refresh-outline', 'Thiết lập lại thông tin cá nhân', handleResetOnboarding, '#2bbcc5', true)}
               <View style={styles.divider} />
               {renderSettingItem('trash-outline', 'Xóa Cache & Dữ liệu', handleClearCache, '#e67e22', false)}
               <View style={styles.divider} />
