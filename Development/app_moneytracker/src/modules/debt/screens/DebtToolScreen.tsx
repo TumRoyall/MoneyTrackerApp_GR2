@@ -42,7 +42,7 @@ const formatDisplayDate = (value?: string | null) => {
 
 const buildProgress = (debt: Debt, wallets: Wallet[]) => {
   const wallet = wallets.find(w => w.walletId === debt.walletId);
-  const totalPaid = wallet ? Number(wallet.currentBalance || 0) : Number(debt.currentBalance || 0);
+  const totalPaid = Math.abs(wallet ? Number(wallet.currentBalance || 0) : Number(debt.currentBalance || 0));
   const target = Number(debt.targetAmount || 0);
   const percent = target > 0 ? Math.min((totalPaid / target) * 100, 100) : 0;
   return { totalPaid, target, percent };
@@ -85,7 +85,7 @@ export const DebtToolScreen = () => {
   const totalPaidAllTime = useMemo(
     () => debts.reduce((sum, debt) => {
       const wallet = wallets.find(w => w.walletId === debt.walletId);
-      return sum + (wallet ? Number(wallet.currentBalance || 0) : Number(debt.currentBalance || 0));
+      return sum + Math.abs(wallet ? Number(wallet.currentBalance || 0) : Number(debt.currentBalance || 0));
     }, 0),
     [debts, wallets],
   );
@@ -96,7 +96,7 @@ export const DebtToolScreen = () => {
     }
     return debts.filter((debt) => {
       const wallet = wallets.find(w => w.walletId === debt.walletId);
-      const paid = wallet ? Number(wallet.currentBalance || 0) : Number(debt.currentBalance || 0);
+      const paid = Math.abs(wallet ? Number(wallet.currentBalance || 0) : Number(debt.currentBalance || 0));
       return paid < debt.targetAmount;
     });
   }, [debts, hideCompleted, wallets]);

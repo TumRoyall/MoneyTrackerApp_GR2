@@ -205,7 +205,7 @@ export const DebtDetailScreen = () => {
   const activityItems = transactionsQuery.data ?? [];
 
   const debtWallet = wallets.find((w) => w.walletId === debt?.walletId);
-  const totalPaid = debtWallet ? Number(debtWallet.currentBalance || 0) : Number(debt?.currentBalance || 0);
+  const totalPaid = Math.abs(debtWallet ? Number(debtWallet.currentBalance || 0) : Number(debt?.currentBalance || 0));
   const targetAmount = debt?.targetAmount ?? 0;
   const percent = targetAmount > 0 ? Math.min((totalPaid / targetAmount) * 100, 100) : 0;
   const remainingAmount = Math.max(targetAmount - totalPaid, 0);
@@ -380,6 +380,7 @@ export const DebtDetailScreen = () => {
 
         await updateTransaction(editingRecord.transactionId, {
           amount: amountValue,
+          type: 'INCOME',
           note: noteWithMeta,
         });
 
@@ -398,6 +399,7 @@ export const DebtDetailScreen = () => {
           if (paired) {
             await updateTransaction(paired.transactionId, {
               amount: amountValue,
+              type: 'EXPENSE',
               note: noteWithMeta,
             });
           }
@@ -413,6 +415,7 @@ export const DebtDetailScreen = () => {
             walletId: selectedSourceWalletId,
             categoryId: expenseCategoryId,
             amount: amountValue,
+            type: 'EXPENSE',
             note: noteWithMeta,
             date: dateValue,
           });
@@ -422,6 +425,7 @@ export const DebtDetailScreen = () => {
           walletId: debt.walletId,
           categoryId: incomeCategoryId,
           amount: amountValue,
+          type: 'INCOME',
           note: noteWithMeta,
           date: dateValue,
         });

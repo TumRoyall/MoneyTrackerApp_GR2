@@ -30,6 +30,7 @@ import { useSavingUsecases } from '@/modules/saving/usecases';
 import { SavingPeriodUnit, SavingType } from '@/modules/saving/models/saving.types';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
+import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { formatMoneyInput, formatVndAmount, parseMoneyInput } from '@/shared/utils/money';
 
 const currencyOptions = ['VND', 'USD', 'EUR'];
@@ -91,6 +92,7 @@ export const SavingToolScreen = () => {
   const { getSavings, createSaving } = useSavingUsecases();
   const { getCategories } = useCategoryUsecases();
   const { getTransactions } = useTransactionUsecases();
+  const { getWallets } = useWalletUsecases();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [savingType, setSavingType] = useState<SavingType>('periodic');
@@ -114,8 +116,14 @@ export const SavingToolScreen = () => {
     queryFn: getCategories,
   });
 
+  const walletsQuery = useQuery({
+    queryKey: ['wallets'],
+    queryFn: getWallets,
+  });
+
   const savings = savingsQuery.data ?? [];
   const categories = categoriesQuery.data ?? [];
+  const wallets = walletsQuery.data ?? [];
 
   const categoryMap = useMemo(
     () => new Map(categories.map((item) => [item.categoryId, item])),
@@ -123,8 +131,12 @@ export const SavingToolScreen = () => {
   );
 
   const totalSavedAllTime = useMemo(
-    () => savings.reduce((sum, saving) => sum + Number(saving.currentBalance || 0), 0),
-    [savings],
+    () => savings.reduce((sum, saving) => {
+      const wallet = wallets.find((w) => w.walletId === saving.walletId);
+      const balance = wallet ? Number(wallet.currentBalance || 0) : Number(saving.currentBalance || 0);
+      return sum + balance;
+    }, 0),
+    [savings, wallets],
   );
 
   const periodicSavings = useMemo(
@@ -165,7 +177,8 @@ export const SavingToolScreen = () => {
     return savings.filter((saving) => {
       const type = normalizeSavingType(saving.type);
       if (type === 'one_time') {
-        const total = Number(saving.currentBalance || 0);
+        const wallet = wallets.find((w) => w.walletId === saving.walletId);
+        const total = wallet ? Number(wallet.currentBalance || 0) : Number(saving.currentBalance || 0);
         return total < saving.targetAmount;
       }
       const unit = normalizePeriodUnit(saving.periodUnit);
@@ -173,7 +186,7 @@ export const SavingToolScreen = () => {
       const saved = sumSignedAmount(transactions, categoryMap);
       return saved < saving.targetAmount;
     });
-  }, [hideCompleted, savings, transactionsBySavingId, categoryMap]);
+  }, [hideCompleted, savings, transactionsBySavingId, categoryMap, wallets]);
 
   const createSavingHandler = async () => {
     const targetAmount = parseMoneyInput(targetInput);
@@ -276,10 +289,11 @@ export const SavingToolScreen = () => {
           filteredSavings.map((saving) => {
             const type = normalizeSavingType(saving.type);
             const unit = normalizePeriodUnit(saving.periodUnit);
-            const totalSavedAllTime = Number(saving.currentBalance || 0);
+            const wallet = wallets.find((w) => w.walletId === saving.walletId);
+            const totalSavedLocal = wallet ? Number(wallet.currentBalance || 0) : Number(saving.currentBalance || 0);
             const progressTarget = saving.targetAmount;
 
-            let progressValue = totalSavedAllTime;
+            let progressValue = totalSavedLocal;
             if (type === 'periodic') {
               const transactions = transactionsBySavingId.get(saving.savingId) ?? [];
               progressValue = sumSignedAmount(transactions, categoryMap);
@@ -353,7 +367,7 @@ export const SavingToolScreen = () => {
                     </>
                   ) : (
                     <>
-                      <Text style={styles.metaText}>Tổng tiết kiệm: {formatVndAmount(totalSavedAllTime)}</Text>
+                      <Text style={styles.metaText}>Tổng tiết kiệm: {formatVndAmount(totalSavedLocal)}</Text>
                       {saving.targetDate && (
                         <>
                           <Text style={styles.metaText}>•</Text>

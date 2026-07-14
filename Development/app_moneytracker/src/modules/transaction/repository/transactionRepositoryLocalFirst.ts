@@ -176,9 +176,22 @@ export class TransactionRepositoryLocalFirst implements TransactionRepository {
   }
 
   private async updateWalletBalance(walletId: string, delta: number) {
-    const wallet = await this.walletLocal.getWalletById(walletId);
+    let wallet = await this.walletLocal.getWalletById(walletId);
     if (!wallet) {
-      return;
+      const now = new Date().toISOString();
+      wallet = {
+        walletId,
+        name: 'Đang đồng bộ...',
+        type: 'SYSTEM',
+        currency: 'VND',
+        openingBalance: 0,
+        currentBalance: 0,
+        description: null,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+        version: 1,
+      };
     }
     const nextBalance = (wallet.currentBalance ?? 0) + delta;
     await this.walletLocal.upsert({
