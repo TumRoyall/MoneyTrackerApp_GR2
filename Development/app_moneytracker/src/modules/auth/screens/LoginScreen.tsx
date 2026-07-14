@@ -10,6 +10,7 @@ import { LoginFormValues } from '@/modules/auth/models/auth.types';
 import { useAuthAction } from '@/modules/auth/screens/useAuthAction';
 import { useAuthUsecases } from '@/modules/auth/usecases';
 import { loginSchema } from '@/modules/auth/validation';
+import { onboardingStorage } from '@/modules/onboarding/storage/onboardingStorage';
 
 export const LoginScreen = () => {
   const { login } = useAuthUsecases();
@@ -20,7 +21,13 @@ export const LoginScreen = () => {
   useEffect(() => {
     const autoLogin = async () => {
       await run({ email: 'nguyenkimngochtm@gmail.com', password: 'admin' });
-      router.replace('/(tabs)/wallets');
+      // Check onboarding status after login
+      const isOnboardingCompleted = await onboardingStorage.isCompleted();
+      if (isOnboardingCompleted) {
+        router.replace('/(tabs)/wallets');
+      } else {
+        router.replace('/onboarding');
+      }
     };
     autoLogin();
   }, []);
@@ -35,7 +42,13 @@ export const LoginScreen = () => {
 
   const onSubmit = handleSubmit(async (values) => {
     await run(values);
-    router.replace('/(tabs)/wallets');
+    // Check onboarding status after login
+    const isOnboardingCompleted = await onboardingStorage.isCompleted();
+    if (isOnboardingCompleted) {
+      router.replace('/(tabs)/wallets');
+    } else {
+      router.replace('/onboarding');
+    }
   });
 
   return (
