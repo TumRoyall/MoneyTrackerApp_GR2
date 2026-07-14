@@ -39,8 +39,10 @@ public class BudgetService {
 
     @Transactional
     public BudgetResponse createBudget(CreateBudgetRequest request, UUID userId) {
-        walletRepository.findByWalletIdAndUserIdAndDeletedAtIsNull(request.getWalletId(), userId)
-                .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+        if (request.getWalletId() != null) {
+            walletRepository.findByWalletIdAndUserIdAndDeletedAtIsNull(request.getWalletId(), userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+        }
 
         Budget budget = new Budget();
         budget.setUserId(userId);

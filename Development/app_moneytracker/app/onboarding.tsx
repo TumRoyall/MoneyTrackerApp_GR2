@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, SafeAreaView, StatusBar, Animated } from 'react-native';
 import { useOnboarding, OnboardingStep } from '@/modules/onboarding/hooks/useOnboarding';
 import { StepIndicator } from '@/modules/onboarding/components/StepIndicator';
 import { WelcomeStep } from '@/modules/onboarding/components/WelcomeStep';
@@ -43,6 +43,26 @@ export default function OnboardingScreen() {
     apply503020,
     completeOnboarding,
   } = useOnboarding();
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    fadeAnim.setValue(0);
+    slideAnim.setValue(20);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [currentStepIndex, fadeAnim, slideAnim]);
 
   const StepComponent = STEP_COMPONENTS[currentStep];
 
@@ -96,9 +116,9 @@ export default function OnboardingScreen() {
       {currentStepIndex > 0 && currentStepIndex < totalSteps - 1 && (
         <StepIndicator currentStep={currentStepIndex} totalSteps={totalSteps} />
       )}
-      <View style={styles.content}>
+      <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         <StepComponent {...getStepProps()} />
-      </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }

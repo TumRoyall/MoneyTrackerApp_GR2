@@ -26,7 +26,7 @@ import {
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
 import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { formatMoneyInput, parseMoneyInput, formatVndAmount } from '@/shared/utils/money';
-import { Button, EmptyState, FAB, colors, CategoryPickerModal } from '@/components/common';
+import { Button, EmptyState, FAB, colors, CategoryPickerModal, CategoryIcon } from '@/components/common';
 import { AnalysisModal } from '../components/AnalysisModal';
 import { AutoAddTransactionModal } from '../components/AutoAddTransactionModal';
 import { exportTransactionsByMonthToCSV, TransactionForExport } from '@/shared/utils/exportCSV';
@@ -37,19 +37,7 @@ type CategoryType = 'EXPENSE' | 'INCOME';
 type TimeMode = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
 type CalendarTarget = 'day' | 'customStart' | 'customEnd' | 'formDate';
 
-// Helper to render dynamic Lucide icon
-const CategoryIcon = ({ icon, size, color }: { icon?: string | null; size: number; color: string }) => {
-  if (!icon) {
-    const FallbackIcon = LucideIcons.HelpCircle;
-    return <FallbackIcon name="HelpCircle" size={size} color={color} />;
-  }
-  const IconComponent = (LucideIcons as any)[icon];
-  if (IconComponent) {
-    return <IconComponent name={icon} size={size} color={color} />;
-  }
-  const FallbackIcon = LucideIcons.HelpCircle;
-  return <FallbackIcon name="HelpCircle" size={size} color={color} />;
-};
+
 
 const defaultCategoryIconByType: Record<CategoryType, string> = {
   EXPENSE: 'UtensilsCrossed',
@@ -798,6 +786,7 @@ export const TransactionScreen = () => {
         await queryClient.invalidateQueries({ queryKey: ['budget'] });
         await queryClient.invalidateQueries({ queryKey: ['budget-transactions'] });
         await queryClient.invalidateQueries({ queryKey: ['transactions-for-budgets'] });
+        await queryClient.invalidateQueries({ queryKey: ['transactions-all-for-budgets'] });
         setFormAmount('');
         setFormNote('');
         setFormDate(formatIsoDate(new Date()));

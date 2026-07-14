@@ -402,6 +402,7 @@ export const SavingDetailScreen = () => {
       await queryClient.invalidateQueries({ queryKey: ['savings'] });
       await queryClient.invalidateQueries({ queryKey: ['wallets'] });
       await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions-all-for-budgets'] });
       await queryClient.invalidateQueries({ queryKey: ['saving-transactions', savingId] });
       await queryClient.invalidateQueries({ queryKey: ['saving-period-transactions'] });
       await queryClient.invalidateQueries({ queryKey: ['saving-activity', savingId] });
@@ -581,6 +582,7 @@ export const SavingDetailScreen = () => {
       await queryClient.invalidateQueries({ queryKey: ['savings'] });
       await queryClient.invalidateQueries({ queryKey: ['wallets'] });
       await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions-all-for-budgets'] });
       await queryClient.invalidateQueries({ queryKey: ['saving-transactions', savingId] });
       await queryClient.invalidateQueries({ queryKey: ['saving-period-transactions'] });
       await queryClient.invalidateQueries({ queryKey: ['saving-activity', savingId] });
@@ -628,6 +630,7 @@ export const SavingDetailScreen = () => {
             await queryClient.invalidateQueries({ queryKey: ['savings'] });
             await queryClient.invalidateQueries({ queryKey: ['wallets'] });
             await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            await queryClient.invalidateQueries({ queryKey: ['transactions-all-for-budgets'] });
             await queryClient.invalidateQueries({ queryKey: ['saving-transactions', savingId] });
             await queryClient.invalidateQueries({ queryKey: ['saving-period-transactions'] });
             await queryClient.invalidateQueries({ queryKey: ['saving-activity', savingId] });

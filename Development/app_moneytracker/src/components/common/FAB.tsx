@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, borderRadius, spacing, typography } from './theme';
 
 interface FABProps {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   label?: string;
   onPress: () => void;
 }
@@ -17,8 +17,8 @@ export const FAB = ({ icon, label, onPress }: FABProps) => (
       pressed && styles.fabPressed,
     ]}
   >
-    <View style={styles.iconWrap}>{icon}</View>
-    {label && <Text style={styles.label}>{label}</Text>}
+    {icon && <View style={styles.iconWrap}>{icon}</View>}
+    {label && <Text style={[styles.label, !icon && { marginLeft: 0 }]}>{label}</Text>}
   </Pressable>
 );
 

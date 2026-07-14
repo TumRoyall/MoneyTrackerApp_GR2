@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface WelcomeStepProps {
@@ -10,7 +10,11 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <Ionicons name="sparkles" size={48} color="#2bbcc5" />
+        <Image 
+          source={require('../../../../assets/thumnail.png')} 
+          style={styles.thumbnail}
+          resizeMode="contain"
+        />
       </View>
 
       <Text style={styles.title}>👋 Chào mừng bạn đến với Money Tracker!</Text>
@@ -35,13 +39,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#e6f8fb',
+    width: 360,
+    height: 360,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
   },
   title: {
     fontSize: 28,

@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as LucideIcons from 'lucide-react-native';
 import { Transaction } from '@/modules/transaction/models/transaction.types';
 import { Category } from '@/modules/category/models/category.types';
+import { CategoryIcon } from '@/components/common';
 import { formatVndAmount } from '@/shared/utils/money';
 
 interface AnalysisModalProps {
@@ -253,8 +254,8 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
                     { backgroundColor: (item.category?.color || '#29bcc8') + '20' },
                   ]}
                 >
-                  <LucideIcons
-                    name={(item.category?.icon as any) || 'help'}
+                  <CategoryIcon
+                    icon={item.category?.icon}
                     size={20}
                     color={item.category?.color || '#29bcc8'}
                   />

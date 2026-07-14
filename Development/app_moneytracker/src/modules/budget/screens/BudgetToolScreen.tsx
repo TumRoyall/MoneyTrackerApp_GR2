@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { CategoryIcon } from '@/components/common/CategoryIcon';
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Modal,
@@ -14,13 +14,14 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { Button, Card, FAB, EmptyState, ProgressBar, Switch, BackButton, colors, spacing, typography, CategoryPickerModal } from '@/components/common';
+import { Button, Card, FAB, EmptyState, ProgressBar, BackButton, colors, spacing, typography, CategoryPickerModal } from '@/components/common';
 
 import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { useTransactionUsecases } from '@/modules/transaction/usecases';
-import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { formatMoneyInput, formatVndAmount, parseMoneyInput } from '@/shared/utils/money';
+import { SmartBudgetDialog } from '@/modules/budget/components/SmartBudgetDialog';
+import { BudgetCard } from '@/modules/budget/components/BudgetCard';
 
 type PeriodType = 'monthly' | 'biweekly' | 'weekly' | 'yearly';
 
@@ -144,10 +145,11 @@ export const BudgetToolScreen = () => {
   const { getBudgets, createBudget } = useBudgetUsecases();
   const { getCategories } = useCategoryUsecases();
   const { getTransactions } = useTransactionUsecases();
-  const { getWallets } = useWalletUsecases();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreationChoiceModal, setShowCreationChoiceModal] = useState(false);
   const [showCategoryPickerModal, setShowCategoryPickerModal] = useState(false);
+  const [showSmartBudgetDialog, setShowSmartBudgetDialog] = useState(false);
   const [titleInput, setTitleInput] = useState('');
   const [amountLimitInput, setAmountLimitInput] = useState('');
   const [alertThresholdInput, setAlertThresholdInput] = useState('80');
@@ -155,14 +157,13 @@ export const BudgetToolScreen = () => {
   const [periodType, setPeriodType] = useState<PeriodType>('monthly');
   const [periodStart, setPeriodStart] = useState(toIsoDate(new Date()));
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
-  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
-  const [showAllWallets, setShowAllWallets] = useState(false);
   const [budgetType, setBudgetType] = useState<CategoryType>('EXPENSE');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [calendarTarget, setCalendarTarget] = useState<CalendarTarget>('day');
   const [calendarMonth, setCalendarMonth] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [calendarSelectedDate, setCalendarSelectedDate] = useState(new Date());
+  const [showExpired, setShowExpired] = useState(false);
 
   const budgetsQuery = useQuery({
     queryKey: ['budgets'],
@@ -174,26 +175,25 @@ export const BudgetToolScreen = () => {
     queryFn: getCategories,
   });
 
-  const walletsQuery = useQuery({
-    queryKey: ['wallets'],
-    queryFn: getWallets,
-  });
+  // Fetch all transactions for the current month to calculate spent amounts
+  const currentPeriodStart = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  }, []);
 
   const transactionsQuery = useQuery({
-    queryKey: ['transactions-for-budgets', showAllWallets ? 'all' : selectedWalletId],
+    queryKey: ['transactions-all-for-budgets'],
     queryFn: () =>
       getTransactions({
-        walletId: selectedWalletId ?? undefined,
         page: 0,
-        size: 1000,
+        size: 5000,
         sort: 'date,desc',
       }),
-    enabled: Boolean(selectedWalletId),
+    enabled: true,
   });
 
   const budgets = budgetsQuery.data ?? [];
   const categories = categoriesQuery.data ?? [];
-  const wallets = walletsQuery.data ?? [];
   const transactions = transactionsQuery.data ?? [];
 
   const budgetTypeCategories = useMemo(
@@ -206,50 +206,68 @@ export const BudgetToolScreen = () => {
     [categories],
   );
 
-  const walletMap = useMemo(
-    () => new Map(wallets.map((item) => [item.walletId, item])),
-    [wallets],
-  );
+  // Check if budget is expired
+  const isBudgetExpired = (endDate: string | undefined | null) => {
+    if (!endDate) return false;
+    const end = normalizeApiDate(endDate);
+    if (!end) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDateObj = new Date(end);
+    return endDateObj < today;
+  };
 
-  useEffect(() => {
-    if (!selectedWalletId && wallets.length > 0) {
-      setSelectedWalletId(wallets[0].walletId);
-    }
-  }, [selectedWalletId, wallets]);
+  // Separate active and expired budgets
+  const { activeBudgets, expiredBudgets } = useMemo(() => {
+    const active: typeof budgets = [];
+    const expired: typeof budgets = [];
+    budgets.forEach((budget) => {
+      if (isBudgetExpired(budget.periodEnd)) {
+        expired.push(budget);
+      } else {
+        active.push(budget);
+      }
+    });
+    return { activeBudgets: active, expiredBudgets: expired };
+  }, [budgets]);
 
   const filteredBudgets = useMemo(() => {
-    if (showAllWallets || !selectedWalletId) {
-      return budgets;
-    }
-    return budgets.filter((budget) => budget.walletId === selectedWalletId);
-  }, [budgets, selectedWalletId, showAllWallets]);
+    // Show active budgets, or active + expired based on toggle
+    return showExpired ? [...activeBudgets, ...expiredBudgets] : activeBudgets;
+  }, [showExpired, activeBudgets, expiredBudgets]);
 
-  const allWalletBudgetTransactionQueries = useQueries({
-    queries: showAllWallets
-      ? filteredBudgets.map((budget) => ({
-          queryKey: ['budget-card-transactions', budget.budgetId, budget.walletId, budget.periodStart, budget.periodEnd],
-          queryFn: () =>
-            getTransactions({
-              walletId: budget.walletId ?? undefined,
-              fromDate: normalizeApiDate(budget.periodStart),
-              toDate: normalizeApiDate(budget.periodEnd),
-              page: 0,
-              size: 1000,
-              sort: 'date,desc',
-            }),
-          enabled: Boolean(budget.walletId),
-        }))
-      : [],
-  });
+  // Filter transactions by period for each budget
+  const budgetSpentAmounts = useMemo(() => {
+    const map = new Map<string, number>();
 
-  const allWalletTransactionsByBudgetId = useMemo(() => {
-    if (!showAllWallets) {
-      return new Map<string, typeof transactions>();
-    }
-    return new Map(
-      filteredBudgets.map((budget, index) => [budget.budgetId, allWalletBudgetTransactionQueries[index]?.data ?? []]),
-    );
-  }, [showAllWallets, filteredBudgets, allWalletBudgetTransactionQueries, transactions]);
+    budgets.forEach((budget) => {
+      const categoryIdSet = new Set(
+        budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []),
+      );
+
+      const startIso = normalizeApiDate(budget.periodStart) || '';
+      const endIso = normalizeApiDate(budget.periodEnd) || '';
+
+      const spent = transactions.reduce((sum, item) => {
+        // Check if transaction category is in budget's categories
+        if (!categoryIdSet.has(item.categoryId)) {
+          return sum;
+        }
+
+        // Check if transaction date is within budget period
+        const itemDate = normalizeApiDate(item.date) || '';
+        if (itemDate < startIso || itemDate > endIso) {
+          return sum;
+        }
+
+        return sum + Number(item.amount || 0);
+      }, 0);
+
+      map.set(budget.budgetId, spent);
+    });
+
+    return map;
+  }, [budgets, transactions]);
 
   const selectedCategories = useMemo(
     () => categories.filter((item) => selectedCategoryIds.includes(item.categoryId)),
@@ -293,10 +311,6 @@ export const BudgetToolScreen = () => {
       Alert.alert('Thiếu tiêu đề', 'Vui lòng nhập tiêu đề cho ngân sách.');
       return;
     }
-    if (!selectedWalletId) {
-      Alert.alert('Thiếu ví', 'Vui lòng chọn ví cho ngân sách.');
-      return;
-    }
     if (selectedCategoryIds.length === 0) {
       Alert.alert('Thiếu danh mục', 'Vui lòng chọn ít nhất một danh mục cho ngân sách.');
       return;
@@ -308,7 +322,7 @@ export const BudgetToolScreen = () => {
 
     try {
       await createBudget({
-        walletId: selectedWalletId,
+        // walletId intentionally omitted - budget applies to all wallets
         categoryId: selectedCategoryIds[0],
         categoryIds: selectedCategoryIds,
         title: titleInput.trim(),
@@ -334,46 +348,33 @@ export const BudgetToolScreen = () => {
     }
   };
 
+  const handleSmartBudgetConfirm = () => {
+    setShowSmartBudgetDialog(false);
+    router.push('/(tabs)/tools/budgets/smart-preview');
+  };
+
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <BackButton to="/(tabs)/tools" />
           <Text style={styles.title}>Ngân sách</Text>
-          <Pressable
-            style={styles.aiHeaderButton}
-            onPress={() => router.push('/(tabs)/tools/budgets/ai-create')}
-            hitSlop={8}
-          >
-            <Ionicons name="sparkles" size={16} color="#0f8c95" />
-            <Text style={styles.aiHeaderButtonText}>Tạo bằng AI</Text>
-          </Pressable>
+          {expiredBudgets.length > 0 && (
+            <Pressable
+              style={[styles.showExpiredToggle, showExpired && styles.showExpiredToggleActive]}
+              onPress={() => setShowExpired(!showExpired)}
+            >
+              <Ionicons
+                name={showExpired ? 'eye' : 'eye-off-outline'}
+                size={16}
+                color={showExpired ? '#fff' : '#0f8c95'}
+              />
+              <Text style={[styles.showExpiredText, showExpired && styles.showExpiredTextActive]}>
+                {expiredBudgets.length}
+              </Text>
+            </Pressable>
+          )}
         </View>
-
-        <View style={styles.walletToggleRow}>
-          <Text style={styles.walletToggleLabel}>Hiển thị tất cả ví</Text>
-          <Switch value={showAllWallets} onValueChange={setShowAllWallets} />
-        </View>
-
-        {!showAllWallets ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletRow}
-          >
-            {wallets.map((wallet) => {
-              const selected = selectedWalletId === wallet.walletId;
-              return (
-                <Pressable
-                  key={wallet.walletId}
-                  style={[styles.walletChip, selected ? styles.walletChipActive : null]}
-                  onPress={() => setSelectedWalletId(wallet.walletId)}
-                >
-                  <Text style={[styles.walletChipText, selected ? styles.walletChipTextActive : null]}>
-                    {wallet.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        ) : null}
 
         {budgetsQuery.isLoading ? (
           <View style={styles.emptyCard}>
@@ -384,37 +385,16 @@ export const BudgetToolScreen = () => {
             icon="wallet-outline"
             title="Chưa có ngân sách"
             description="Bạn có thể tạo ngân sách đầu tiên bằng nút bên dưới."
-            action={{ title: "Tạo ngân sách", onPress: () => setShowCreateModal(true) }}
+            action={{ title: "Tạo ngân sách", onPress: () => setShowCreationChoiceModal(true) }}
           />
         ) : (
           filteredBudgets.map((budget) => {
             const categoriesForBudget = (budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []))
               .map((id) => categoryMap.get(id))
               .filter((item): item is NonNullable<typeof item> => Boolean(item));
-            const wallet = budget.walletId ? walletMap.get(budget.walletId) : undefined;
             const visibleCategories = categoriesForBudget.slice(0, 3);
             const extraCategoryCount = Math.max(categoriesForBudget.length - visibleCategories.length, 0);
-            const categoryIdSet = new Set(
-              budget.categoryIds ?? (budget.categoryId ? [budget.categoryId] : []),
-            );
-            const sourceTransactions = showAllWallets
-              ? allWalletTransactionsByBudgetId.get(budget.budgetId) ?? []
-              : transactions;
-            const spent = sourceTransactions.reduce((sum, item) => {
-              if (budget.walletId && item.walletId !== budget.walletId) {
-                return sum;
-              }
-              if (!categoryIdSet.has(item.categoryId)) {
-                return sum;
-              }
-              const startIso = normalizeApiDate(budget.periodStart) || '';
-              const endIso = normalizeApiDate(budget.periodEnd) || '';
-              const itemDate = normalizeApiDate(item.date) || '';
-              if (itemDate < startIso || itemDate > endIso) {
-                return sum;
-              }
-              return sum + Number(item.amount || 0);
-            }, 0);
+            const spent = budgetSpentAmounts.get(budget.budgetId) ?? 0;
             const percent = budget.amountLimit > 0 ? Math.min((spent / budget.amountLimit) * 100, 100) : 0;
             const title = budget.title?.trim() || 'Ngân sách';
             const isIncome = categoriesForBudget.length > 0 && categoriesForBudget[0]?.type === 'INCOME';
@@ -425,110 +405,101 @@ export const BudgetToolScreen = () => {
             const targetAmount = budget.amountLimit;
             const neededAmount = Math.max(targetAmount - spent, 0);
 
+            const categoryName = visibleCategories[0]?.name || title;
+            const categoryIcon = visibleCategories[0]?.icon || null;
+            const categoryIdForColor = visibleCategories[0]?.categoryId || budget.budgetId;
+            const startDateStr = formatDateVi(budget.periodStart);
+            const endDateStr = formatDateVi(budget.periodEnd);
+
             return (
-              <Card variant="elevated" key={budget.budgetId}>
-                <Pressable onPress={() =>
+              <BudgetCard
+                key={budget.budgetId}
+                budgetId={budget.budgetId}
+                categoryId={categoryIdForColor}
+                categoryName={categoryName}
+                categoryIcon={categoryIcon}
+                targetAmount={targetAmount}
+                spentAmount={spent}
+                remainingAmount={remainingAmount}
+                percent={percent}
+                startDateStr={startDateStr}
+                endDateStr={endDateStr}
+                isIncome={isIncome}
+                onPress={() =>
                   router.push({
-                    pathname: '/(tabs)/tools/budgets/[budgetId]',
+                    pathname: '/(tabs)/tools/budgets/[budgetId]/edit',
                     params: { budgetId: budget.budgetId },
                   })
-                }>
-                <View style={styles.budgetCardHeader}>
-                  <Text style={styles.budgetTitle}>{title}</Text>
-                  <Pressable
-                    hitSlop={10}
-                    onPress={(event) => {
-                      event.stopPropagation();
-                      router.push({
-                        pathname: '/(tabs)/tools/budgets/[budgetId]/edit',
-                        params: { budgetId: budget.budgetId },
-                      });
-                    }}
-                    style={styles.editButton}
-                  >
-                    <Ionicons name="pencil" size={16} color="#1f1f1f" />
-                  </Pressable>
-                </View>
-                <View style={styles.amountRow}>
-                  <Text style={styles.amountPrimary}>{formatVndAmount(spent)}</Text>
-                  <Text style={styles.amountSecondary}>/ {formatVndAmount(targetAmount)}</Text>
-                </View>
-
-                <View style={styles.metaRow}>
-                  {wallet ? (
-                    <View style={styles.walletInfoRow}>
-                      <Ionicons name="wallet" size={12} color="#5b6770" />
-                      <Text style={styles.walletName}>{wallet.name}</Text>
-                    </View>
-                  ) : null}
-                  <Text style={styles.metaText}>{formatDateVi(budget.periodStart)}</Text>
-                  <Text style={styles.metaText}>-</Text>
-                  <Text style={styles.metaText}>{formatDateVi(budget.periodEnd)}</Text>
-                </View>
-
-                <View style={styles.categoryRowCompact}>
-                  {visibleCategories.length === 0 ? (
-                    <View style={styles.categoryDot}>
-                      <Text style={styles.categoryDotIcon}>💸</Text>
-                    </View>
-                  ) : (
-                    visibleCategories.map((cat) => (
-                      <View key={cat.categoryId} style={styles.categoryDot}>
-                        <CategoryIcon icon={cat.icon} color={(cat as any).color || '#29bcc8'} size={14} />
-                      </View>
-                    ))
-                  )}
-                  {extraCategoryCount > 0 ? (
-                    <View style={styles.categoryMoreChip}>
-                      <Text style={styles.categoryMoreText}>+{extraCategoryCount}</Text>
-                    </View>
-                  ) : null}
-                </View>
-
-                {(() => {
-                  const alertThreshold = budget.alertThreshold ?? 100;
-                  let pbVariant: 'default' | 'success' | 'warning' | 'danger' = 'default';
-                  if (percent >= 100 && !isIncome) {
-                    pbVariant = 'danger';
-                  } else if (percent >= alertThreshold && !isIncome) {
-                    pbVariant = 'warning';
-                  } else if (percent > 0) {
-                    pbVariant = 'success';
-                  }
-
-                  return (
-                    <>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={[styles.budgetSummary, pbVariant === 'danger' && { color: '#f44336' }]}>
-                          {isIncome
-                            ? `cần thêm ${formatVndAmount(neededAmount)} để đạt mục tiêu`
-                            : percent >= 100 
-                              ? `Vượt mức ${formatVndAmount(Math.abs(remainingAmount))}` 
-                              : `${formatVndAmount(remainingAmount)} còn lại`}
-                        </Text>
-                        {pbVariant === 'warning' && (
-                          <Ionicons name="warning" size={16} color="#ff9800" />
-                        )}
-                        {pbVariant === 'danger' && (
-                          <Ionicons name="alert-circle" size={16} color="#f44336" />
-                        )}
-                      </View>
-                      <ProgressBar value={percent} showLabel variant={pbVariant} />
-                    </>
-                  );
-                })()}
-                </Pressable>
-              </Card>
+                }
+              />
             );
           })
         )}
       </ScrollView>
 
-      <FAB
-        icon={<Ionicons name="add" size={24} color="#fff" />}
-        label="Thêm ngân sách"
-        onPress={() => setShowCreateModal(true)}
+      <View style={styles.fabRow}>
+        <FAB
+          label="Thêm ngân sách"
+          onPress={() => setShowCreationChoiceModal(true)}
+        />
+      </View>
+
+      {/* Smart Budget Dialog */}
+      <SmartBudgetDialog
+        visible={showSmartBudgetDialog}
+        onDismiss={() => setShowSmartBudgetDialog(false)}
+        onConfirm={handleSmartBudgetConfirm}
       />
+
+      {/* Creation Choice Modal */}
+      <Modal visible={showCreationChoiceModal} transparent animationType="slide" onRequestClose={() => setShowCreationChoiceModal(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowCreationChoiceModal(false)}>
+          <View style={styles.modalSheet} onStartShouldSetResponder={() => true}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Thêm ngân sách</Text>
+              <Pressable onPress={() => setShowCreationChoiceModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+
+            <View style={{ gap: 12, marginTop: 10, paddingBottom: 16 }}>
+              <Pressable
+                style={styles.choiceCard}
+                onPress={() => {
+                  setShowCreationChoiceModal(false);
+                  setShowSmartBudgetDialog(true);
+                }}
+              >
+                <View style={[styles.choiceIcon, { backgroundColor: '#e9fbfd' }]}>
+                  <Ionicons name="flash" size={24} color="#0f8c95" />
+                </View>
+                <View style={styles.choiceInfo}>
+                  <Text style={styles.choiceTitle}>Tự động</Text>
+                  <Text style={styles.choiceDesc}>Tạo ngân sách tự động cực nhanh và thông minh.</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+              </Pressable>
+
+              <Pressable
+                style={styles.choiceCard}
+                onPress={() => {
+                  setShowCreationChoiceModal(false);
+                  setShowCreateModal(true);
+                }}
+              >
+                <View style={[styles.choiceIcon, { backgroundColor: '#f3f4f6' }]}>
+                  <Ionicons name="create-outline" size={24} color="#4b5563" />
+                </View>
+                <View style={styles.choiceInfo}>
+                  <Text style={styles.choiceTitle}>Thủ công</Text>
+                  <Text style={styles.choiceDesc}>Tự do tùy chỉnh hạng mục và hạn mức.</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
 
       <Modal visible={showCreateModal} transparent animationType="slide" onRequestClose={() => setShowCreateModal(false)}>
         <View style={styles.modalOverlay}>
@@ -631,12 +602,11 @@ export const BudgetToolScreen = () => {
                   <Ionicons name="notifications-outline" size={20} color="#5d6972" />
                   <Text style={styles.sectionLabel}>Cảnh báo khi vượt mức (%)</Text>
                 </View>
-                <Switch 
-                  value={enableAlert} 
-                  onValueChange={setEnableAlert} 
-                  trackColor={{ false: '#d5dde3', true: '#29bcc8' }}
-                  thumbColor="#fff"
-                />
+                <View style={styles.switchWrapper}>
+                  <View style={[styles.switch, enableAlert && styles.switchActive]} onTouchEnd={() => setEnableAlert(!enableAlert)}>
+                    <View style={[styles.switchThumb, enableAlert && styles.switchThumbActive]} />
+                  </View>
+                </View>
               </View>
               {enableAlert && (
                 <View style={styles.alertThresholdControl}>
@@ -681,30 +651,9 @@ export const BudgetToolScreen = () => {
               <Text style={styles.openCategoryPickerButtonText}>Thêm danh mục</Text>
             </Pressable>
 
-            <Text style={styles.sectionLabel}>Chọn ví</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletRow}
-            >
-              {wallets.length === 0 ? (
-                <View style={styles.walletEmptyChip}>
-                  <Text style={styles.walletEmptyText}>Chưa có ví</Text>
-                </View>
-              ) : (
-                wallets.map((wallet) => {
-                  const selected = selectedWalletId === wallet.walletId;
-                  return (
-                    <Pressable
-                      key={wallet.walletId}
-                      onPress={() => setSelectedWalletId(wallet.walletId)}
-                      style={[styles.walletChip, selected ? styles.walletChipActive : null]}
-                    >
-                      <Text style={[styles.walletChipText, selected ? styles.walletChipTextActive : null]}>
-                        {wallet.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })
-              )}
-            </ScrollView>
+            <Text style={styles.walletNote}>
+              💡 Ngân sách này sẽ áp dụng cho tất cả ví REGULAR của bạn
+            </Text>
 
             <Button title="Lưu" onPress={createBudgetHandler} />
           </View>
@@ -814,8 +763,9 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes['3xl'],
     fontWeight: typography.weights.bold,
     color: colors.textPrimary,
+    textAlign: 'center',
   },
-  aiHeaderButton: {
+  smartHeaderButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -826,21 +776,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#29bcc8',
   },
-  aiHeaderButtonText: {
+  smartHeaderButtonText: {
     color: '#0f8c95',
     fontSize: 13,
     fontWeight: '700',
-  },
-  walletToggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-  },
-  walletToggleLabel: {
-    fontSize: 14,
-    color: '#4b5963',
-    fontWeight: '600',
   },
   emptyCard: {
     borderRadius: 14,
@@ -858,164 +797,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: '#667179',
-  },
-  budgetCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#14b8c4',
-    backgroundColor: '#fff',
-    padding: 12,
-    gap: 8,
-  },
-  budgetCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  editButton: {
-    padding: 4,
-    borderRadius: 8,
-  },
-  budgetTitle: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1f1f1f',
-  },
-  amountRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-  },
-  amountPrimary: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1f1f1f',
-  },
-  amountSecondary: {
-    fontSize: 14,
-    color: '#6b7680',
-    fontWeight: '600',
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  metaText: {
-    fontSize: 12,
-    color: '#6b7680',
-    fontWeight: '600',
-  },
-  categoryRowCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  categoryDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
-    backgroundColor: '#f1f5f8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryDotIcon: {
-    fontSize: 14,
-  },
-  categoryMoreChip: {
-    minHeight: 28,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    backgroundColor: '#e9fbfd',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryMoreText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0f8c95',
-  },
-  walletInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  walletName: {
-    fontSize: 12,
-    color: '#5b6770',
-    fontWeight: '600',
-  },
-  budgetSummary: {
-    fontSize: 13,
-    color: '#4b5963',
-  },
-  remainingText: {
-    color: '#129f8a',
-    fontWeight: '700',
-  },
-  totalText: {
-    color: '#1f1f1f',
-    fontWeight: '700',
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: '#e8edf0',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: 6,
-    backgroundColor: '#29bcc8',
-  },
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 18,
-    borderRadius: 999,
-    backgroundColor: '#22648e',
-    paddingHorizontal: 18,
-    minHeight: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    elevation: 5,
-  },
-  fabText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  fabRow: {
-    position: 'absolute',
-    right: 16,
-    bottom: 18,
-    left: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  aiFab: {
-    flex: 1,
-    minHeight: 54,
-    borderRadius: 999,
-    backgroundColor: '#e9fbfd',
-    borderWidth: 1,
-    borderColor: '#29bcc8',
-    paddingHorizontal: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    elevation: 5,
-  },
-  aiFabText: {
-    color: '#0f8c95',
-    fontSize: 16,
-    fontWeight: '700',
   },
   modalOverlay: {
     flex: 1,
@@ -1040,88 +821,32 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1f1f1f',
   },
-  periodRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  periodChip: {
-    flex: 1,
-    minHeight: 40,
-    minWidth: 120,
-    borderRadius: 999,
-    backgroundColor: '#edf1f5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  endDateRow: {
-    marginTop: 8,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#f3fafb',
-    borderWidth: 1,
-    borderColor: '#d9f0f2',
-  },
-  endDateLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#5d6972',
-    marginBottom: 4,
-  },
-  endDateText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1f1f1f',
-  },
-  periodChipActive: {
-    backgroundColor: '#29bcc8',
-  },
-  periodChipText: {
-    color: '#3b4750',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  periodChipTextActive: {
-    color: '#fff',
-  },
-  input: {
-    minHeight: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#d5dde3',
-    paddingHorizontal: 12,
-    backgroundColor: '#fff',
-  },
-  dateTypeRow: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  calendarInput: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#d5dde3',
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  calendarInputText: {
-    fontSize: 14,
-    color: '#1f1f1f',
-  },
   typeToggleTopRow: {
     flexDirection: 'row',
     gap: 8,
     marginBottom: 10,
   },
-  typeToggleRow: {
-    flexDirection: 'row',
-    gap: 8,
+  typeToggleButton: {
+    minHeight: 40,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#d5dde3',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeToggleButtonActive: {
+    borderColor: '#29bcc8',
+    backgroundColor: '#e9fbfd',
+  },
+  typeToggleText: {
+    fontSize: 13,
+    color: '#3a464e',
+    fontWeight: '700',
+  },
+  typeToggleTextActive: {
+    color: '#0f8c95',
   },
   dropdownWrapper: {
     marginBottom: 10,
@@ -1159,27 +884,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#3a464e',
   },
-  typeToggleButton: {
-    minHeight: 40,
+  input: {
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d5dde3',
     paddingHorizontal: 12,
-    borderRadius: 999,
+    backgroundColor: '#fff',
+  },
+  dateTypeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  calendarInput: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#d5dde3',
     backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
   },
-  typeToggleButtonActive: {
-    borderColor: '#29bcc8',
-    backgroundColor: '#e9fbfd',
+  calendarInputText: {
+    fontSize: 14,
+    color: '#1f1f1f',
   },
-  typeToggleText: {
+  endDateRow: {
+    marginTop: 8,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#f3fafb',
+    borderWidth: 1,
+    borderColor: '#d9f0f2',
+  },
+  endDateLabel: {
     fontSize: 13,
-    color: '#3a464e',
     fontWeight: '700',
+    color: '#5d6972',
+    marginBottom: 4,
   },
-  typeToggleTextActive: {
-    color: '#0f8c95',
+  endDateText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f1f1f',
+  },
+  sectionLabel: {
+    marginTop: 2,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#5d6972',
   },
   selectedCategoryRow: {
     flexDirection: 'row',
@@ -1230,113 +987,102 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  categoryPickerSheet: {
+  walletNote: {
+    fontSize: 13,
+    color: '#6B7280',
+    backgroundColor: '#f3fafb',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  switchWrapper: {
+    marginLeft: 8,
+  },
+  switch: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#d5dde3',
+    padding: 2,
+    justifyContent: 'center',
+  },
+  switchActive: {
+    backgroundColor: '#29bcc8',
+  },
+  switchThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 16,
-    maxHeight: '80%',
   },
-  categoryPickerContent: {
-    gap: 10,
-    paddingBottom: 16,
+  switchThumbActive: {
+    alignSelf: 'flex-end',
   },
-  categoryPickerItem: {
+  alertThresholdSection: {
+    marginTop: 4,
+    marginBottom: 4,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e6ecef',
+  },
+  alertThresholdHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  alertThresholdTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: '#f7fbfc',
-    borderWidth: 1,
-    borderColor: '#d9e2e8',
+    gap: 8,
+  },
+  alertThresholdControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
     gap: 12,
   },
-  categoryPickerItemSelected: {
+  alertPercentBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     backgroundColor: '#e9fbfd',
-    borderColor: '#29bcc8',
-  },
-  categoryPickerIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: '#eef9fb',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryPickerIcon: {
-    fontSize: typography.sizes.lg,
-  },
-  categoryPickerName: {
-    flex: 1,
-    fontSize: 15,
-    color: '#3a464e',
-    fontWeight: '600',
-  },
-  categoryPickerNameSelected: {
-    color: '#0f8c95',
-  },
-  categoryPickerSelectedMark: {
+  alertPercentText: {
     fontSize: 16,
-    color: '#0f8c95',
     fontWeight: '700',
+    color: '#0f8c95',
   },
-  categoryPickerDoneButton: {
-    minHeight: 48,
-    borderRadius: 12,
-    backgroundColor: '#29bcc8',
+  fabRow: {
+    position: 'absolute',
+    right: 16,
+    bottom: 18,
+    left: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
+    justifyContent: 'space-between',
+    gap: 10,
   },
-  categoryPickerDoneButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  sectionLabel: {
-    marginTop: 2,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#5d6972',
-  },
-  walletRow: {
-    gap: 8,
-    paddingBottom: 6,
-  },
-  walletChip: {
-    minHeight: 40,
-    borderRadius: 14,
+  smartFab: {
+    minHeight: 54,
+    borderRadius: 999,
+    backgroundColor: '#e9fbfd',
     borderWidth: 1,
-    borderColor: '#d9e2e8',
-    backgroundColor: '#fff',
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  walletChipActive: {
     borderColor: '#29bcc8',
-    backgroundColor: '#e9fbfd',
-  },
-  walletChipText: {
-    fontSize: 13,
-    color: '#3a464e',
-    fontWeight: '600',
-  },
-  walletChipTextActive: {
-    color: '#0f8c95',
-  },
-  walletEmptyChip: {
-    minHeight: 40,
-    borderRadius: 14,
-    paddingHorizontal: 14,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f1f5f8',
+    gap: 8,
+    elevation: 5,
   },
-  walletEmptyText: {
-    fontSize: 13,
-    color: '#7b868d',
-    fontWeight: '600',
+  smartFabText: {
+    color: '#0f8c95',
+    fontSize: 14,
+    fontWeight: '700',
   },
   modalOverlayCenter: {
     flex: 1,
@@ -1416,111 +1162,58 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 8,
   },
-  rangeGhostBtn: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#d5dde3',
+  choiceCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#fff',
-  },
-  rangeGhostBtnText: {
-    color: '#4b5963',
-    fontWeight: '700',
-  },
-  rangeConfirmBtn: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 12,
-    backgroundColor: '#29bcc8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rangeConfirmBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  categoryRow: {
-    gap: 8,
-    paddingBottom: 6,
-  },
-  categoryOption: {
-    minHeight: 42,
-    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#d9e2e8',
-    backgroundColor: '#fff',
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  categoryOptionActive: {
-    borderColor: '#29bcc8',
-    backgroundColor: '#e9fbfd',
-  },
-  categoryOptionIcon: {
-    fontSize: 16,
-  },
-  categoryOptionText: {
-    fontSize: 13,
-    color: '#3a464e',
-    fontWeight: '600',
-  },
-  categoryOptionTextActive: {
-    color: '#0f8c95',
-  },
-  saveBtn: {
-    minHeight: 48,
-    borderRadius: 12,
-    backgroundColor: '#29bcc8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 6,
-  },
-  saveBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  alertThresholdSection: {
-    marginTop: 4,
-    marginBottom: 4,
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e6ecef',
-  },
-  alertThresholdHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  alertThresholdTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  alertThresholdControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
+    borderColor: '#e5e7eb',
+    borderRadius: 16,
+    padding: 16,
     gap: 12,
   },
-  alertPercentBadge: {
+  choiceIcon: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: '#e9fbfd',
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  alertPercentText: {
+  choiceInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  choiceTitle: {
     fontSize: 16,
     fontWeight: '700',
+    color: '#111827',
+  },
+  choiceDesc: {
+    fontSize: 13,
+    color: '#6b7280',
+  },
+  // Show expired toggle
+  showExpiredToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#e9fbfd',
+    borderWidth: 1,
+    borderColor: '#29bcc8',
+  },
+  showExpiredToggleActive: {
+    backgroundColor: '#0f8c95',
+    borderColor: '#0f8c95',
+  },
+  showExpiredText: {
+    fontSize: 12,
+    fontWeight: '700',
     color: '#0f8c95',
+  },
+  showExpiredTextActive: {
+    color: '#fff',
   },
 });

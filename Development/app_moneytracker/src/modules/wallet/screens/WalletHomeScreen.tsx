@@ -12,6 +12,7 @@ import {
   Text,
   TextInput,
   View,
+  Image,
 } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 
@@ -29,6 +30,7 @@ import { StreakScreen } from '@/modules/streak/screens';
 import { AnalysisModal } from '@/modules/transaction/components/AnalysisModal';
 import { exportTransactionsByMonthToCSV, TransactionForExport } from '@/shared/utils/exportCSV';
 import { CategoryIcon } from '@/components/common/CategoryIcon';
+import { BudgetSummaryWidget } from '@/modules/wallet/components/BudgetSummaryWidget';
 
 type CategoryType = 'EXPENSE' | 'INCOME';
 type TimeMode = 'WEEK' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM';
@@ -43,11 +45,7 @@ const walletTypeLabels: Record<string, string> = {
   EVENT: 'Sự kiện',
 };
 
-// Helper for dynamic Lucide icons
-const LucideIcon = ({ name, size, color }: { name: string; size: number; color: string }) => {
-  const Icon = (LucideIcons as any)[name] || LucideIcons.Circle;
-  return <Icon name={name} size={size} color={color} />;
-};
+
 
 const currencyOptions = ['VND', 'USD', 'EUR'];
 
@@ -492,6 +490,7 @@ export const WalletHomeScreen = () => {
 
     wallets.forEach((wallet) => {
       const type = String(wallet.type || '').toUpperCase();
+      if (type === 'CREDIT' || type === 'DEBT') return;
       const current = totalsByType.get(type) ?? { count: 0, total: 0 };
       current.count += 1;
       current.total += Math.max(wallet.currentBalance ?? 0, 0);
@@ -677,8 +676,12 @@ export const WalletHomeScreen = () => {
           <View style={styles.bubble}>
             <Text style={styles.bubbleText}>Chào bạn! 👋</Text>
           </View>
-          <View style={styles.botCircle}>
-            <Ionicons name="sparkles" size={34} color="#4c88ff" />
+          <View style={[styles.botCircle, { backgroundColor: 'transparent', shadowOpacity: 0, width: 120, height: 120 }]}>
+            <Image 
+              source={require('../../../../assets/thumnail.png')} 
+              style={{ width: 240, height: 240 }} 
+              resizeMode="contain" 
+            />
           </View>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletCarouselContent}>
@@ -722,8 +725,10 @@ export const WalletHomeScreen = () => {
           {walletDistribution.length === 0 ? (
             <Text style={styles.chartEmpty}>Chưa có dữ liệu để hiển thị biểu đồ.</Text>
           ) : (
-            walletDistribution.map((item) => (
-              <View key={item.type} style={styles.chartRow}>
+            walletDistribution.map((item) => {
+              const bgColor = item.color && item.color.startsWith('#') && item.color.length === 7 ? item.color + '1A' : '#f5f7f9';
+              return (
+              <View key={item.type} style={[styles.chartRow, { backgroundColor: bgColor }]}>
                 <View style={[styles.chartDot, { backgroundColor: item.color }]} />
                 <Text style={styles.chartWalletName} numberOfLines={1}>
                   {walletTypeLabels[item.type] ?? item.type}
@@ -731,9 +736,11 @@ export const WalletHomeScreen = () => {
                 <Text style={styles.chartPercent}>{item.percentage.toFixed(0)}%</Text>
                 <Text style={styles.chartAmount}>{formatCurrency(item.total, currentWallet?.currency || 'VND')}</Text>
               </View>
-            ))
+            )})
           )}
         </View>
+
+        <BudgetSummaryWidget categories={categories} />
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Phân tích</Text>
@@ -848,8 +855,11 @@ export const WalletHomeScreen = () => {
                 </View>
               </View>
               <View style={styles.categoryList}>
-                {categoryBreakdown.map((item) => (
-                  <View key={item.category.categoryId} style={styles.categoryRow}>
+                {categoryBreakdown.map((item) => {
+                  const bgColor = item.color && item.color.startsWith('#') && item.color.length === 7 ? item.color + '1A' : '#f5f7f9';
+                  const trackColor = item.color && item.color.startsWith('#') && item.color.length === 7 ? item.color + '33' : '#eef1f4';
+                  return (
+                  <View key={item.category.categoryId} style={[styles.categoryRow, { backgroundColor: bgColor }]}>
                     <View style={styles.categoryIcon}>
                       <CategoryIcon icon={item.category.icon} size={26} color={item.color} />
                     </View>
@@ -862,7 +872,7 @@ export const WalletHomeScreen = () => {
                           {formatCurrency(item.amount, currentWallet?.currency || 'VND')}
                         </Text>
                       </View>
-                      <View style={styles.progressTrack}>
+                      <View style={[styles.progressTrack, { backgroundColor: trackColor }]}>
                         <View
                           style={[
                             styles.progressFill,
@@ -875,7 +885,7 @@ export const WalletHomeScreen = () => {
                       </View>
                     </View>
                   </View>
-                ))}
+                )})}
               </View>
             </>
           )}
@@ -1373,6 +1383,8 @@ const styles = StyleSheet.create({
   chartRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
     gap: 8,
   },
   chartDot: {
@@ -1531,15 +1543,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   categoryList: {
-    borderTopWidth: 1,
-    borderTopColor: '#f1f3f5',
+    paddingTop: 8,
+    gap: 10,
   },
   categoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f3f5',
+    padding: 12,
+    borderRadius: 12,
     gap: 16,
   },
   categoryIcon: {

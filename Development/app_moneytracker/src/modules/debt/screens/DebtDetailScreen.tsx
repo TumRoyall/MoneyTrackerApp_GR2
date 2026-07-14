@@ -435,6 +435,7 @@ export const DebtDetailScreen = () => {
       await queryClient.invalidateQueries({ queryKey: ['debts'] });
       await queryClient.invalidateQueries({ queryKey: ['wallets'] });
       await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions-all-for-budgets'] });
       await queryClient.invalidateQueries({ queryKey: ['debt-activity', debtId] });
 
       resetRecordForm();
@@ -482,6 +483,7 @@ export const DebtDetailScreen = () => {
             await queryClient.invalidateQueries({ queryKey: ['debts'] });
             await queryClient.invalidateQueries({ queryKey: ['wallets'] });
             await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            await queryClient.invalidateQueries({ queryKey: ['transactions-all-for-budgets'] });
             await queryClient.invalidateQueries({ queryKey: ['debt-activity', debtId] });
 
             resetRecordForm();

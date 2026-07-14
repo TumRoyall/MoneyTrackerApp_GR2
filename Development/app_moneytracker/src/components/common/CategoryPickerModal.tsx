@@ -10,11 +10,11 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as LucideIcons from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useCategoryUsecases } from '@/modules/category/usecases';
 import { Category } from '@/modules/category/models/category.types';
 import { categoryGroups } from '@/modules/category/data/categoryIconGroups';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 
 export type CategoryType = 'EXPENSE' | 'INCOME';
 
@@ -35,30 +35,6 @@ const PRESET_COLORS = [
   '#EC4899', '#06B6D4', '#64748B', '#10B981', '#F97316',
   '#6366F1', '#DDA0DD', '#4169E1', '#4CAF50',
 ];
-
-// Common Lucide icons for category creation
-const AVAILABLE_ICONS = [
-  'ShoppingBag', 'UtensilsCrossed', 'Coffee', 'Pizza', 'Cake', 'Cup',
-  'Car', 'Bus', 'Plane', 'Train', 'Taxi', 'Bike', 'Fuel',
-  'Home', 'Key', 'Zap', 'Droplets', 'Wifi', 'Wrench', 'Sofa',
-  'Smartphone', 'Laptop', 'Tablet', 'Headphones', 'Speaker', 'Camera', 'Tv',
-  'Shirt', 'Watch', 'Gem', 'Footprints', 'Store', 'ShoppingCart',
-  'Gamepad2', 'Film', 'Music', 'Mic', 'Clapperboard',
-  'Pill', 'Stethoscope', 'Syringe', 'Heart', 'Eye', 'Tooth', 'Shield',
-  'PawPrint', 'Dog', 'Cat', 'Fish', 'Bird',
-  'Dumbbell', 'Soccer', 'Basketball', 'Swimming', 'Bike',
-  'GraduationCap', 'Book', 'Award', 'Pencil', 'Brain',
-  'PiggyBank', 'Landmark', 'Coins', 'Wallet', 'Briefcase', 'Trophy',
-  'Gift', 'TrendingUp', 'Hotel', 'Tent', 'MapPin', 'Umbrella',
-  'Sparkles', 'Lipstick', 'Palette', 'Crown', 'Scissors', 'Flower',
-  'Apple', 'Milk', 'Drumstick', 'Wheat',
-  'CreditCard', 'Banknote',
-];
-
-const IconComponent = ({ name, size, color }: { name: string; size: number; color: string }) => {
-  const Icon = (LucideIcons as any)[name] || LucideIcons.HelpCircle;
-  return <Icon name={name} size={size} color={color} />;
-};
 
 export function CategoryPickerModal({
   visible,
@@ -197,8 +173,8 @@ export function CategoryPickerModal({
                                 setShowIconPicker(false);
                               }}
                             >
-                              <IconComponent
-                                name={subIcon.icon}
+                              <CategoryIcon
+                                icon={subIcon.icon}
                                 size={26}
                                 color={subIcon.color}
                               />
@@ -242,8 +218,8 @@ export function CategoryPickerModal({
                 style={[styles.selectedIconCircle, { backgroundColor: newCategoryColor + '20' }]}
                 onPress={() => setShowIconPicker(true)}
               >
-                <IconComponent
-                  name={newCategoryIcon}
+                <CategoryIcon
+                  icon={newCategoryIcon}
                   size={32}
                   color={newCategoryColor}
                 />
@@ -379,8 +355,8 @@ export function CategoryPickerModal({
                           { backgroundColor: catColor + '20' },
                         ]}
                       >
-                        <IconComponent
-                          name={category.icon || 'HelpCircle'}
+                        <CategoryIcon
+                          icon={category.icon || 'HelpCircle'}
                           size={22}
                           color={catColor}
                         />

@@ -13,7 +13,6 @@ export default function ToolsStackLayout() {
     <Stack screenOptions={screenOptions}>
       <Stack.Screen name="index" />
       <Stack.Screen name="budgets/index" />
-      <Stack.Screen name="budgets/[budgetId]" />
       <Stack.Screen name="budgets/[budgetId]/edit" />
       <Stack.Screen name="budgets/ai-create" />
       <Stack.Screen name="budgets/ai-preview" />
@@ -24,7 +23,7 @@ export default function ToolsStackLayout() {
       <Stack.Screen name="debts/[debtId]" />
       <Stack.Screen name="debts/[debtId]/edit" />
       <Stack.Screen name="events/index" />
-      <Stack.Screen name="events/[eventId]" />
+      <Stack.Screen name="events/[eventId]/index" />
     </Stack>
   );
 }

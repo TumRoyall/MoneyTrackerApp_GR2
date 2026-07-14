@@ -19,7 +19,7 @@ export interface Budget {
 }
 
 export interface BudgetCreateInput {
-  walletId: string;
+  // walletId removed - Budget now applies to all REGULAR wallets
   categoryId?: string;
   categoryIds?: string[];
   title: string;
@@ -31,7 +31,7 @@ export interface BudgetCreateInput {
 }
 
 export interface BudgetUpdateInput {
-  walletId?: string;
+  // walletId removed - Budget now applies to all REGULAR wallets
   categoryId?: string;
   categoryIds?: string[];
   title?: string;

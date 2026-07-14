@@ -18,7 +18,6 @@ import { CategoryPickerModal } from '@/components/common';
 
 import { useBudgetUsecases } from '@/modules/budget/usecases';
 import { useCategoryUsecases } from '@/modules/category/usecases';
-import { useWalletUsecases } from '@/modules/wallet/usecases';
 import { formatMoneyInput, parseMoneyInput } from '@/shared/utils/money';
 
 type PeriodType = 'monthly' | 'biweekly' | 'weekly' | 'yearly';
@@ -139,16 +138,14 @@ export const BudgetEditScreen = () => {
   const budgetId = params.budgetId || '';
 
   const queryClient = useQueryClient();
-  const { getBudget, updateBudget } = useBudgetUsecases();
+  const { getBudget, updateBudget, deleteBudget } = useBudgetUsecases();
   const { getCategories } = useCategoryUsecases();
-  const { getWallets } = useWalletUsecases();
 
   const [titleInput, setTitleInput] = useState('');
   const [amountLimitInput, setAmountLimitInput] = useState('');
   const [periodType, setPeriodType] = useState<PeriodType>('monthly');
   const [periodStart, setPeriodStart] = useState(toIsoDate(new Date()));
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
-  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null);
   const [budgetType, setBudgetType] = useState<CategoryType>('EXPENSE');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
@@ -172,14 +169,8 @@ export const BudgetEditScreen = () => {
     queryFn: getCategories,
   });
 
-  const walletsQuery = useQuery({
-    queryKey: ['wallets'],
-    queryFn: getWallets,
-  });
-
   const budget = budgetQuery.data;
   const categories = categoriesQuery.data ?? [];
-  const wallets = walletsQuery.data ?? [];
 
   useEffect(() => {
     if (hasInitialized || !budget) {
@@ -192,7 +183,7 @@ export const BudgetEditScreen = () => {
     setPeriodType(normalizePeriodType(budget.periodType));
     setPeriodStart(budget.periodStart || toIsoDate(new Date()));
     setSelectedCategoryIds(initialCategoryIds);
-    setSelectedWalletId(budget.walletId ?? null);
+    // walletId intentionally not set - budget applies to all wallets
     if (budget.alertThreshold != null) {
       setAlertThresholdInput(String(budget.alertThreshold));
       setEnableAlert(true);
@@ -213,17 +204,6 @@ export const BudgetEditScreen = () => {
       setBudgetType(normalizeCategoryType(budgetCategory.type));
     }
   }, [hasInitialized, categories, budget]);
-
-  useEffect(() => {
-    if (selectedWalletId || wallets.length === 0) {
-      return;
-    }
-    if (budget?.walletId) {
-      setSelectedWalletId(budget.walletId);
-      return;
-    }
-    setSelectedWalletId(wallets[0].walletId);
-  }, [selectedWalletId, wallets, budget?.walletId]);
 
   const budgetTypeCategories = useMemo(
     () => categories.filter((item) => normalizeCategoryType(item.type) === budgetType),
@@ -280,10 +260,6 @@ export const BudgetEditScreen = () => {
       Alert.alert('Thiếu tiêu đề', 'Vui lòng nhập tiêu đề cho ngân sách.');
       return;
     }
-    if (!selectedWalletId) {
-      Alert.alert('Thiếu ví', 'Vui lòng chọn ví cho ngân sách.');
-      return;
-    }
     if (selectedCategoryIds.length === 0) {
       Alert.alert('Thiếu danh mục', 'Vui lòng chọn ít nhất một danh mục cho ngân sách.');
       return;
@@ -295,7 +271,7 @@ export const BudgetEditScreen = () => {
 
     try {
       await updateBudget(budgetId, {
-        walletId: selectedWalletId,
+        // walletId intentionally omitted - budget applies to all wallets
         categoryId: selectedCategoryIds[0],
         categoryIds: selectedCategoryIds,
         title: titleInput.trim(),
@@ -312,6 +288,30 @@ export const BudgetEditScreen = () => {
     } catch {
       Alert.alert('Lỗi', 'Không thể cập nhật ngân sách. Vui lòng thử lại.');
     }
+  };
+
+  const deleteBudgetHandler = () => {
+    Alert.alert(
+      'Xóa ngân sách',
+      'Bạn có chắc chắn muốn xóa ngân sách này không? Thao tác này không thể hoàn tác.',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteBudget(budgetId);
+              await queryClient.invalidateQueries({ queryKey: ['budgets'] });
+              Alert.alert('Thành công', 'Đã xóa ngân sách.');
+              router.navigate('/(tabs)/tools/budgets');
+            } catch {
+              Alert.alert('Lỗi', 'Không thể xóa ngân sách. Vui lòng thử lại.');
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -472,32 +472,18 @@ export const BudgetEditScreen = () => {
               <Text style={styles.openCategoryPickerButtonText}>Thêm danh mục</Text>
             </Pressable>
 
-            <Text style={styles.sectionLabel}>Chọn ví</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.walletRow}>
-              {wallets.length === 0 ? (
-                <View style={styles.walletEmptyChip}>
-                  <Text style={styles.walletEmptyText}>Chưa có ví</Text>
-                </View>
-              ) : (
-                wallets.map((wallet) => {
-                  const selected = selectedWalletId === wallet.walletId;
-                  return (
-                    <Pressable
-                      key={wallet.walletId}
-                      onPress={() => setSelectedWalletId(wallet.walletId)}
-                      style={[styles.walletChip, selected ? styles.walletChipActive : null]}
-                    >
-                      <Text style={[styles.walletChipText, selected ? styles.walletChipTextActive : null]}>
-                        {wallet.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })
-              )}
-            </ScrollView>
+            <View style={styles.walletNoteContainer}>
+              <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
+              <Text style={styles.walletNoteText}>Ngân sách này sẽ áp dụng cho tất cả ví REGULAR</Text>
+            </View>
 
             <Pressable style={styles.saveBtn} onPress={saveBudgetHandler}>
               <Text style={styles.saveBtnText}>Lưu thay đổi</Text>
+            </Pressable>
+
+            <Pressable style={styles.deleteBtn} onPress={deleteBudgetHandler}>
+              <Ionicons name="trash-outline" size={20} color="#fff" />
+              <Text style={styles.deleteBtnText}>Xóa ngân sách</Text>
             </Pressable>
           </>
         )}
@@ -794,44 +780,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  walletRow: {
-    gap: 8,
-    paddingBottom: 6,
-  },
-  walletChip: {
-    minHeight: 40,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#d9e2e8',
-    backgroundColor: '#fff',
-    paddingHorizontal: 14,
+  walletNoteContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#f6f8fa',
+    borderRadius: 10,
   },
-  walletChipActive: {
-    borderColor: '#29bcc8',
-    backgroundColor: '#e9fbfd',
-  },
-  walletChipText: {
+  walletNoteText: {
     fontSize: 13,
-    color: '#3a464e',
-    fontWeight: '600',
-  },
-  walletChipTextActive: {
-    color: '#0f8c95',
-  },
-  walletEmptyChip: {
-    minHeight: 40,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f1f5f8',
-  },
-  walletEmptyText: {
-    fontSize: 13,
-    color: '#7b868d',
-    fontWeight: '600',
+    color: '#6B7280',
+    fontWeight: '500',
   },
   modalOverlay: {
     flex: 1,
@@ -1017,6 +978,21 @@ const styles = StyleSheet.create({
   },
   rangeConfirmBtnText: {
     color: '#fff',
+    fontWeight: '700',
+  },
+  deleteBtn: {
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  deleteBtnText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '700',
   },
   saveBtn: {

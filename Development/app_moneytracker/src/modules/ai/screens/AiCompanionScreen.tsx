@@ -413,6 +413,7 @@ export const AiCompanionScreen = () => {
       await queryClient.invalidateQueries({ queryKey: ['transactions'] });
       await queryClient.invalidateQueries({ queryKey: ['wallets'] });
       await queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions-all-for-budgets'] });
       setDraftTransaction(null);
     } catch (error) {
       setSubmitError('Không thể lưu giao dịch lúc này.');

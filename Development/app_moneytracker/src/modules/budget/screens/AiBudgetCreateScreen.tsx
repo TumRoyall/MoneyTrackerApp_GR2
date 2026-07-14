@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as LucideIcons from 'lucide-react-native';
+import { CategoryIcon } from '@/components/common';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import {
@@ -207,8 +208,7 @@ export const AiBudgetCreateScreen = () => {
                     >
                       {(() => {
                         const iconName = ((w as { icon?: string }).icon ?? 'Wallet');
-                        const Icon = (LucideIcons as any)[iconName] || LucideIcons.HelpCircle;
-                        return <Icon name={iconName} size={16} color={selected ? '#0f8c95' : '#3a464e'} />;
+                        return <CategoryIcon icon={iconName} size={16} color={selected ? '#0f8c95' : '#3a464e'} />;
                       })()}
                       <Text
                         style={[
