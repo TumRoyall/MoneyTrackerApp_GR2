@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from
 import { Ionicons } from '@expo/vector-icons';
 import { queryAll } from '@/core/db/sqlite';
 import { Category } from '@/modules/category/models/category.types';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 
 interface ExpensesStepProps {
   selected: string[];
@@ -67,7 +68,11 @@ export const ExpensesStep: React.FC<ExpensesStepProps> = ({
                 onPress={() => onToggle(category.categoryId)}
               >
                 <View style={[styles.iconContainer, { backgroundColor: category.color || '#f0f0f0' }]}>
-                  <Text style={styles.categoryIcon}>{category.icon || '📦'}</Text>
+                  <CategoryIcon
+                    icon={category.icon}
+                    color="#fff"
+                    size={18}
+                  />
                 </View>
                 <Text
                   style={[
