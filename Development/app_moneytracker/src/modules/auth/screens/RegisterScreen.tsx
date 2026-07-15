@@ -3,7 +3,7 @@ import { AntDesign, FontAwesome, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Image } from 'react-native';
 
 import { AuthMessage } from '@/modules/auth/components';
 import { RegisterFormValues } from '@/modules/auth/models/auth.types';
@@ -40,7 +40,7 @@ export const RegisterScreen = () => {
     <ScrollView contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
       <View style={styles.heroSection}>
         <View style={styles.robotCircle}>
-          <Ionicons name="sparkles" size={36} color="#2bbcc5" />
+          <Image source={require('../../../../assets/icon.png')} style={{ width: 98, height: 98, borderRadius: 49 }} />
         </View>
       </View>
 

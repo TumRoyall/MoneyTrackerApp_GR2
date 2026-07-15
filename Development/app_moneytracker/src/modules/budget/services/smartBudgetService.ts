@@ -73,24 +73,13 @@ export function calculateSmartBudget(
   });
   totalPercent += savingTargetPercent;
 
-  // Step 2: Calculate percentages for other categories (excluding savings)
-  // We normalize these so the total equals (100% - savingTargetPercent)
-  const otherCategoryKeys = getSmartBudgetCategoryKeys().filter((k) => k !== 'savings');
-  const baseOtherPercentSum = otherCategoryKeys.reduce((sum, key) => {
-    return sum + SMART_BUDGET_CATEGORIES[key].defaultPercent;
-  }, 0);
-
-  // Step 3: Allocate remaining amount to each category
-  const remainingAmount = totalAsset - savingsAmount;
-
-  otherCategoryKeys.forEach((key) => {
+  // Step 2: Needs (Chi tiêu thiết yếu) ALWAYS takes 50%.
+  // Food (25%), Home (15%), Transport (10%)
+  const needsKeys = ['food', 'home', 'transport'];
+  needsKeys.forEach((key) => {
     const config = SMART_BUDGET_CATEGORIES[key];
-    // Calculate the percentage of remaining amount (normalized)
-    const normalizedPercent =
-      baseOtherPercentSum > 0
-        ? (config.defaultPercent / baseOtherPercentSum) * (100 - savingTargetPercent)
-        : 0;
-    const amount = Math.round((remainingAmount * normalizedPercent) / 100);
+    const percent = config.defaultPercent; // 25, 15, 10
+    const amount = Math.round((totalAsset * percent) / 100);
 
     items.push({
       key,
@@ -98,12 +87,46 @@ export function calculateSmartBudget(
       categoryName: config.name,
       icon: config.icon,
       color: config.color,
-      percent: Math.round(normalizedPercent * 10) / 10, // Round to 1 decimal
+      percent,
       amount,
     });
-
-    totalPercent += normalizedPercent;
+    totalPercent += percent;
   });
+
+  // Step 3: Wants (Sở thích) takes the rest: (100 - 50 - savings)
+  const wantsKeys = ['entertainment', 'shopping'];
+  const wantsPercent = Math.max(0, 100 - 50 - savingTargetPercent);
+  
+  if (wantsPercent > 0) {
+    // Split evenly, round to multiple of 5 if possible, but keep integer
+    const baseWantsPercent = Math.floor(wantsPercent / wantsKeys.length);
+    let remainderWants = wantsPercent - (baseWantsPercent * wantsKeys.length);
+
+    wantsKeys.forEach((key, index) => {
+      const config = SMART_BUDGET_CATEGORIES[key];
+      // Give remainder to the first one (e.g., if 15% / 2 -> 8% and 7%)
+      let percent = baseWantsPercent;
+      if (remainderWants > 0) {
+        // Try to distribute to make it end in 0 or 5 if possible?
+        // Let's just give remainder to the first item.
+        percent += remainderWants;
+        remainderWants = 0;
+      }
+      
+      const amount = Math.round((totalAsset * percent) / 100);
+      
+      items.push({
+        key,
+        categoryGroupId: config.groupId,
+        categoryName: config.name,
+        icon: config.icon,
+        color: config.color,
+        percent,
+        amount,
+      });
+      totalPercent += percent;
+    });
+  }
 
   // Round total percent
   totalPercent = Math.round(totalPercent * 10) / 10;
@@ -118,13 +141,7 @@ export function calculateSmartBudget(
 
 /**
  * Recalculate amounts when user adjusts a single item's percentage.
- * Uses auto-rebalancing to keep total at 100%.
- *
- * @param items - Current Smart Budget items
- * @param changedKey - The key of the item that was changed
- * @param newPercent - The new percentage for that item
- * @param totalAsset - Total asset amount
- * @returns Updated SmartBudgetResult
+ * No auto-rebalancing anymore.
  */
 export function recalculateSmartBudget(
   items: SmartBudgetItem[],
@@ -135,7 +152,7 @@ export function recalculateSmartBudget(
   // Clamp percent to valid range
   const clampedPercent = Math.max(0, Math.min(100, newPercent));
 
-  // Update the changed item
+  // Update the changed item only
   let updatedItems = items.map((item) => {
     if (item.key === changedKey) {
       return {
@@ -146,26 +163,6 @@ export function recalculateSmartBudget(
     }
     return item;
   });
-
-  // Auto adjust 'other' category if it exists and wasn't the one changed
-  if (changedKey !== 'other') {
-    const hasOther = updatedItems.some((i) => i.key === 'other');
-    if (hasOther) {
-      const sumWithoutOther = updatedItems.reduce((sum, item) => sum + (item.key !== 'other' ? item.percent : 0), 0);
-      const remainingForOther = Math.max(0, 100 - sumWithoutOther);
-      
-      updatedItems = updatedItems.map((item) => {
-        if (item.key === 'other') {
-          return {
-            ...item,
-            percent: remainingForOther,
-            amount: Math.round((totalAsset * remainingForOther) / 100),
-          };
-        }
-        return item;
-      });
-    }
-  }
 
   // Calculate new total
   const totalPercent = updatedItems.reduce((sum, item) => sum + item.percent, 0);

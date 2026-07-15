@@ -15,12 +15,13 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { SmartBudgetItem, recalculateSmartBudget, formatCurrency } from '@/modules/budget/services/smartBudgetService';
-import { SmartBudgetDialog } from './SmartBudgetDialog';
 import { formatVndAmount } from '@/shared/utils/money';
+import { CategoryIcon } from '@/components/common/CategoryIcon';
 
 // Default Smart Budget categories
 const DEFAULT_CATEGORIES: Record<string, { name: string; icon: string; color: string; defaultPercent: number }> = {
@@ -39,10 +40,13 @@ const AVAILABLE_CATEGORIES: Array<{ key: string; name: string; icon: string; col
     ...DEFAULT_CATEGORIES[k],
   }));
 
+import { Category } from '@/modules/category/models/category.types';
+
 export interface SmartBudgetPreviewProps {
   totalAsset: number;
   savingTargetPercent: number;
   items: SmartBudgetItem[];
+  categories?: Category[];
   onConfirm: (items: SmartBudgetItem[]) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
@@ -62,6 +66,7 @@ export function SmartBudgetPreview({
   totalAsset,
   savingTargetPercent,
   items: initialItems,
+  categories = [],
   onConfirm,
   onCancel,
   loading = false,
@@ -77,9 +82,41 @@ export function SmartBudgetPreview({
 
   // Get categories that can be added (not already in items)
   const availableToAdd = useMemo(() => {
-    const existingKeys = new Set(items.map((i) => i.key));
-    return AVAILABLE_CATEGORIES.filter((c) => !existingKeys.has(c.key));
-  }, [items]);
+    // Collect all category IDs that are already used.
+    // For default items (key like 'food'), their categoryGroupId is 'food'.
+    // We need to find the corresponding category in the DB and mark its ID as used.
+    const usedCategoryIds = new Set<string>();
+    
+    items.forEach((item) => {
+      // If the key is already a UUID (from custom added category), add it
+      usedCategoryIds.add(item.key);
+      
+      // Also find if there is a category in the DB that matches this item's groupId
+      if (item.categoryGroupId && categories.length > 0) {
+        const matchingCat = categories.find(c => c.groupId === item.categoryGroupId);
+        if (matchingCat) {
+          usedCategoryIds.add(matchingCat.categoryId);
+        }
+      }
+    });
+    
+    // If categories are provided (from API/DB), use them
+    if (categories.length > 0) {
+      return categories
+        .filter((c) => c.type === 'EXPENSE' || (c.type as any) === 'expense')
+        .filter((c) => !usedCategoryIds.has(c.categoryId))
+        .map((c) => ({
+          key: c.categoryId,
+          name: c.name,
+          icon: c.icon || '📦',
+          color: c.color || '#6B7280',
+          defaultPercent: 0,
+        }));
+    }
+    
+    // Fallback to default categories if no DB categories loaded
+    return AVAILABLE_CATEGORIES.filter((c) => !usedCategoryIds.has(c.key));
+  }, [items, categories]);
 
   // Handle percentage change
   const handlePercentChange = useCallback(
@@ -125,25 +162,14 @@ export function SmartBudgetPreview({
   // Handle add item
   const handleAddItem = useCallback(
     (categoryKey: string) => {
-      const category = AVAILABLE_CATEGORIES.find((c) => c.key === categoryKey);
+      // Find from availableToAdd which holds both dynamic and fallback categories
+      const category = availableToAdd.find((c) => c.key === categoryKey);
       if (!category) return;
 
-      // Default percent for new item (evenly distribute remaining)
-      const currentPercentSum = items.reduce((sum, i) => sum + i.percent, 0);
-      const remainingPercent = Math.max(0, 100 - currentPercentSum);
-      const newPercent = Math.round(remainingPercent / (items.length + 1) * 10) / 10;
+      // Default percent for new item
+      const newPercent = category.defaultPercent || 0;
 
-      // Redistribute existing items
-      const updatedItems = items.map((item) => {
-        const newItemPercent = Math.max(0, item.percent - (newPercent / items.length));
-        return {
-          ...item,
-          percent: Math.round(newItemPercent * 10) / 10,
-          amount: Math.round((totalAsset * newItemPercent) / 100),
-        };
-      });
-
-      // Add new item
+      // Add new item without touching others
       const newItem: SmartBudgetItem = {
         key: categoryKey,
         categoryGroupId: categoryKey,
@@ -154,27 +180,38 @@ export function SmartBudgetPreview({
         amount: Math.round((totalAsset * newPercent) / 100),
       };
 
-      setItems([...updatedItems, newItem]);
+      setItems([...items, newItem]);
       setShowAddModal(false);
     },
-    [items, totalAsset]
+    [items, totalAsset, availableToAdd]
   );
 
   // Handle confirm button press
-  const handleConfirmPress = useCallback(() => {
-    setShowDialog(true);
-  }, []);
-
-  // Handle actual confirmation
-  const handleConfirm = useCallback(async () => {
-    setShowDialog(false);
+  const handleConfirmPress = useCallback(async () => {
     await onConfirm(items);
   }, [items, onConfirm]);
 
-  // Handle cancel dialog
+  // Handle cancel dialog (kept for compatibility if needed, but unused)
   const handleCancelDialog = useCallback(() => {
     setShowDialog(false);
   }, []);
+
+  // Handle direct percent text input
+  const handlePercentTextChange = useCallback(
+    (key: string, text: string) => {
+      // Remove any non-numeric characters except dot
+      const numericText = text.replace(/[^0-9.]/g, '');
+      if (numericText === '') {
+        handlePercentChange(key, 0);
+        return;
+      }
+      const val = parseFloat(numericText);
+      if (!isNaN(val)) {
+        handlePercentChange(key, val);
+      }
+    },
+    [handlePercentChange]
+  );
 
   // Render a single budget item
   const renderItem = useCallback(
@@ -186,7 +223,7 @@ export function SmartBudgetPreview({
         <View style={styles.itemContainer}>
           <View style={styles.itemHeader}>
             <View style={styles.itemInfo}>
-              <Text style={styles.itemIcon}>{item.icon}</Text>
+              <CategoryIcon icon={item.icon} size={24} color={item.color} />
               <Text style={styles.itemName}>{item.categoryName}</Text>
             </View>
             <View style={styles.itemActions}>
@@ -205,9 +242,19 @@ export function SmartBudgetPreview({
                 >
                   <Ionicons name="remove" size={14} color="#179ea9" />
                 </Pressable>
-                <Text style={[styles.itemPercent, item.percent === 0 && styles.zeroPercent]}>
-                  {item.percent.toFixed(0)}%
-                </Text>
+                
+                <View style={styles.percentInputWrapper}>
+                  <TextInput
+                    style={[styles.itemPercentInput, item.percent === 0 && styles.zeroPercent]}
+                    value={item.percent.toString()}
+                    onChangeText={(text) => handlePercentTextChange(item.key, text)}
+                    keyboardType="numeric"
+                    maxLength={5}
+                    selectTextOnFocus
+                  />
+                  <Text style={styles.percentSymbol}>%</Text>
+                </View>
+
                 <Pressable
                   style={styles.stepButton}
                   onPress={() => handlePercentChange(item.key, Math.min(100, item.percent + 5))}
@@ -231,7 +278,7 @@ export function SmartBudgetPreview({
         </View>
       );
     },
-    [handlePercentChange, handleDeleteItem]
+    [handlePercentChange, handlePercentTextChange, handleDeleteItem]
   );
 
   // Render add button
@@ -338,13 +385,6 @@ export function SmartBudgetPreview({
         </View>
       </View>
 
-      {/* Confirmation Dialog */}
-      <SmartBudgetDialog
-        visible={showDialog}
-        onDismiss={handleCancelDialog}
-        onConfirm={handleConfirm}
-        loading={loading}
-      />
 
       {/* Add Category Modal */}
       <Modal
@@ -368,7 +408,7 @@ export function SmartBudgetPreview({
                   style={styles.categoryItem}
                   onPress={() => handleAddItem(category.key)}
                 >
-                  <Text style={styles.categoryIcon}>{category.icon}</Text>
+                  <CategoryIcon icon={category.icon} color={category.color} size={24} />
                   <Text style={styles.categoryName}>{category.name}</Text>
                   <Text style={styles.categoryPercent}>{category.defaultPercent}%</Text>
                 </Pressable>
@@ -469,12 +509,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  itemPercent: {
+  percentInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 50,
+    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingBottom: 2,
+  },
+  itemPercentInput: {
     fontSize: 16,
     fontWeight: '700',
     color: '#179ea9',
-    minWidth: 40,
     textAlign: 'center',
+    minWidth: 30,
+    padding: 0,
+    margin: 0,
+  },
+  percentSymbol: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#179ea9',
+    marginLeft: 2,
   },
   zeroPercent: {
     color: '#9CA3AF',

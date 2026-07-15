@@ -39,8 +39,10 @@ public class TransactionService {
             Pageable pageable,
             UUID userId
     ) {
-        walletRepo.findByWalletIdAndUserIdAndDeletedAtIsNull(filter.getWalletId(), userId)
-                .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+        if (filter.getWalletId() != null) {
+            walletRepo.findByWalletIdAndUserIdAndDeletedAtIsNull(filter.getWalletId(), userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Wallet not found"));
+        }
 
         var spec = TransactionSpecification.filter(
                 userId,

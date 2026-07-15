@@ -235,6 +235,25 @@ export function CategoryPickerModal({
               />
             </View>
 
+            <View style={styles.presetColorContainer}>
+              <Text style={styles.presetColorTitle}>Màu sắc</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetColorScroll}>
+                {PRESET_COLORS.map((color) => (
+                  <Pressable
+                    key={color}
+                    style={[
+                      styles.presetColorCircle,
+                      { backgroundColor: color },
+                      newCategoryColor === color && styles.presetColorCircleSelected,
+                    ]}
+                    onPress={() => setNewCategoryColor(color)}
+                  >
+                    {newCategoryColor === color && <Ionicons name="checkmark" size={16} color="#fff" />}
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+
             <View style={styles.createBtnWrap}>
               <Pressable style={styles.createSubmitBtn} onPress={handleCreateCategory}>
                 <Text style={styles.createSubmitBtnText}>Tạo danh mục</Text>
@@ -619,5 +638,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 16,
+  },
+  presetColorContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  presetColorTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  presetColorScroll: {
+    flexDirection: 'row',
+  },
+  presetColorCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  presetColorCircleSelected: {
+    borderWidth: 2,
+    borderColor: '#333',
   },
 });

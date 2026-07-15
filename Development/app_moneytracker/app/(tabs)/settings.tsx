@@ -154,6 +154,36 @@ export default function SettingsScreen() {
         onPress: async () => {
           try {
             await logout();
+            
+            // Clear React Query Cache
+            queryClient.clear();
+            
+            // Clear SecureStore info
+            await SecureStore.deleteItemAsync('display_username');
+            await SecureStore.deleteItemAsync('user_id');
+            await SecureStore.deleteItemAsync('user_avatar');
+            
+            // Clear onboarding status
+            await onboardingStorage.reset();
+            
+            // Clear Wallet and Profile storage (dynamically imported to avoid circular dependencies if any)
+            const { walletStorage } = require('@/core/storage/walletStorage');
+            const { profileStorage } = require('@/modules/budget/storage/profileStorage');
+            await walletStorage.clear();
+            await profileStorage.clear();
+            
+            // Clear SQLite Database Tables
+            try {
+              const tables = await queryAll<{ name: string }>("SELECT name FROM sqlite_master WHERE type='table'");
+              const tableNames = tables.map(t => t.name).filter(name => name !== 'android_metadata' && name !== 'sqlite_sequence');
+              for (const table of tableNames) {
+                await executeSql(`DELETE FROM ${table}`);
+              }
+              await executeSql('PRAGMA user_version = 0');
+            } catch (e) {
+              console.log('Error clearing SQLite DB on logout', e);
+            }
+            
             router.replace('/(auth)/login');
           } catch (e) {
             Alert.alert('Lỗi', 'Đăng xuất thất bại');

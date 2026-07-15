@@ -28,6 +28,7 @@ export const SMART_BUDGET_CATEGORIES: Record<string, SmartBudgetCategoryConfig> 
     color: '#F59E0B',
     defaultPercent: 0, // Set dynamically from user's saving_target_percent
   },
+  // --- THIẾT YẾU (NEEDS) - LUÔN CHIẾM 50% TỔNG CỘNG ---
   food: {
     groupId: 'food',
     name: 'Thức ăn & Đồ uống',
@@ -49,26 +50,20 @@ export const SMART_BUDGET_CATEGORIES: Record<string, SmartBudgetCategoryConfig> 
     color: '#64748B',
     defaultPercent: 10,
   },
+  // --- SỞ THÍCH (WANTS) - CHIẾM PHẦN TRĂM CÒN LẠI ---
   entertainment: {
     groupId: 'entertainment',
     name: 'Giải trí',
     icon: '🎮',
     color: '#8B5CF6',
-    defaultPercent: 7,
+    defaultPercent: 15, // Will be dynamically adjusted based on remaining budget
   },
   shopping: {
     groupId: 'shopping',
     name: 'Mua sắm',
     icon: '🛍️',
     color: '#EC4899',
-    defaultPercent: 8,
-  },
-  other: {
-    groupId: 'uncategorized',
-    name: 'Khác',
-    icon: '📦',
-    color: '#6B7280',
-    defaultPercent: 35, // Remaining percentage
+    defaultPercent: 15, // Will be dynamically adjusted based on remaining budget
   },
 };
 

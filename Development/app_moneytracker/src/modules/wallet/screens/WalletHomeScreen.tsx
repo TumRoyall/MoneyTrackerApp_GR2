@@ -313,7 +313,12 @@ export const WalletHomeScreen = () => {
   );
 
   const categoryBreakdown = useMemo(() => {
-    const palette = ['#60c5d1', '#8bc3ed', '#f6c04b', '#ef7d83', '#a98ff0', '#79d7a5'];
+    const palette = [
+      '#60c5d1', '#8bc3ed', '#f6c04b', '#ef7d83', '#a98ff0', '#79d7a5',
+      '#FF9F40', '#FF6384', '#36A2EB', '#4BC0C0', '#9966FF', '#FFCD56',
+      '#C9CBCF', '#FF8A80', '#FF80AB', '#EA80FC', '#B388FF', '#8C9EFF',
+      '#82B1FF', '#84FFFF', '#A7FFEB', '#B9F6CA', '#CCFF90', '#F4FF81'
+    ];
     const fallback: Category = {
       categoryId: 'unknown',
       name: 'Chưa được phân loại',
@@ -339,16 +344,34 @@ export const WalletHomeScreen = () => {
     });
 
     const sorted = Array.from(totals.values()).sort((a, b) => b.amount - a.amount);
+    const usedColors = new Set<string>();
 
     return sorted.map((item, index) => {
       const percentage = totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0;
-      const paletteColor = palette[index % palette.length];
-      const rawColor = item.category.color || '';
-      const color = rawColor && rawColor !== '#BFEFF3' ? rawColor : paletteColor;
+      let rawColor = (item.category.color || '').toUpperCase();
+      
+      // If color is missing, fallback, or already used -> find an unused color
+      if (!rawColor || rawColor === '#BFEFF3' || usedColors.has(rawColor)) {
+         let found = false;
+         for (const pc of palette) {
+             const upperPc = pc.toUpperCase();
+             if (!usedColors.has(upperPc)) {
+                 rawColor = upperPc;
+                 found = true;
+                 break;
+             }
+         }
+         if (!found) {
+             rawColor = palette[index % palette.length];
+         }
+      }
+
+      usedColors.add(rawColor.toUpperCase());
+
       return {
         ...item,
         percentage,
-        color,
+        color: rawColor,
       };
     });
   }, [transactions, categoryMap, categoryMode]);

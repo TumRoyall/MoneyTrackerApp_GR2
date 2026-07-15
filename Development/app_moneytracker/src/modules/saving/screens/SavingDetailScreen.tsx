@@ -220,9 +220,9 @@ export const SavingDetailScreen = () => {
   const activityItems = activityQuery.data ?? [];
   const periodSaved = savingType === 'periodic' ? sumSignedAmount(transactions, categoryMap) : 0;
   const savingWallet = wallets.find((w) => w.walletId === saving?.walletId);
-  const totalSaved = savingWallet ? Number(savingWallet.currentBalance || 0) : Number(saving?.currentBalance || 0);
+  const totalSaved = Math.max(0, savingWallet ? Number(savingWallet.currentBalance || 0) : Number(saving?.currentBalance || 0));
   const targetAmount = saving?.targetAmount ?? 0;
-  const progressValue = savingType === 'periodic' ? periodSaved : totalSaved;
+  const progressValue = savingType === 'periodic' ? Math.max(0, periodSaved) : totalSaved;
   const percent = targetAmount > 0 ? Math.min((progressValue / targetAmount) * 100, 100) : 0;
   const remainingAmount = Math.max(targetAmount - progressValue, 0);
 

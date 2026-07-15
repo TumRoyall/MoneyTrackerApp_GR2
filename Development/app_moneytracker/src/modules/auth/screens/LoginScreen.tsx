@@ -3,7 +3,7 @@ import { AntDesign, FontAwesome, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, Image } from 'react-native';
 
 import { AuthMessage } from '@/modules/auth/components';
 import { LoginFormValues } from '@/modules/auth/models/auth.types';
@@ -17,20 +17,20 @@ export const LoginScreen = () => {
   const { run, loading, error, success } = useAuthAction(login);
   const [showPassword, setShowPassword] = useState(false);
 
-  // DEV ONLY: AUTO LOGIN
-  useEffect(() => {
-    const autoLogin = async () => {
-      await run({ email: 'nguyenkimngochtm@gmail.com', password: 'admin' });
-      // Check onboarding status after login
-      const isOnboardingCompleted = await onboardingStorage.isCompleted();
-      if (isOnboardingCompleted) {
-        router.replace('/(tabs)/wallets');
-      } else {
-        router.replace('/onboarding');
-      }
-    };
-    autoLogin();
-  }, []);
+  // // DEV ONLY: AUTO LOGIN
+  // useEffect(() => {
+  //   const autoLogin = async () => {
+  //     await run({ email: 'minhanhs2@gmail.com', password: 'admin' });
+  //     // Check onboarding status after login
+  //     const isOnboardingCompleted = await onboardingStorage.isCompleted();
+  //     if (isOnboardingCompleted) {
+  //       router.replace('/(tabs)/wallets');
+  //     } else {
+  //       router.replace('/onboarding');
+  //     }
+  //   };
+  //   autoLogin();
+  // }, []);
 
   const { control, handleSubmit } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -55,7 +55,7 @@ export const LoginScreen = () => {
     <ScrollView contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
       <View style={styles.heroSection}>
         <View style={styles.robotCircle}>
-          <Ionicons name="sparkles" size={36} color="#2bbcc5" />
+          <Image source={require('../../../../assets/icon.png')} style={{ width: 98, height: 98, borderRadius: 49 }} />
         </View>
       </View>
 

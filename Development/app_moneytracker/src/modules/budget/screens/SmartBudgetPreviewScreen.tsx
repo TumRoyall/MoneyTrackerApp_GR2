@@ -17,24 +17,32 @@ import {
   getTotalRegularBalance,
   getOnboardingData,
 } from '@/modules/budget/usecases/smartBudgetUsecases';
+import { useCategoryUsecases } from '@/modules/category/usecases';
+import { Category } from '@/modules/category/models/category.types';
 
 export const SmartBudgetPreviewScreen = () => {
   const router = useRouter();
+  const { getCategories } = useCategoryUsecases();
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [totalAsset, setTotalAsset] = useState(0);
   const [savingTargetPercent, setSavingTargetPercent] = useState(20);
   const [items, setItems] = useState<SmartBudgetItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   // Load Smart Budget data on mount
   useEffect(() => {
     (async () => {
       try {
-        const result = await generateSmartBudget();
+        const [result, fetchedCategories] = await Promise.all([
+          generateSmartBudget(),
+          getCategories(),
+        ]);
         setTotalAsset(result.totalAsset);
         setSavingTargetPercent(result.savingTargetPercent);
         setItems(result.items);
+        setCategories(fetchedCategories);
         setError(null);
       } catch (err) {
         console.error('Failed to generate smart budget:', err);
@@ -43,7 +51,7 @@ export const SmartBudgetPreviewScreen = () => {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [getCategories]);
 
   // Handle cancel - go back
   const handleCancel = useCallback(() => {
@@ -152,6 +160,7 @@ export const SmartBudgetPreviewScreen = () => {
       totalAsset={totalAsset}
       savingTargetPercent={savingTargetPercent}
       items={items}
+      categories={categories}
       onConfirm={handleConfirm}
       onCancel={handleCancel}
       loading={creating}

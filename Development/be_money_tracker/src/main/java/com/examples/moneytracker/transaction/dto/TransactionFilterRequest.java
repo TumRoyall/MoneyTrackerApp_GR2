@@ -10,7 +10,6 @@ import java.util.UUID;
 @Data
 public class TransactionFilterRequest {
 
-    @NotNull
     private UUID walletId;
     private UUID categoryId;
     private String type; // INCOME / EXPENSE
